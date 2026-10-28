@@ -34,7 +34,7 @@ export const BottomNav: React.FC = () => {
                   type="button"
                   onClick={() => setVoiceModalOpen(true)}
                   aria-label="Rekam Pengeluaran Suara"
-                  className="w-[66px] h-[66px] rounded-full bg-gradient-to-b from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-black/40 border-2 border-[rgba(235,245,255,0.25)] hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                  className="btn-primary w-[66px] h-[66px] rounded-full bg-gradient-to-b from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-black/40 border-2 border-[rgba(235,245,255,0.25)] cursor-pointer"
                 >
                   <Mic size={28} strokeWidth={2.2} />
                 </button>
@@ -54,18 +54,36 @@ export const BottomNav: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(item.key as NavTabKey)}
               aria-label={item.label}
-              className={`flex flex-col items-center justify-center min-w-[56px] py-1 transition-colors ${
+              className={`chip-press relative flex flex-col items-center justify-center min-w-[56px] py-1 transition-colors ${
                 isActive ? 'text-[#E39A5E]' : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
               }`}
             >
+              {/* Active indicator dot above icon */}
+              <span
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-[#E39A5E] origin-center"
+                style={{
+                  transform: `translateX(-50%) scaleX(${isActive ? 1 : 0})`,
+                  transition: 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+                  opacity: isActive ? 1 : 0,
+                }}
+              />
               <div
-                className={`p-1 rounded-xl transition-all ${
-                  isActive ? 'bg-[rgba(227,154,94,0.15)]' : ''
-                }`}
+                className="p-1 rounded-xl"
+                style={{
+                  background: isActive ? 'rgba(227,154,94,0.15)' : 'transparent',
+                  transition: 'background 0.18s ease',
+                }}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.2 : 1.75} />
+                <Icon
+                  size={20}
+                  strokeWidth={isActive ? 2.2 : 1.75}
+                  style={{ transition: 'stroke-width 0.15s ease' }}
+                />
               </div>
-              <span className={`text-[11px] mt-0.5 ${isActive ? 'font-semibold text-[#EEF2F6]' : 'font-normal'}`}>
+              <span
+                className={`text-[11px] mt-0.5 ${isActive ? 'font-semibold text-[#EEF2F6]' : 'font-normal'}`}
+                style={{ transition: 'color 0.15s ease' }}
+              >
                 {item.label}
               </span>
             </button>

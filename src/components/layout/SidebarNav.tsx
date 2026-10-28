@@ -51,7 +51,7 @@ export const SidebarNav: React.FC = () => {
       className="hidden md:flex flex-col justify-between w-20 lg:w-64 h-screen sticky top-0 z-30 p-4 border-r border-[rgba(205,225,245,0.13)] bg-[#070A0F]/80 backdrop-blur-md"
     >
       <div className="space-y-6">
-        {/* Brand Logo: Sound wave transitioning to rising chart */}
+        {/* Brand Logo */}
         <div className="flex items-center gap-3 px-2 pt-2">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-md shadow-black/40 border border-[rgba(235,245,255,0.3)]">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -71,7 +71,7 @@ export const SidebarNav: React.FC = () => {
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] font-semibold text-sm flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.98] transition-all shadow-md shadow-black/30 cursor-pointer"
+            className="btn-primary w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-black/30 cursor-pointer"
           >
             <Mic size={18} strokeWidth={2.2} />
             <span>Rekam Pengeluaran</span>
@@ -79,7 +79,7 @@ export const SidebarNav: React.FC = () => {
         </div>
 
         {/* Navigation list */}
-        <nav className="space-y-1">
+        <nav className="space-y-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.key;
@@ -89,17 +89,36 @@ export const SidebarNav: React.FC = () => {
                 key={item.key}
                 type="button"
                 onClick={() => setActiveTab(item.key)}
-                className={`w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
+                className={`group relative w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl cursor-pointer overflow-hidden ${
                   isActive
                     ? 'glass-2 border-[#E39A5E]/30 text-[#EEF2F6] font-semibold'
-                    : 'text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.04]'
+                    : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
                 }`}
+                style={{ transition: 'color 0.15s ease, background 0.15s ease' }}
                 title={item.label}
               >
-                <div className={`${isActive ? 'text-[#E39A5E]' : ''}`}>
-                  <Icon size={20} strokeWidth={isActive ? 2.2 : 1.75} />
+                {/* Left active accent bar */}
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r-full bg-[#E39A5E]"
+                  style={{
+                    height: isActive ? '60%' : '0%',
+                    transition: 'height 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+                {/* Hover fill for inactive items */}
+                {!isActive && (
+                  <span
+                    className="absolute inset-0 rounded-xl bg-white/[0.04] opacity-0 group-hover:opacity-100"
+                    style={{ transition: 'opacity 0.15s ease' }}
+                  />
+                )}
+                <div
+                  className={isActive ? 'text-[#E39A5E]' : 'group-hover:text-[#EEF2F6]'}
+                  style={{ transition: 'color 0.15s ease' }}
+                >
+                  <Icon size={20} strokeWidth={isActive ? 2.2 : 1.75} style={{ transition: 'stroke-width 0.15s ease' }} />
                 </div>
-                <span className="hidden lg:inline text-sm tracking-tight text-left">
+                <span className="hidden lg:inline text-sm tracking-tight text-left relative z-10">
                   {item.label}
                 </span>
               </button>
@@ -110,12 +129,12 @@ export const SidebarNav: React.FC = () => {
 
       {/* Bottom Profile and Settings section */}
       <div className="space-y-3 pt-4 border-t border-[rgba(205,225,245,0.1)]">
-        {/* Theme and Mode toggle */}
+        {/* Theme toggle */}
         <div className="flex items-center justify-between px-2">
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.04] transition-colors cursor-pointer"
+            className="icon-spin-hover btn-ghost p-2 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer"
             title="Ganti Tema"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -147,7 +166,7 @@ export const SidebarNav: React.FC = () => {
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className="text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                className="btn-ghost text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer px-1 py-0.5 rounded"
                 title="Hubungkan Google"
               >
                 <LogIn size={14} />
@@ -157,7 +176,7 @@ export const SidebarNav: React.FC = () => {
               <button
                 type="button"
                 onClick={signOut}
-                className="text-xs text-[#A3AFBC] hover:text-[#EE5D6C] flex items-center gap-1 cursor-pointer"
+                className="btn-danger text-xs text-[#A3AFBC] flex items-center gap-1 cursor-pointer p-1 rounded-lg"
                 title="Keluar"
               >
                 <LogOut size={14} />

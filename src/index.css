@@ -173,3 +173,135 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ─── Keyframes ─────────────────────────────────────────────────── */
+
+/* Modal: slide up from bottom (mobile sheet) */
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Modal: scale in (desktop dialog) */
+@keyframes scale-in {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* Backdrop fade in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Waveform bar bounce — used by voice recorder */
+@keyframes waveform {
+  0%   { transform: scaleY(0.35); }
+  100% { transform: scaleY(1);    }
+}
+
+/* Subtle row entrance — stagger via style delay */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* Nav active pill slide */
+@keyframes nav-pip-in {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ─── Animation utilities ─────────────────────────────────────────── */
+
+.animate-slide-up {
+  animation: slide-up 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease both;
+}
+
+.animate-row-in {
+  animation: row-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Waveform bar: apply to each bar, set --delay via inline style */
+.waveform-bar {
+  transform-origin: center bottom;
+  animation: waveform 0.55s ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+
+/* ─── Interactive utilities ─────────────────────────────────────────── */
+
+/* Button press: scale down on :active */
+.btn-press {
+  transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Primary CTA brightness lift on hover */
+.btn-primary {
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+.btn-primary:hover  { filter: brightness(1.08); }
+.btn-primary:active { transform: scale(0.96); filter: brightness(0.96); }
+
+/* Ghost button */
+.btn-ghost {
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.btn-ghost:hover  { background: rgba(255,255,255,0.05); }
+.btn-ghost:active { transform: scale(0.97); }
+
+/* Danger hover (delete) */
+.btn-danger {
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+.btn-danger:hover  { color: #EE5D6C; background: rgba(238,93,108,0.08); }
+.btn-danger:active { transform: scale(0.94); }
+
+/* Card lift — hover elevation bump */
+.card-lift {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.2s ease,
+              border-color 0.15s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Chip press */
+.chip-press {
+  transition: background 0.12s ease, color 0.12s ease,
+              transform 0.08s ease, border-color 0.12s ease;
+}
+.chip-press:active { transform: scale(0.95); }
+
+/* Input focus glow */
+.input-glow {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.input-glow:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(227,154,94,0.15);
+}
+
+/* Progress bar fill transition — uses width change */
+.progress-fill {
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Icon rotate on hover (for theme toggle) */
+.icon-spin-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), color 0.15s ease;
+}
+.icon-spin-hover:hover { transform: rotate(20deg); }
