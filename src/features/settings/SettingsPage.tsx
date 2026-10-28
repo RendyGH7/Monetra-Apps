@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Brain,
   Trash2,
@@ -27,6 +27,13 @@ export const SettingsPage: React.FC = () => {
   const [datingBudget, setDatingBudget] = useState(String(profile.dating_budget_est));
   const [newMemoryText, setNewMemoryText] = useState('');
   const [addMemOpen, setAddMemOpen] = useState(false);
+
+  useEffect(() => {
+    setName(profile.nama);
+    setSalary(String(profile.monthly_income));
+    setPayDay(String(profile.pay_day));
+    setDatingBudget(String(profile.dating_budget_est));
+  }, [profile.nama, profile.monthly_income, profile.pay_day, profile.dating_budget_est]);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();

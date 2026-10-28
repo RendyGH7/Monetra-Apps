@@ -332,15 +332,18 @@ export const useAppStore = create<AppState>((set, get) => {
       });
     },
 
-    syncWithSupabaseUser: async (userId, email, name) => {
-      set((state) => ({
-        profile: {
+    syncWithSupabaseUser: async (userId, email, name, avatarUrl) => {
+      set((state) => {
+        const updatedProfile: UserProfile = {
           ...state.profile,
           id: userId,
           email: email || state.profile.email,
           nama: name || state.profile.nama,
-        },
-      }));
+          avatar_url: avatarUrl || state.profile.avatar_url,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, profile: updatedProfile }));
+        return { profile: updatedProfile };
+      });
     },
 
     signOut: async () => {

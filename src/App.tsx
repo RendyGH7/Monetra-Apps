@@ -31,8 +31,10 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const u = session.user;
-        setAuthUser({ id: u.id, email: u.email, name: u.user_metadata?.full_name || u.email });
-        syncWithSupabaseUser(u.id, u.email, u.user_metadata?.full_name || u.email);
+        const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email;
+        const avatarUrl = u.user_metadata?.avatar_url || u.user_metadata?.picture;
+        setAuthUser({ id: u.id, email: u.email, name, avatar_url: avatarUrl });
+        syncWithSupabaseUser(u.id, u.email, name, avatarUrl);
       }
       setAuthLoading(false);
     });
@@ -41,8 +43,10 @@ export default function App() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         const u = session.user;
-        setAuthUser({ id: u.id, email: u.email, name: u.user_metadata?.full_name || u.email });
-        syncWithSupabaseUser(u.id, u.email, u.user_metadata?.full_name || u.email);
+        const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email;
+        const avatarUrl = u.user_metadata?.avatar_url || u.user_metadata?.picture;
+        setAuthUser({ id: u.id, email: u.email, name, avatar_url: avatarUrl });
+        syncWithSupabaseUser(u.id, u.email, name, avatarUrl);
         if (event === 'SIGNED_IN') {
           showToast('Berhasil masuk dengan akun Google.');
         }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Home,
   ListOrdered,
@@ -9,7 +9,6 @@ import {
   Mic,
   Sun,
   Moon,
-  ShieldCheck,
   LogIn,
   LogOut,
 } from 'lucide-react';
@@ -17,8 +16,9 @@ import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
 
 export const SidebarNav: React.FC = () => {
-  const { activeTab, setActiveTab, setVoiceModalOpen, theme, toggleTheme, profile, showToast, signOut } =
+  const { activeTab, setActiveTab, setVoiceModalOpen, theme, toggleTheme, profile, authUser, showToast, signOut } =
     useAppStore();
+  const [avatarError, setAvatarError] = useState(false);
 
   const navItems = [
     { key: 'beranda' as const, label: 'Beranda', icon: Home },
@@ -139,30 +139,36 @@ export const SidebarNav: React.FC = () => {
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-[#A3AFBC] font-mono">
-            <ShieldCheck size={14} className="text-[#4FD3A4]" />
-            <span>RLS Terproteksi</span>
-          </div>
         </div>
 
         {/* User Card */}
         <div className="glass-1 p-2.5 rounded-xl flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs shrink-0">
-              {profile.nama.charAt(0)}
-            </div>
+            {profile.avatar_url && !avatarError ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.nama}
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarError(true)}
+                className="w-8 h-8 rounded-lg object-cover border border-[#E39A5E]/40 shrink-0 shadow-sm"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs shrink-0">
+                {(profile.nama || 'U').charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="hidden lg:block min-w-0">
               <p className="text-xs font-semibold text-[#EEF2F6] truncate">
                 {profile.nama}
               </p>
               <p className="text-[10px] text-[#A3AFBC] truncate">
-                {profile.internship_status}
+                {profile.email || profile.internship_status}
               </p>
             </div>
           </div>
 
           <div className="hidden lg:block">
-            {profile.id === 'default' ? (
+            {profile.id === 'default' && !authUser ? (
               <button
                 type="button"
                 onClick={handleGoogleLogin}
@@ -176,7 +182,7 @@ export const SidebarNav: React.FC = () => {
               <button
                 type="button"
                 onClick={signOut}
-                className="btn-danger text-xs text-[#A3AFBC] flex items-center gap-1 cursor-pointer p-1 rounded-lg"
+                className="btn-danger text-xs text-[#A3AFBC] hover:text-[#EE5D6C] flex items-center gap-1 cursor-pointer p-1.5 rounded-lg"
                 title="Keluar"
               >
                 <LogOut size={14} />
