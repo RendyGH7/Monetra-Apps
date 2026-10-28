@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, AlertTriangle, Plus, PiggyBank, HandCoins, CheckCircle2 } from 'lucide-react';
+import { Target, AlertTriangle, Plus, PiggyBank } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { formatCurrency, stripEmoji } from '../../utils/format';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
@@ -11,11 +11,10 @@ export const BudgetPage: React.FC = () => {
   const [newGoalTarget, setNewGoalTarget] = useState('');
   const [addGoalModal, setAddGoalModal] = useState(false);
 
-  // Budget allocations
   const budgetAllocations = [
     {
       categoryName: 'Makanan & Minuman',
-      budgetAmount: 450000, // 15k * 30
+      budgetAmount: 450000,
       note: 'Target harian Rp 15.000 untuk makan siang magang',
     },
     {
@@ -69,7 +68,7 @@ export const BudgetPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setAddGoalModal(true)}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold hover:brightness-105 active:scale-95 transition-all flex items-center gap-1.5 self-start cursor-pointer shadow-md"
+          className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 self-start cursor-pointer shadow-md"
         >
           <Plus size={15} />
           <span>Tambah Target Tabungan</span>
@@ -78,11 +77,9 @@ export const BudgetPage: React.FC = () => {
 
       {/* Monthly Budget Allocations */}
       <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[#EEF2F6]">
-            Batas Anggaran Kategori (Gaji Magang Rp 1.500.000)
-          </h2>
-        </div>
+        <h2 className="text-sm font-semibold text-[#EEF2F6]">
+          Batas Anggaran Kategori (Gaji Magang Rp 1.500.000)
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {budgetAllocations.map((b, idx) => {
@@ -98,7 +95,7 @@ export const BudgetPage: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="glass-2 p-4 rounded-xl border-[rgba(205,225,245,0.1)] space-y-3"
+                className="card-lift glass-2 p-4 rounded-xl border-[rgba(205,225,245,0.1)] space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -124,7 +121,7 @@ export const BudgetPage: React.FC = () => {
 
                 <div className="w-full h-2 rounded-full bg-white/[0.08] overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${
+                    className={`h-full rounded-full progress-fill ${
                       isOver ? 'bg-[#EE5D6C]' : isWarning ? 'bg-[#F2C14E]' : 'bg-[#E39A5E]'
                     }`}
                     style={{ width: `${pct}%` }}
@@ -164,7 +161,7 @@ export const BudgetPage: React.FC = () => {
             return (
               <div
                 key={g.id}
-                className="glass-2 p-4 rounded-xl border-[rgba(205,225,245,0.1)] space-y-3"
+                className="card-lift glass-2 p-4 rounded-xl border-[rgba(205,225,245,0.1)] space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs sm:text-sm font-semibold text-[#EEF2F6]">
@@ -175,7 +172,7 @@ export const BudgetPage: React.FC = () => {
 
                 <div className="w-full h-2.5 rounded-full bg-white/[0.08] overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-[#E39A5E] to-[#4FD3A4] rounded-full transition-all"
+                    className="h-full bg-gradient-to-r from-[#E39A5E] to-[#4FD3A4] rounded-full progress-fill"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -190,7 +187,8 @@ export const BudgetPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => updateGoalProgress(g.id, 50000)}
-                    className="px-2.5 py-1 rounded-lg bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-xs text-[#4FD3A4] font-medium hover:bg-[#4FD3A4]/25 transition-colors cursor-pointer"
+                    className="chip-press px-2.5 py-1 rounded-lg bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-xs text-[#4FD3A4] font-medium hover:bg-[#4FD3A4]/25 cursor-pointer"
+                    style={{ transition: 'background 0.15s ease' }}
                   >
                     + Rp 50.000
                   </button>
@@ -206,9 +204,10 @@ export const BudgetPage: React.FC = () => {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setAddGoalModal(false); }}
         >
-          <div className="glass-3 w-full max-w-sm p-5 rounded-2xl border border-[rgba(205,225,245,0.18)] space-y-4">
+          <div className="animate-scale-in glass-3 w-full max-w-sm p-5 rounded-2xl border border-[rgba(205,225,245,0.18)] space-y-4">
             <h3 className="text-sm font-semibold text-[#EEF2F6]">Tambah Target Tabungan Baru</h3>
             <form onSubmit={handleCreateGoal} className="space-y-3">
               <div>
@@ -219,7 +218,7 @@ export const BudgetPage: React.FC = () => {
                   placeholder="Contoh: Kado Ulang Tahun Pacar, Dana Darurat"
                   value={newGoalName}
                   onChange={(e) => setNewGoalName(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl glass-1 text-xs text-[#EEF2F6] focus:border-[#E39A5E] outline-none mt-1"
+                  className="input-glow w-full h-10 px-3 rounded-xl glass-1 text-xs text-[#EEF2F6] border border-white/[0.08] outline-none mt-1"
                 />
               </div>
 
@@ -232,7 +231,7 @@ export const BudgetPage: React.FC = () => {
                   placeholder="500000"
                   value={newGoalTarget}
                   onChange={(e) => setNewGoalTarget(e.target.value.replace(/[^\d]/g, ''))}
-                  className="w-full h-10 px-3 rounded-xl glass-1 text-xs text-[#EEF2F6] focus:border-[#E39A5E] outline-none mt-1"
+                  className="input-glow w-full h-10 px-3 rounded-xl glass-1 text-xs text-[#EEF2F6] border border-white/[0.08] outline-none mt-1"
                 />
               </div>
 
@@ -240,13 +239,13 @@ export const BudgetPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAddGoalModal(false)}
-                  className="px-3 py-1.5 rounded-lg border border-[rgba(205,225,245,0.2)] text-xs text-[#EEF2F6] cursor-pointer"
+                  className="btn-ghost px-3 py-1.5 rounded-lg border border-[rgba(205,225,245,0.2)] text-xs text-[#EEF2F6] cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold cursor-pointer"
+                  className="btn-primary px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold cursor-pointer"
                 >
                   Simpan
                 </button>

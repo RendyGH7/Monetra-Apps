@@ -21,9 +21,17 @@ import {
 import { supabase } from '../lib/supabase';
 import { stripEmoji } from '../utils/format';
 
+interface AuthUser {
+  id: string;
+  email?: string;
+  name?: string;
+}
+
 interface AppState {
   activeTab: 'beranda' | 'transaksi' | 'statistik' | 'asisten' | 'budget' | 'pengaturan';
   theme: 'dark' | 'light';
+  authLoading: boolean;
+  authUser: AuthUser | null;
   profile: UserProfile;
   categories: Category[];
   wallets: Wallet[];
@@ -42,6 +50,8 @@ interface AppState {
   clearToast: () => void;
   setVoiceModalOpen: (open: boolean) => void;
   setQuickManualOpen: (open: boolean) => void;
+  setAuthLoading: (v: boolean) => void;
+  setAuthUser: (user: AuthUser | null) => void;
 
   updateProfile: (updates: Partial<UserProfile>) => void;
   addTransaction: (tx: Omit<Transaction, 'id' | 'created_at'>) => void;
@@ -82,6 +92,8 @@ export const useAppStore = create<AppState>((set, get) => {
   const initialState: AppState = {
     activeTab: 'beranda',
     theme: 'dark',
+    authLoading: true,
+    authUser: null,
     profile: saved.profile || INITIAL_PROFILE,
     categories: saved.categories || INITIAL_CATEGORIES,
     wallets: saved.wallets || INITIAL_WALLETS,
@@ -124,6 +136,8 @@ export const useAppStore = create<AppState>((set, get) => {
 
     setVoiceModalOpen: (open) => set({ voiceModalOpen: open }),
     setQuickManualOpen: (open) => set({ quickManualOpen: open }),
+    setAuthLoading: (v) => set({ authLoading: v }),
+    setAuthUser: (user) => set({ authUser: user }),
 
     updateProfile: (updates) => {
       set((state) => {
@@ -330,7 +344,7 @@ export const useAppStore = create<AppState>((set, get) => {
 
     signOut: async () => {
       await supabase.auth.signOut();
-      set({ profile: INITIAL_PROFILE });
+      set({ profile: INITIAL_PROFILE, authUser: null });
       get().showToast('Kamu telah keluar dari akun.');
     },
   };

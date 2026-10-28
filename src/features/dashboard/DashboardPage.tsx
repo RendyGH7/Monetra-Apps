@@ -25,7 +25,6 @@ export const DashboardPage: React.FC = () => {
     setActiveTab,
   } = useAppStore();
 
-  // Calculate monthly summaries
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -45,17 +44,13 @@ export const DashboardPage: React.FC = () => {
 
   const netBalance = totalIncome - totalExpense;
 
-  // Calculate Sisa Aman Hari Ini
-  // Days until next pay_day (e.g. 25th)
   const todayDate = now.getDate();
   const payDay = profile.pay_day || 25;
   let daysLeft = payDay > todayDate ? payDay - todayDate : 30 - todayDate + payDay;
   if (daysLeft <= 0) daysLeft = 1;
 
-  // Safe daily spend = Remaining balance / daysLeft
   const safeDailySpend = Math.max(0, Math.round(netBalance / daysLeft));
 
-  // Category breakdown for Pie Chart
   const expenseByCategory: Record<string, number> = {};
   thisMonthTx
     .filter((t) => t.type === 'expense')
@@ -65,16 +60,9 @@ export const DashboardPage: React.FC = () => {
       expenseByCategory[name] = (expenseByCategory[name] || 0) + t.amount;
     });
 
-  // Chart data matching Design.md 8 colors
   const chartPalette = [
-    '#E39A5E', // tembaga
-    '#4FD3A4', // jade
-    '#6FA8D6', // biru baja
-    '#EE5D6C', // karmin
-    '#CDBFA3', // pasir
-    '#4FA8A0', // teal
-    '#B5603A', // karat / date
-    '#8A9AA8', // slate
+    '#E39A5E', '#4FD3A4', '#6FA8D6', '#EE5D6C',
+    '#CDBFA3', '#4FA8A0', '#B5603A', '#8A9AA8',
   ];
 
   const pieData = Object.entries(expenseByCategory).map(([name, value], i) => ({
@@ -83,7 +71,6 @@ export const DashboardPage: React.FC = () => {
     color: chartPalette[i % chartPalette.length],
   }));
 
-  // Dating category spending check
   const dateSpending = expenseByCategory['Kencan & Pacaran'] || 0;
   const dateBudgetMonth = profile.dating_budget_est || 600000;
   const isDatingOver = dateSpending > dateBudgetMonth;
@@ -93,11 +80,9 @@ export const DashboardPage: React.FC = () => {
       {/* Top Greeting and Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
-              Halo, {profile.nama}
-            </h1>
-          </div>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
+            Halo, {profile.nama}
+          </h1>
           <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
             Gaji magang Rp 1.500.000 · Gajian tiap tanggal {profile.pay_day} · {daysLeft} hari menuju gajian
           </p>
@@ -107,7 +92,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="px-3 py-2 rounded-xl glass-1 border border-white/[0.08] text-xs font-medium text-[#EEF2F6] hover:bg-white/[0.05] transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="btn-ghost px-3 py-2 rounded-xl glass-1 border border-white/[0.08] text-xs font-medium text-[#EEF2F6] flex items-center gap-1.5 cursor-pointer"
           >
             <Plus size={15} />
             <span>Catat Cepat</span>
@@ -115,7 +100,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold hover:brightness-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/30"
+            className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/30"
           >
             <Mic size={15} strokeWidth={2.2} />
             <span>Bicara</span>
@@ -123,10 +108,10 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Bento Grid: Balance + Safe Daily + Dating Status */}
+      {/* Bento Grid: Balance + Safe Daily */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Main Balance Card (Glass 2) */}
-        <div className="glass-2 p-5 rounded-2xl flex flex-col justify-between border-[rgba(205,225,245,0.14)] md:col-span-2">
+        {/* Main Balance Card */}
+        <div className="card-lift glass-2 p-5 rounded-2xl flex flex-col justify-between border-[rgba(205,225,245,0.14)] md:col-span-2">
           <div className="space-y-1">
             <span className="text-xs uppercase font-semibold tracking-wider text-[#A3AFBC]">
               Sisa Saldo Bulan Ini
@@ -164,7 +149,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Sisa Aman Hari Ini */}
-        <div className="glass-1 p-5 rounded-2xl flex flex-col justify-between border-[rgba(205,225,245,0.12)]">
+        <div className="card-lift glass-1 p-5 rounded-2xl flex flex-col justify-between border-[rgba(205,225,245,0.12)]">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase font-semibold tracking-wider text-[#A3AFBC]">
@@ -183,7 +168,7 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-3">
             <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#4FD3A4] to-[#E39A5E] rounded-full transition-all"
+                className="h-full bg-gradient-to-r from-[#4FD3A4] to-[#E39A5E] rounded-full progress-fill"
                 style={{ width: `${Math.min(100, Math.max(10, (netBalance / (profile.monthly_income || 1500000)) * 100))}%` }}
               />
             </div>
@@ -194,8 +179,8 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Daily Insight Card tailored to user real situation */}
-      <div className="glass-2 p-4 sm:p-5 rounded-2xl border-[rgba(205,225,245,0.15)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* AI Daily Insight Card */}
+      <div className="card-lift glass-2 p-4 sm:p-5 rounded-2xl border-[rgba(205,225,245,0.15)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
           <div className="w-9 h-9 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0 mt-0.5">
             <Sparkles size={18} />
@@ -221,7 +206,8 @@ export const DashboardPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('asisten')}
-          className="self-end sm:self-center shrink-0 px-3.5 py-2 rounded-xl glass-1 border border-[#E39A5E]/30 text-xs font-medium text-[#E39A5E] hover:bg-[#E39A5E]/10 transition-colors flex items-center gap-1 cursor-pointer"
+          className="btn-ghost self-end sm:self-center shrink-0 px-3.5 py-2 rounded-xl glass-1 border border-[#E39A5E]/30 text-xs font-medium text-[#E39A5E] hover:bg-[#E39A5E]/10 flex items-center gap-1 cursor-pointer"
+          style={{ transition: 'background 0.15s ease, border-color 0.15s ease' }}
         >
           <span>Tanya Asisten AI</span>
           <ArrowRight size={14} />
@@ -230,14 +216,17 @@ export const DashboardPage: React.FC = () => {
 
       {/* Analytics & Recent Transactions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Category Donut Chart (2 columns on desktop) */}
+        {/* Category Donut Chart */}
         <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[#EEF2F6]">Distribusi Pengeluaran</h2>
             <button
               type="button"
               onClick={() => setActiveTab('statistik')}
-              className="text-xs text-[#E39A5E] hover:underline cursor-pointer"
+              className="text-xs text-[#E39A5E] cursor-pointer"
+              style={{ transition: 'opacity 0.15s ease' }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               Lihat Detail
             </button>
@@ -278,7 +267,6 @@ export const DashboardPage: React.FC = () => {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                {/* Total Center text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="text-[10px] text-[#A3AFBC] uppercase">Total</span>
                   <span className="text-xs font-bold text-[#EEF2F6] num-tabular">
@@ -287,7 +275,6 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Legend list */}
               <div className="space-y-1.5 pt-2 border-t border-[rgba(205,225,245,0.08)]">
                 {pieData.slice(0, 4).map((entry, idx) => (
                   <div key={idx} className="flex items-center justify-between text-xs">
@@ -305,28 +292,32 @@ export const DashboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Recent Transactions List (3 columns on desktop) */}
+        {/* Recent Transactions List */}
         <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] lg:col-span-3 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[#EEF2F6]">Transaksi Terbaru</h2>
             <button
               type="button"
               onClick={() => setActiveTab('transaksi')}
-              className="text-xs text-[#E39A5E] hover:underline cursor-pointer"
+              className="text-xs text-[#E39A5E] cursor-pointer"
+              style={{ transition: 'opacity 0.15s ease' }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               Semua Transaksi ({transactions.length})
             </button>
           </div>
 
           <div className="space-y-2.5">
-            {transactions.slice(0, 5).map((tx) => {
+            {transactions.slice(0, 5).map((tx, idx) => {
               const cat = categories.find((c) => c.id === tx.category_id);
               const isExpense = tx.type === 'expense';
 
               return (
                 <div
                   key={tx.id}
-                  className="glass-2 p-3 rounded-xl flex items-center justify-between gap-3 border-[rgba(205,225,245,0.1)] hover:border-[#E39A5E]/30 transition-all"
+                  className="animate-row-in card-lift glass-2 p-3 rounded-xl flex items-center justify-between gap-3 border border-[rgba(205,225,245,0.1)] hover:border-[#E39A5E]/30"
+                  style={{ animationDelay: `${idx * 0.05}s` }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">

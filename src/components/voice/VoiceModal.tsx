@@ -103,9 +103,10 @@ export const VoiceModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="voice-modal-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="glass-3 w-full max-w-lg overflow-hidden border border-[rgba(205,225,245,0.18)] max-h-[92dvh] flex flex-col">
+      <div className="animate-slide-up sm:animate-scale-in glass-3 w-full max-w-lg overflow-hidden border border-[rgba(205,225,245,0.18)] max-h-[92dvh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(205,225,245,0.1)]">
           <div className="flex items-center gap-2">
@@ -118,7 +119,7 @@ export const VoiceModal: React.FC = () => {
             type="button"
             onClick={handleClose}
             aria-label="Tutup"
-            className="p-1 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.05] transition-colors cursor-pointer"
+            className="btn-ghost p-1.5 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -143,7 +144,7 @@ export const VoiceModal: React.FC = () => {
                   type="button"
                   onClick={handleStartRecording}
                   aria-label="Mulai Merekam"
-                  className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-xl shadow-black/60 border-4 border-[rgba(235,245,255,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  className="btn-primary w-24 h-24 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-xl shadow-black/60 border-4 border-[rgba(235,245,255,0.3)] cursor-pointer"
                 >
                   <Mic size={40} strokeWidth={2.2} />
                 </button>
@@ -161,7 +162,8 @@ export const VoiceModal: React.FC = () => {
                       key={idx}
                       type="button"
                       onClick={() => handleSelectExample(phrase)}
-                      className="w-full text-left p-2.5 rounded-xl glass-1 hover:border-[#E39A5E]/40 text-xs text-[#A3AFBC] hover:text-[#EEF2F6] transition-all flex items-center justify-between cursor-pointer"
+                      className="chip-press w-full text-left p-2.5 rounded-xl glass-1 text-xs text-[#A3AFBC] hover:text-[#EEF2F6] flex items-center justify-between cursor-pointer border border-transparent hover:border-[#E39A5E]/40"
+                      style={{ transition: 'border-color 0.15s ease, color 0.15s ease' }}
                     >
                       <span className="truncate pr-2">&quot;{phrase}&quot;</span>
                       <Sparkles size={14} className="text-[#E39A5E] shrink-0" />
@@ -184,10 +186,10 @@ export const VoiceModal: React.FC = () => {
                 {[40, 70, 30, 90, 60, 100, 45, 80, 50, 95, 35, 75, 60, 85].map((h, i) => (
                   <div
                     key={i}
-                    className="w-1.5 rounded-full bg-[#EE5D6C]"
+                    className="waveform-bar w-1.5 rounded-full bg-[#EE5D6C]"
                     style={{
                       height: `${h}%`,
-                      animation: `pulse 1s ease-in-out infinite alternate ${i * 0.08}s`,
+                      ['--delay' as string]: `${i * 0.06}s`,
                     }}
                   />
                 ))}
@@ -197,7 +199,10 @@ export const VoiceModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleStopRecording}
-                  className="px-6 py-3 rounded-xl bg-[#EE5D6C] text-white font-semibold text-sm flex items-center gap-2 hover:bg-[#EE5D6C]/90 active:scale-95 transition-all cursor-pointer shadow-lg shadow-black/40"
+                  className="btn-press px-6 py-3 rounded-xl bg-[#EE5D6C] text-white font-semibold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-black/40"
+                  style={{ transition: 'filter 0.15s ease, transform 0.1s ease' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1)'; }}
                 >
                   <Check size={18} />
                   <span>Selesai Bicara</span>
@@ -278,7 +283,7 @@ export const VoiceModal: React.FC = () => {
                           type="button"
                           onClick={() => handleRemoveItem(item.id)}
                           aria-label="Hapus item ini"
-                          className="p-1 text-[#74808E] hover:text-[#EE5D6C] transition-colors cursor-pointer"
+                          className="btn-danger p-1.5 rounded-lg text-[#74808E] cursor-pointer"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -307,7 +312,7 @@ export const VoiceModal: React.FC = () => {
             <button
               type="button"
               onClick={() => setRecordState('idle')}
-              className="px-4 py-2.5 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] hover:bg-white/[0.05] transition-colors cursor-pointer"
+              className="btn-ghost px-4 py-2.5 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] cursor-pointer"
             >
               Ulangi Rekam
             </button>
@@ -315,7 +320,7 @@ export const VoiceModal: React.FC = () => {
               type="button"
               onClick={handleSaveAll}
               disabled={parsedItems.length === 0}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold hover:brightness-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-black/40"
+              className="btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold disabled:opacity-50 cursor-pointer shadow-md shadow-black/40"
             >
               Simpan Semua ({parsedItems.length})
             </button>
