@@ -348,7 +348,6 @@ function smartLocalFinancialReasoning(
   // 14. Pertanyaan Umum / Fallback Cerdas
   return `Pertanyaan yang bagus, ${firstName}! Sebagai asisten keuangan pribadimu, saya selalu siap mendampingi pengelolaan finansialmu.\n\nRingkasan status dompetmu saat ini:\n- Saldo aktif: ${formatCurrency(netBalance)}\n- Batas aman belanja: ${formatCurrency(safeDaily)}/hari (menuju gajian tgl ${payDay})\n\nKamu bisa tanyakan hal seperti:\n- "Berapa sisa aman belanja hari ini?"\n- "Tips kencan hemat agar gaji magang cukup"\n- "Rekomendasi investasi pemula untuk gaji 1.5 juta"\n- Atau ketik "catat makan warteg 20rb" untuk mencatat pengeluaran baru.`;
 }
-}
 
 /**
  * Intelligent AI voice transaction parser:
