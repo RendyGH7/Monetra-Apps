@@ -31,6 +31,7 @@ interface AuthUser {
 interface AppState {
   activeTab: 'beranda' | 'transaksi' | 'statistik' | 'asisten' | 'budget' | 'pengaturan';
   theme: 'dark' | 'light';
+  sidebarCollapsed: boolean;
   authLoading: boolean;
   authUser: AuthUser | null;
   profile: UserProfile;
@@ -47,6 +48,8 @@ interface AppState {
 
   setActiveTab: (tab: AppState['activeTab']) => void;
   toggleTheme: () => void;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   showToast: (message: string, onUndo?: () => void) => void;
   clearToast: () => void;
   setVoiceModalOpen: (open: boolean) => void;
@@ -92,7 +95,8 @@ export const useAppStore = create<AppState>((set, get) => {
 
   const initialState: AppState = {
     activeTab: 'beranda',
-    theme: 'dark',
+    theme: saved.theme || 'dark',
+    sidebarCollapsed: saved.sidebarCollapsed ?? false,
     authLoading: true,
     authUser: null,
     profile: saved.profile || INITIAL_PROFILE,
@@ -121,7 +125,25 @@ export const useAppStore = create<AppState>((set, get) => {
     toggleTheme: () => {
       const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', nextTheme);
-      set({ theme: nextTheme });
+      set((state) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, theme: nextTheme }));
+        return { theme: nextTheme };
+      });
+    },
+
+    toggleSidebar: () => {
+      set((state) => {
+        const next = !state.sidebarCollapsed;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, sidebarCollapsed: next }));
+        return { sidebarCollapsed: next };
+      });
+    },
+
+    setSidebarCollapsed: (collapsed: boolean) => {
+      set((state) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, sidebarCollapsed: collapsed }));
+        return { sidebarCollapsed: collapsed };
+      });
     },
 
     showToast: (message, onUndo) => {

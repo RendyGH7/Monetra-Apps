@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Mic,
   TrendingDown,
@@ -9,10 +9,22 @@ import {
   Calendar,
   AlertTriangle,
   Plus,
+  BarChart3,
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts';
 import { useAppStore } from '../../store';
-import { formatCurrency, formatTimeShort } from '../../utils/format';
+import { formatCurrency, formatTimeShort, formatCompact } from '../../utils/format';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 
 export const DashboardPage: React.FC = () => {
@@ -74,6 +86,224 @@ export const DashboardPage: React.FC = () => {
   const dateSpending = expenseByCategory['Kencan & Pacaran'] || 0;
   const dateBudgetMonth = profile.dating_budget_est || 600000;
   const isDatingOver = dateSpending > dateBudgetMonth;
+
+  type StatPeriod = 'week' | 'month' | 'year';
+  const [statPeriod, setStatPeriod] = useState<StatPeriod>('week');
+
+  const periodStats = useMemo(() => {
+    const today = new Date();
+
+    if (statPeriod === 'week') {
+      const dayOfWeek = (today.getDay() + 6) % 7;
+      const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOfWeek, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+      const prevStart = new Date(startOfWeek);
+      prevStart.setDate(prevStart.getDate() - 7);
+      const prevEnd = new Date(startOfWeek);
+
+      const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+      const fullDayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      const daysData = dayLabels.map((lbl, idx) => {
+        const dObj = new Date(startOfWeek);
+        dObj.setDate(dObj.getDate() + idx);
+        return {
+          label: lbl,
+          fullLabel: `${fullDayNames[idx]}, ${dObj.getDate()} ${dObj.toLocaleDateString('id-ID', { month: 'short' })}`,
+          expense: 0,
+          income: 0,
+          isCurrent: idx === dayOfWeek,
+        };
+      });
+
+      let totalExpense = 0;
+      let totalIncome = 0;
+      let prevExpense = 0;
+
+      transactions.forEach((t) => {
+        const d = new Date(t.occurred_at);
+        if (d >= startOfWeek && d < endOfWeek) {
+          const dIdx = (d.getDay() + 6) % 7;
+          if (t.type === 'expense') {
+            totalExpense += t.amount;
+            daysData[dIdx].expense += t.amount;
+          } else {
+            totalIncome += t.amount;
+            daysData[dIdx].income += t.amount;
+          }
+        } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
+          prevExpense += t.amount;
+        }
+      });
+
+      const delta = prevExpense > 0 ? Math.round(((totalExpense - prevExpense) / prevExpense) * 100) : null;
+      const avg = Math.round(totalExpense / 7);
+
+      return {
+        title: 'Minggu Ini',
+        chartSubtitle: 'Harian (7 Hari)',
+        totalExpense,
+        totalIncome,
+        net: totalIncome - totalExpense,
+        chartData: daysData,
+        delta,
+        prevLabel: 'minggu lalu',
+        avgLabel: 'Rata-rata/hari',
+        avgValue: avg,
+      };
+    }
+
+    if (statPeriod === 'month') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const prevStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const prevEnd = new Date(startOfMonth);
+
+      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const monthData = Array.from({ length: daysInMonth }, (_, idx) => {
+        const dayNum = idx + 1;
+        const dObj = new Date(today.getFullYear(), today.getMonth(), dayNum);
+        const dayName = dObj.toLocaleDateString('id-ID', { weekday: 'short' });
+        return {
+          label: `${dayNum}`,
+          fullLabel: `${dayName}, ${dayNum} ${today.toLocaleDateString('id-ID', { month: 'short' })}`,
+          expense: 0,
+          income: 0,
+          isCurrent: dayNum === today.getDate(),
+        };
+      });
+
+      let totalExpense = 0;
+      let totalIncome = 0;
+      let prevExpense = 0;
+
+      transactions.forEach((t) => {
+        const d = new Date(t.occurred_at);
+        if (d >= startOfMonth && d < endOfMonth) {
+          const dayNum = d.getDate();
+          const idx = dayNum - 1;
+          if (idx >= 0 && idx < monthData.length) {
+            if (t.type === 'expense') {
+              totalExpense += t.amount;
+              monthData[idx].expense += t.amount;
+            } else {
+              totalIncome += t.amount;
+              monthData[idx].income += t.amount;
+            }
+          }
+        } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
+          prevExpense += t.amount;
+        }
+      });
+
+      const delta = prevExpense > 0 ? Math.round(((totalExpense - prevExpense) / prevExpense) * 100) : null;
+      const avg = Math.round(totalExpense / Math.max(1, today.getDate()));
+
+      return {
+        title: 'Bulan Ini',
+        chartSubtitle: `Harian (${daysInMonth} Hari)`,
+        totalExpense,
+        totalIncome,
+        net: totalIncome - totalExpense,
+        chartData: monthData,
+        delta,
+        prevLabel: 'bulan lalu',
+        avgLabel: 'Rata-rata/hari',
+        avgValue: avg,
+      };
+    }
+
+    // year
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const endOfYear = new Date(today.getFullYear() + 1, 0, 1);
+    const prevStart = new Date(today.getFullYear() - 1, 0, 1);
+    const prevEnd = new Date(startOfYear);
+
+    const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const monthsFull = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ];
+    const monthsData = monthsShort.map((lbl, idx) => ({
+      label: lbl,
+      fullLabel: `${monthsFull[idx]} ${today.getFullYear()}`,
+      expense: 0,
+      income: 0,
+      isCurrent: idx === today.getMonth(),
+    }));
+
+    let totalExpense = 0;
+    let totalIncome = 0;
+    let prevExpense = 0;
+
+    transactions.forEach((t) => {
+      const d = new Date(t.occurred_at);
+      if (d >= startOfYear && d < endOfYear) {
+        const mIdx = d.getMonth();
+        if (t.type === 'expense') {
+          totalExpense += t.amount;
+          monthsData[mIdx].expense += t.amount;
+        } else {
+          totalIncome += t.amount;
+          monthsData[mIdx].income += t.amount;
+        }
+      } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
+        prevExpense += t.amount;
+      }
+    });
+
+    const delta = prevExpense > 0 ? Math.round(((totalExpense - prevExpense) / prevExpense) * 100) : null;
+    const avg = Math.round(totalExpense / (today.getMonth() + 1));
+
+    return {
+      title: 'Tahun Ini',
+      chartSubtitle: 'Bulanan (12 Bulan)',
+      totalExpense,
+      totalIncome,
+      net: totalIncome - totalExpense,
+      chartData: monthsData,
+      delta,
+      prevLabel: 'tahun lalu',
+      avgLabel: 'Rata-rata/bulan',
+      avgValue: avg,
+    };
+  }, [transactions, statPeriod]);
+
+  // Minimalist Custom Tooltip for Dashboard Line Chart
+  const MinimalChartTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="glass-2 border border-white/10 rounded-xl p-3 shadow-xl backdrop-blur-md text-xs space-y-2 min-w-[155px]">
+          <p className="font-semibold text-[#EEF2F6] border-b border-white/[0.08] pb-1.5 text-[11px]">
+            {data.fullLabel || data.label}
+          </p>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-3 text-[#A3AFBC]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#E39A5E]" />
+                Pengeluaran
+              </span>
+              <span className="font-semibold text-[#EEF2F6] num-tabular">
+                {formatCurrency(data.expense || 0)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 text-[#A3AFBC]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#4FD3A4]" />
+                Pemasukan
+              </span>
+              <span className="font-semibold text-[#4FD3A4] num-tabular">
+                {formatCurrency(data.income || 0)}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24 md:pb-12">
@@ -176,6 +406,194 @@ export const DashboardPage: React.FC = () => {
               {daysLeft} hari lagi
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Minimalist Periodic Statistics (Mingguan / Bulanan / Tahunan) ── */}
+      <div className="card-lift glass-2 p-5 rounded-2xl border border-[var(--glass-border)] space-y-4">
+        {/* Header with Title and Minimalist Period Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
+              <BarChart3 size={16} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-[#EEF2F6]">
+                Statistik {periodStats.title}
+              </h2>
+              <p className="text-[11px] text-[#A3AFBC]">
+                Tren detail arus kas dan evaluasi pengeluaran
+              </p>
+            </div>
+          </div>
+
+          {/* Minimalist Clean Period Switcher */}
+          <div className="flex items-center p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-xs self-start sm:self-auto">
+            {(['week', 'month', 'year'] as StatPeriod[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setStatPeriod(p)}
+                className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                  statPeriod === p
+                    ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-sm'
+                    : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
+                }`}
+              >
+                {p === 'week' ? 'Mingguan' : p === 'month' ? 'Bulanan' : 'Tahunan'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4 Minimalist Clean Metric Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
+              Pengeluaran
+            </div>
+            <p className="text-sm sm:text-base font-bold text-[#EEF2F6] num-tabular mt-1">
+              {formatCurrency(periodStats.totalExpense)}
+            </p>
+          </div>
+
+          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4]" />
+              Pemasukan
+            </div>
+            <p className="text-sm sm:text-base font-bold text-[#4FD3A4] num-tabular mt-1">
+              {formatCurrency(periodStats.totalIncome)}
+            </p>
+          </div>
+
+          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
+              <span className={`w-1.5 h-1.5 rounded-full ${periodStats.net >= 0 ? 'bg-[#4FD3A4]' : 'bg-[#EE5D6C]'}`} />
+              Arus Bersih
+            </div>
+            <p
+              className={`text-sm sm:text-base font-bold num-tabular mt-1 ${
+                periodStats.net >= 0 ? 'text-[#4FD3A4]' : 'text-[#EE5D6C]'
+              }`}
+            >
+              {periodStats.net >= 0 ? '+' : ''}
+              {formatCurrency(periodStats.net)}
+            </p>
+          </div>
+
+          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#74808E]" />
+              {periodStats.avgLabel}
+            </div>
+            <p className="text-sm sm:text-base font-bold text-[#EEF2F6] num-tabular mt-1">
+              {formatCurrency(periodStats.avgValue)}
+            </p>
+          </div>
+        </div>
+
+        {/* Detailed Statistical Area & Line Chart */}
+        <div className="pt-2">
+          <div className="flex items-center justify-between text-[11px] text-[#A3AFBC] mb-2 px-1">
+            <span className="text-[11px] text-[#74808E]">
+              Tren {periodStats.chartSubtitle}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-1 rounded-full bg-[#E39A5E]" />
+                Pengeluaran
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-1 rounded-full bg-[#4FD3A4]" />
+                Pemasukan
+              </span>
+            </div>
+          </div>
+
+          <div className="h-44 sm:h-52 w-full -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={periodStats.chartData} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="dashExpGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#E39A5E" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="#E39A5E" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="dashIncGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4FD3A4" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#4FD3A4" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: '#74808E', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={statPeriod === 'month' ? 4 : 0}
+                />
+                <YAxis
+                  tickFormatter={(v) => formatCompact(v)}
+                  tick={{ fill: '#74808E', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={42}
+                />
+                <Tooltip content={<MinimalChartTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="expense"
+                  name="Pengeluaran"
+                  stroke="#E39A5E"
+                  strokeWidth={2.2}
+                  fill="url(#dashExpGrad)"
+                  dot={statPeriod === 'month' ? false : { r: 3, fill: '#E39A5E', strokeWidth: 1.5, stroke: '#1C0E04' }}
+                  activeDot={{ r: 5, fill: '#E39A5E', stroke: '#EEF2F6', strokeWidth: 2 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="income"
+                  name="Pemasukan"
+                  stroke="#4FD3A4"
+                  strokeWidth={1.8}
+                  strokeDasharray={statPeriod === 'month' ? undefined : '2 2'}
+                  fill="url(#dashIncGrad)"
+                  dot={statPeriod === 'month' ? false : { r: 2.5, fill: '#4FD3A4', strokeWidth: 1, stroke: '#071F17' }}
+                  activeDot={{ r: 4.5, fill: '#4FD3A4', stroke: '#EEF2F6', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Footer with Trend Delta & Direct Link to Statistics */}
+        <div className="pt-3 border-t border-[rgba(205,225,245,0.08)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#A3AFBC]">
+          <div className="flex items-center gap-1.5">
+            {periodStats.delta !== null ? (
+              <>
+                <span
+                  className={`font-semibold num-tabular flex items-center gap-0.5 ${
+                    periodStats.delta > 0 ? 'text-[#EE5D6C]' : 'text-[#4FD3A4]'
+                  }`}
+                >
+                  {periodStats.delta > 0 ? `+${periodStats.delta}%` : `${periodStats.delta}%`}
+                </span>
+                <span>pengeluaran vs {periodStats.prevLabel}</span>
+              </>
+            ) : (
+              <span>Belum ada data pembanding {periodStats.prevLabel}</span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('statistik')}
+            className="btn-ghost self-start sm:self-auto text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+          >
+            <span>Buka Analisis Lengkap</span>
+            <ArrowRight size={13} />
+          </button>
         </div>
       </div>
 

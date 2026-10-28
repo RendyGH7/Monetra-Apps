@@ -136,7 +136,7 @@ export const QuickManualModal: React.FC = () => {
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="input-glow w-full h-11 px-3 rounded-xl glass-1 text-sm text-[#EEF2F6] bg-[#0D1219] border border-white/[0.08] outline-none cursor-pointer"
+              className="input-glow w-full h-11 px-3 rounded-xl glass-1 text-sm text-[#EEF2F6] bg-[var(--bg-elevated)] border border-white/[0.08] outline-none cursor-pointer"
             >
               {categories
                 .filter((c) => c.type === type)
@@ -154,7 +154,7 @@ export const QuickManualModal: React.FC = () => {
             <select
               value={walletId}
               onChange={(e) => setWalletId(e.target.value)}
-              className="input-glow w-full h-11 px-3 rounded-xl glass-1 text-sm text-[#EEF2F6] bg-[#0D1219] border border-white/[0.08] outline-none cursor-pointer"
+              className="input-glow w-full h-11 px-3 rounded-xl glass-1 text-sm text-[#EEF2F6] bg-[var(--bg-elevated)] border border-white/[0.08] outline-none cursor-pointer"
             >
               {wallets.map((w) => (
                 <option key={w.id} value={w.id}>

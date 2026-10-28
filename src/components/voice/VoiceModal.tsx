@@ -1,21 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, X, Check, Edit3, Trash2, Volume2, Sparkles, AlertCircle } from 'lucide-react';
+import { Mic, X, Check, Trash2, Volume2, Sparkles, AlertCircle, RefreshCw, Send } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { parseVoiceInput } from '../../utils/voiceParser';
 import { ParsedVoiceItem } from '../../types';
 import { formatCurrency, stripEmoji } from '../../utils/format';
 import { CategoryIcon } from '../common/CategoryIcon';
 
+// Web Speech API interface fallback
+const getSpeechRecognition = () => {
+  if (typeof window === 'undefined') return null;
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+};
+
 export const VoiceModal: React.FC = () => {
-  const { voiceModalOpen, setVoiceModalOpen, addTransaction, categories, wallets } = useAppStore();
+  const { voiceModalOpen, setVoiceModalOpen, addTransaction, categories, wallets, profile, showToast } =
+    useAppStore();
 
   const [recordState, setRecordState] = useState<'idle' | 'recording' | 'processing' | 'confirm'>('idle');
   const [seconds, setSeconds] = useState(0);
   const [transcript, setTranscript] = useState('');
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [manualText, setManualText] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [parsedItems, setParsedItems] = useState<ParsedVoiceItem[]>([]);
-  const timerRef = useRef<number | null>(null);
 
-  // Suggested voice templates based on user real background
+  const timerRef = useRef<number | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Suggested voice templates
   const examplePhrases = [
     'Tadi pagi sarapan nasi uduk 15 ribu sama isi bensin motor 25 ribu',
     'Nge-date nonton bioskop bareng pacar habis 120 ribu di Cinema XXI',
@@ -23,6 +35,7 @@ export const VoiceModal: React.FC = () => {
     'Gaji pokok magang masuk 1.5 juta rupiah',
   ];
 
+  // Timer while recording
   useEffect(() => {
     if (recordState === 'recording') {
       setSeconds(0);
@@ -37,32 +50,145 @@ export const VoiceModal: React.FC = () => {
     };
   }, [recordState]);
 
+  // Cleanup speech recognition on unmount or modal close
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
+
   if (!voiceModalOpen) return null;
 
+  // ── Start Real Voice Recording via Web Speech API ──────────────────────────
   const handleStartRecording = () => {
-    setRecordState('recording');
+    setErrorMessage(null);
+    setLiveTranscript('');
+
+    const SpeechRecognition = getSpeechRecognition();
+
+    if (!SpeechRecognition) {
+      setErrorMessage(
+        'Browser Anda belum mendukung Web Speech API bawaan. Anda dapat mengetik kalimat transaksi langsung pada kolom di bawah.'
+      );
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'id-ID';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setRecordState('recording');
+      };
+
+      recognition.onresult = (event: any) => {
+        let full = '';
+        for (let i = 0; i < event.results.length; i++) {
+          full += event.results[i][0].transcript + ' ';
+        }
+        const clean = full.trim();
+        if (clean) {
+          setLiveTranscript(clean);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('SpeechRecognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setErrorMessage(
+            'Izin akses mikrofon ditolak oleh browser. Silakan klik ikon gembok/pengaturan di address bar browser untuk mengizinkan mikrofon.'
+          );
+          handleStopStream();
+          setRecordState('idle');
+        } else if (event.error === 'no-speech') {
+          // Keep recording, user might be taking a pause
+        } else if (event.error === 'network') {
+          setErrorMessage(
+            'Layanan pengenalan suara browser memerlukan koneksi internet. Anda juga bisa mengetik kalimatnya langsung.'
+          );
+        }
+      };
+
+      recognition.onend = () => {
+        // Recognition naturally stopped or finished
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (err: any) {
+      setErrorMessage('Gagal mengaktifkan mikrofon: ' + (err.message || 'Error tidak diketahui'));
+      setRecordState('idle');
+    }
   };
 
+  const handleStopStream = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+      recognitionRef.current = null;
+    }
+  };
+
+  // ── Stop Recording & Parse Text ───────────────────────────────────────────
   const handleStopRecording = () => {
+    handleStopStream();
     setRecordState('processing');
-    // Simulate real voice transcription & Gemini processing
+
+    const spoken = liveTranscript.trim();
+
+    if (!spoken) {
+      setTimeout(() => {
+        setRecordState('idle');
+        setErrorMessage(
+          'Suara tidak terdeteksi atau mikrofon tidak menangkap ucapan. Coba ulangi dengan suara lebih jelas, atau gunakan kolom ketik di bawah.'
+        );
+      }, 500);
+      return;
+    }
+
     setTimeout(() => {
-      const sampleText = 'Tadi siang makan nasi warteg 15 ribu terus beli bensin 25 ribu bolak-balik magang';
-      setTranscript(sampleText);
-      const items = parseVoiceInput(sampleText);
-      setParsedItems(items);
-      setRecordState('confirm');
-    }, 1200);
+      processTranscription(spoken);
+    }, 400);
+  };
+
+  const processTranscription = (text: string) => {
+    setTranscript(text);
+    const items = parseVoiceInput(text);
+    setParsedItems(items);
+    setRecordState('confirm');
   };
 
   const handleSelectExample = (text: string) => {
-    setTranscript(text);
     setRecordState('processing');
+    setErrorMessage(null);
     setTimeout(() => {
-      const items = parseVoiceInput(text);
-      setParsedItems(items);
-      setRecordState('confirm');
-    }, 500);
+      processTranscription(text);
+    }, 300);
+  };
+
+  const handleManualSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clean = manualText.trim();
+    if (!clean) return;
+    setRecordState('processing');
+    setErrorMessage(null);
+    setTimeout(() => {
+      processTranscription(clean);
+      setManualText('');
+    }, 300);
   };
 
   const handleSaveAll = () => {
@@ -73,7 +199,7 @@ export const VoiceModal: React.FC = () => {
       const defaultWallet = wallets[0]?.id || 'wallet-cash';
 
       addTransaction({
-        user_id: 'default',
+        user_id: profile.id || 'default',
         type: item.type,
         amount: item.amount,
         note: stripEmoji(item.note),
@@ -84,13 +210,18 @@ export const VoiceModal: React.FC = () => {
       });
     });
 
+    showToast(`${parsedItems.length} transaksi berhasil dicatat dari suara!`);
     handleClose();
   };
 
   const handleClose = () => {
+    handleStopStream();
     setVoiceModalOpen(false);
     setRecordState('idle');
     setTranscript('');
+    setLiveTranscript('');
+    setManualText('');
+    setErrorMessage(null);
     setParsedItems([]);
   };
 
@@ -104,15 +235,17 @@ export const VoiceModal: React.FC = () => {
       aria-modal="true"
       aria-labelledby="voice-modal-title"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
     >
-      <div className="animate-slide-up sm:animate-scale-in glass-3 w-full max-w-lg overflow-hidden border border-[rgba(205,225,245,0.18)] max-h-[92dvh] flex flex-col">
+      <div className="animate-slide-up sm:animate-scale-in glass-3 w-full max-w-lg overflow-hidden border border-[var(--glass-border)] max-h-[92dvh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(205,225,245,0.1)]">
           <div className="flex items-center gap-2">
             <Volume2 size={18} className="text-[#E39A5E]" />
             <h2 id="voice-modal-title" className="text-base font-semibold text-[#EEF2F6]">
-              {recordState === 'confirm' ? 'Konfirmasi Transaksi' : 'Bicara ke FinAI'}
+              {recordState === 'confirm' ? 'Konfirmasi Transaksi Suara' : 'Bicara ke FinAI'}
             </h2>
           </div>
           <button
@@ -127,34 +260,68 @@ export const VoiceModal: React.FC = () => {
 
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-6">
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="p-3.5 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-xs text-[#EE5D6C] flex items-start gap-2.5">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <div className="flex-1 leading-relaxed">
+                <p className="font-semibold">Perhatian</p>
+                <p className="mt-0.5 text-[#EEF2F6]/90">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+
           {recordState === 'idle' && (
-            <div className="text-center space-y-6 py-4">
+            <div className="text-center space-y-6 py-2">
               <div className="space-y-1.5">
                 <p className="text-lg font-semibold text-[#EEF2F6]">
                   Ceritakan pengeluaran atau pemasukanmu
                 </p>
                 <p className="text-xs text-[#A3AFBC] max-w-sm mx-auto leading-relaxed">
-                  Bicara santai menggunakan Bahasa Indonesia. AI akan memecah ucapanmu menjadi beberapa transaksi otomatis.
+                  Bicara santai menggunakan Bahasa Indonesia. AI FinAI akan memecah ucapanmu menjadi nominal dan kategori otomatis.
                 </p>
               </div>
 
               {/* Big Interactive Mic Button */}
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={handleStartRecording}
                   aria-label="Mulai Merekam"
-                  className="btn-primary w-24 h-24 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-xl shadow-black/60 border-4 border-[rgba(235,245,255,0.3)] cursor-pointer"
+                  className="btn-primary w-24 h-24 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-xl shadow-black/50 border-4 border-[rgba(235,245,255,0.3)] cursor-pointer hover:scale-105 active:scale-95 transition-transform"
                 >
                   <Mic size={40} strokeWidth={2.2} />
                 </button>
+                <p className="text-xs text-[#E39A5E] font-medium animate-pulse">
+                  Ketuk mikrofon untuk mulai bicara
+                </p>
               </div>
-              <p className="text-xs text-[#E39A5E] font-medium">Ketuk mikrofon untuk mulai</p>
+
+              {/* Manual input fallback option */}
+              <form onSubmit={handleManualSubmit} className="pt-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={manualText}
+                    onChange={(e) => setManualText(e.target.value)}
+                    placeholder="Atau ketik: makan warteg 15rb dan bensin 25rb..."
+                    className="flex-1 h-11 px-3.5 rounded-xl glass-1 border border-white/[0.08] text-xs text-[#EEF2F6] placeholder:text-[#74808E] outline-none focus:border-[#E39A5E]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!manualText.trim()}
+                    className="btn-primary px-4 h-11 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-md"
+                  >
+                    <span>Proses</span>
+                    <Send size={13} />
+                  </button>
+                </div>
+              </form>
 
               {/* Example phrases to try */}
               <div className="pt-4 border-t border-[rgba(205,225,245,0.1)] text-left space-y-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#74808E]">
-                  Atau coba contoh kalimat ini:
+                  Atau coba contoh kalimat siap pakai ini:
                 </span>
                 <div className="space-y-1.5">
                   {examplePhrases.map((phrase, idx) => (
@@ -163,7 +330,6 @@ export const VoiceModal: React.FC = () => {
                       type="button"
                       onClick={() => handleSelectExample(phrase)}
                       className="chip-press w-full text-left p-2.5 rounded-xl glass-1 text-xs text-[#A3AFBC] hover:text-[#EEF2F6] flex items-center justify-between cursor-pointer border border-transparent hover:border-[#E39A5E]/40"
-                      style={{ transition: 'border-color 0.15s ease, color 0.15s ease' }}
                     >
                       <span className="truncate pr-2">&quot;{phrase}&quot;</span>
                       <Sparkles size={14} className="text-[#E39A5E] shrink-0" />
@@ -175,9 +341,9 @@ export const VoiceModal: React.FC = () => {
           )}
 
           {recordState === 'recording' && (
-            <div className="text-center space-y-6 py-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EE5D6C]/20 border border-[#EE5D6C]/40 text-[#EE5D6C] text-xs font-mono">
-                <span className="w-2 h-2 rounded-full bg-[#EE5D6C] animate-ping" />
+            <div className="text-center space-y-6 py-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EE5D6C]/20 border border-[#EE5D6C]/40 text-[#EE5D6C] text-xs font-mono">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#EE5D6C] animate-ping" />
                 <span>Merekam: 00:{seconds < 10 ? `0${seconds}` : seconds}</span>
               </div>
 
@@ -195,14 +361,24 @@ export const VoiceModal: React.FC = () => {
                 ))}
               </div>
 
+              {/* Live speech transcription text box */}
+              <div className="p-4 rounded-xl glass-1 border border-[#EE5D6C]/30 min-h-[64px] flex items-center justify-center text-center">
+                {liveTranscript ? (
+                  <p className="text-sm font-medium text-[#EEF2F6] leading-relaxed">
+                    &quot;{liveTranscript}&quot;
+                  </p>
+                ) : (
+                  <p className="text-xs text-[#A3AFBC] italic">
+                    Silakan bicara sekarang, kata-kata Anda akan muncul di sini...
+                  </p>
+                )}
+              </div>
+
               <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={handleStopRecording}
-                  className="btn-press px-6 py-3 rounded-xl bg-[#EE5D6C] text-white font-semibold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-black/40"
-                  style={{ transition: 'filter 0.15s ease, transform 0.1s ease' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.08)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1)'; }}
+                  className="btn-press px-7 py-3 rounded-xl bg-[#EE5D6C] hover:bg-[#E0343F] text-white font-semibold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-[#EE5D6C]/30 transition-all"
                 >
                   <Check size={18} />
                   <span>Selesai Bicara</span>
@@ -214,8 +390,8 @@ export const VoiceModal: React.FC = () => {
           {recordState === 'processing' && (
             <div className="text-center space-y-4 py-12">
               <div className="w-12 h-12 rounded-full border-2 border-[#E39A5E] border-t-transparent animate-spin mx-auto" />
-              <p className="text-sm font-semibold text-[#EEF2F6]">Memahami ceritamu...</p>
-              <p className="text-xs text-[#A3AFBC]">AI sedang memisahkan rincian transaksi</p>
+              <p className="text-sm font-semibold text-[#EEF2F6]">Memproses Suara & AI...</p>
+              <p className="text-xs text-[#A3AFBC]">Memisahkan rincian belanja dan nominal uang</p>
             </div>
           )}
 
@@ -223,9 +399,17 @@ export const VoiceModal: React.FC = () => {
             <div className="space-y-4">
               {/* Transcript */}
               <div className="p-3.5 rounded-xl glass-1 border-[rgba(205,225,245,0.1)] space-y-1">
-                <span className="text-[10px] uppercase font-semibold text-[#74808E] tracking-wider">
-                  Hasil Transkripsi:
-                </span>
+                <div className="flex items-center justify-between text-[10px] uppercase font-semibold text-[#74808E] tracking-wider">
+                  <span>Hasil Suara yang Didengar:</span>
+                  <button
+                    type="button"
+                    onClick={() => setRecordState('idle')}
+                    className="text-[#E39A5E] normal-case font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw size={11} />
+                    <span>Ulangi</span>
+                  </button>
+                </div>
                 <p className="text-xs text-[#EEF2F6] italic leading-relaxed">
                   &quot;{transcript}&quot;
                 </p>
@@ -234,22 +418,29 @@ export const VoiceModal: React.FC = () => {
               {/* Parsed Transactions List */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs text-[#A3AFBC]">
-                  <span>{parsedItems.length} Transaksi Ditemukan</span>
+                  <span>{parsedItems.length} Transaksi Terdeteksi</span>
                   <span className="text-[#4FD3A4] font-medium flex items-center gap-1">
                     <Sparkles size={12} />
-                    <span>Akurasi 98%</span>
+                    <span>AI Parser Aktif</span>
                   </span>
                 </div>
 
                 {parsedItems.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-[#A3AFBC]">
-                    Tidak ada transaksi yang terdeteksi. Silakan coba lagi.
+                  <div className="p-6 text-center text-xs text-[#A3AFBC] glass-1 rounded-xl space-y-2">
+                    <p>Tidak ada nominal transaksi yang terdeteksi dari kalimat tersebut.</p>
+                    <button
+                      type="button"
+                      onClick={() => setRecordState('idle')}
+                      className="btn-ghost px-3 py-1.5 rounded-lg border border-[var(--glass-border)] text-xs text-[#E39A5E] font-medium"
+                    >
+                      Bicara Lagi atau Ketik Ulang
+                    </button>
                   </div>
                 ) : (
                   parsedItems.map((item) => (
                     <div
                       key={item.id}
-                      className="glass-2 p-3.5 rounded-xl flex items-center justify-between gap-3 border-[rgba(205,225,245,0.12)]"
+                      className="glass-2 p-3.5 rounded-xl flex items-center justify-between gap-3 border-[var(--glass-border)]"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
@@ -298,7 +489,7 @@ export const VoiceModal: React.FC = () => {
                 <div className="p-3 rounded-xl bg-[rgba(181,96,58,0.12)] border border-[#B5603A]/30 text-xs text-[#EEF2F6] flex items-start gap-2">
                   <AlertCircle size={16} className="text-[#E39A5E] shrink-0 mt-0.5" />
                   <p className="leading-relaxed">
-                    Pengeluaran kencan terdeteksi. AI mencatat ini sebagai pos tersendiri agar kamu bisa memantau sisa budget pacaran minggu ini.
+                    Pengeluaran kencan terdeteksi. AI FinAI mencatat ini pada pos kencan tersendiri agar kamu dapat memantau budget pacaran bulan ini.
                   </p>
                 </div>
               )}
@@ -308,13 +499,13 @@ export const VoiceModal: React.FC = () => {
 
         {/* Footer Actions */}
         {recordState === 'confirm' && (
-          <div className="p-4 border-t border-[rgba(205,225,245,0.1)] flex items-center justify-end gap-3 bg-[#070A0F]/60">
+          <div className="p-4 border-t border-[rgba(205,225,245,0.1)] flex items-center justify-end gap-3 bg-[var(--bg-base)]/60">
             <button
               type="button"
               onClick={() => setRecordState('idle')}
               className="btn-ghost px-4 py-2.5 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] cursor-pointer"
             >
-              Ulangi Rekam
+              Bicara Lagi
             </button>
             <button
               type="button"

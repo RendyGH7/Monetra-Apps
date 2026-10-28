@@ -19,11 +19,17 @@ export default function App() {
     activeTab,
     authLoading,
     authUser,
+    theme,
     setAuthLoading,
     setAuthUser,
     syncWithSupabaseUser,
     showToast,
   } = useAppStore();
+
+  // ── Sync theme to html document ─────────────────────────────────────────
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // ── Resolve Supabase session on first load ──────────────────────────────
   useEffect(() => {
@@ -109,7 +115,7 @@ export default function App() {
 
   // ── Main app ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-dvh bg-[#070A0F] text-[#EEF2F6] flex relative selection:bg-[#E39A5E]/20 selection:text-[#E39A5E]">
+    <div className="min-h-dvh bg-[var(--bg-base)] text-[var(--text-primary)] flex relative selection:bg-[#E39A5E]/20 selection:text-[#E39A5E] transition-colors duration-200">
       {/* Aurora Ambient Mesh Background */}
       <div className="aurora-mesh" aria-hidden="true">
         <div className="aurora-orb-1" />

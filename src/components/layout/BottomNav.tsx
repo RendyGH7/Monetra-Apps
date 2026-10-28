@@ -25,7 +25,7 @@ export const BottomNav: React.FC = () => {
       aria-label="Navigasi bawah ponsel"
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2"
     >
-      <div className="glass-3 max-w-lg mx-auto flex items-center justify-around h-16 px-2 relative border border-[rgba(205,225,245,0.13)]">
+      <div className="glass-3 max-w-lg mx-auto flex items-center justify-around h-16 px-2 relative border border-[var(--glass-border)]">
         {navItems.map((item) => {
           if (item.isMic) {
             return (
