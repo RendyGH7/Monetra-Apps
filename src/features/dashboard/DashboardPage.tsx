@@ -89,6 +89,7 @@ export const DashboardPage: React.FC = () => {
 
   type StatPeriod = 'week' | 'month' | 'year';
   const [statPeriod, setStatPeriod] = useState<StatPeriod>('week');
+  const [chartMetric, setChartMetric] = useState<'all' | 'expense' | 'income'>('all');
 
   const periodStats = useMemo(() => {
     const today = new Date();
@@ -448,47 +449,49 @@ export const DashboardPage: React.FC = () => {
 
         {/* 4 Minimalist Clean Metric Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
             <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--expense)' }} />
               Pengeluaran
             </div>
-            <p className="text-sm sm:text-base font-bold text-[#EEF2F6] num-tabular mt-1">
+            <p className="text-sm sm:text-base font-bold num-tabular mt-1" style={{ color: 'var(--expense)' }}>
               {formatCurrency(periodStats.totalExpense)}
             </p>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
             <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4]" />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--income)' }} />
               Pemasukan
             </div>
-            <p className="text-sm sm:text-base font-bold text-[#4FD3A4] num-tabular mt-1">
+            <p className="text-sm sm:text-base font-bold num-tabular mt-1" style={{ color: 'var(--income)' }}>
               {formatCurrency(periodStats.totalIncome)}
             </p>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
             <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className={`w-1.5 h-1.5 rounded-full ${periodStats.net >= 0 ? 'bg-[#4FD3A4]' : 'bg-[#EE5D6C]'}`} />
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: periodStats.net >= 0 ? 'var(--income)' : 'var(--expense)' }}
+              />
               Arus Bersih
             </div>
             <p
-              className={`text-sm sm:text-base font-bold num-tabular mt-1 ${
-                periodStats.net >= 0 ? 'text-[#4FD3A4]' : 'text-[#EE5D6C]'
-              }`}
+              className="text-sm sm:text-base font-bold num-tabular mt-1"
+              style={{ color: periodStats.net >= 0 ? 'var(--income)' : 'var(--expense)' }}
             >
               {periodStats.net >= 0 ? '+' : ''}
               {formatCurrency(periodStats.net)}
             </p>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] p-2.5 sm:p-3 rounded-xl transition-colors">
+          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
             <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#74808E]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
               {periodStats.avgLabel}
             </div>
-            <p className="text-sm sm:text-base font-bold text-[#EEF2F6] num-tabular mt-1">
+            <p className="text-sm sm:text-base font-bold num-tabular mt-1 text-[#EEF2F6]">
               {formatCurrency(periodStats.avgValue)}
             </p>
           </div>
@@ -496,25 +499,52 @@ export const DashboardPage: React.FC = () => {
 
         {/* Detailed Statistical Area & Line Chart */}
         <div className="pt-2">
-          <div className="flex items-center justify-between text-[11px] text-[#A3AFBC] mb-2 px-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-[#A3AFBC] mb-2 px-1 gap-2">
             <span className="text-[11px] text-[#74808E]">
               Tren {periodStats.chartSubtitle}
             </span>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-1 rounded-full bg-[#E39A5E]" />
+            <div className="flex items-center gap-1 bg-white/[0.03] p-0.5 rounded-lg border border-white/[0.05] text-[10px] self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setChartMetric('all')}
+                className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                  chartMetric === 'all'
+                    ? 'bg-white/[0.1] text-[#EEF2F6] font-semibold shadow-xs'
+                    : 'text-[#74808E] hover:text-[#A3AFBC]'
+                }`}
+              >
+                Semua
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric('expense')}
+                className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer ${
+                  chartMetric === 'expense'
+                    ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-xs'
+                    : 'text-[#74808E] hover:text-[#E39A5E]'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
                 Pengeluaran
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-1 rounded-full bg-[#4FD3A4]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric('income')}
+                className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer ${
+                  chartMetric === 'income'
+                    ? 'bg-[#4FD3A4]/15 text-[#4FD3A4] font-semibold border border-[#4FD3A4]/30 shadow-xs'
+                    : 'text-[#74808E] hover:text-[#4FD3A4]'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4]" />
                 Pemasukan
-              </span>
+              </button>
             </div>
           </div>
 
-          <div className="h-44 sm:h-52 w-full -ml-2">
+          <div className="h-44 sm:h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={periodStats.chartData} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
+              <AreaChart data={periodStats.chartData} margin={{ top: 8, right: 12, left: -2, bottom: 0 }}>
                 <defs>
                   <linearGradient id="dashExpGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#E39A5E" stopOpacity={0.28} />
@@ -538,30 +568,34 @@ export const DashboardPage: React.FC = () => {
                   tick={{ fill: '#74808E', fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
-                  width={42}
+                  width={48}
                 />
                 <Tooltip content={<MinimalChartTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="expense"
-                  name="Pengeluaran"
-                  stroke="#E39A5E"
-                  strokeWidth={2.2}
-                  fill="url(#dashExpGrad)"
-                  dot={statPeriod === 'month' ? false : { r: 3, fill: '#E39A5E', strokeWidth: 1.5, stroke: '#1C0E04' }}
-                  activeDot={{ r: 5, fill: '#E39A5E', stroke: '#EEF2F6', strokeWidth: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="income"
-                  name="Pemasukan"
-                  stroke="#4FD3A4"
-                  strokeWidth={1.8}
-                  strokeDasharray={statPeriod === 'month' ? undefined : '2 2'}
-                  fill="url(#dashIncGrad)"
-                  dot={statPeriod === 'month' ? false : { r: 2.5, fill: '#4FD3A4', strokeWidth: 1, stroke: '#071F17' }}
-                  activeDot={{ r: 4.5, fill: '#4FD3A4', stroke: '#EEF2F6', strokeWidth: 2 }}
-                />
+                {(chartMetric === 'all' || chartMetric === 'expense') && (
+                  <Area
+                    type="monotone"
+                    dataKey="expense"
+                    name="Pengeluaran"
+                    stroke="#E39A5E"
+                    strokeWidth={2.2}
+                    fill="url(#dashExpGrad)"
+                    dot={statPeriod === 'month' ? false : { r: 3, fill: '#E39A5E', strokeWidth: 1.5, stroke: '#1C0E04' }}
+                    activeDot={{ r: 5, fill: '#E39A5E', stroke: '#EEF2F6', strokeWidth: 2 }}
+                  />
+                )}
+                {(chartMetric === 'all' || chartMetric === 'income') && (
+                  <Area
+                    type="monotone"
+                    dataKey="income"
+                    name="Pemasukan"
+                    stroke="#4FD3A4"
+                    strokeWidth={1.8}
+                    strokeDasharray={statPeriod === 'month' ? undefined : '2 2'}
+                    fill="url(#dashIncGrad)"
+                    dot={statPeriod === 'month' ? false : { r: 2.5, fill: '#4FD3A4', strokeWidth: 1, stroke: '#071F17' }}
+                    activeDot={{ r: 4.5, fill: '#4FD3A4', stroke: '#EEF2F6', strokeWidth: 2 }}
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

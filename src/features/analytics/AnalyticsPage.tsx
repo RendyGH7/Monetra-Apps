@@ -265,19 +265,19 @@ export const AnalyticsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="glass-1 p-1 rounded-xl flex items-center gap-0.5 border border-white/[0.08] text-xs self-start sm:self-auto">
+        <div className="flex items-center p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs self-start sm:self-auto">
           {(['week', 'month', 'year'] as Period[]).map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => setPeriod(p)}
-              className={`chip-press px-3 py-1.5 rounded-lg font-medium cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
                 period === p
-                  ? 'bg-[#E39A5E] text-[#1C0E04] font-semibold'
+                  ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-xs'
                   : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
               }`}
             >
-              {p === 'week' ? 'Minggu' : p === 'month' ? 'Bulan' : 'Tahun'}
+              {p === 'week' ? 'Mingguan' : p === 'month' ? 'Bulanan' : 'Tahunan'}
             </button>
           ))}
         </div>
@@ -332,20 +332,39 @@ export const AnalyticsPage: React.FC = () => {
 
       {/* ── Bar Chart: Income vs Expense over time ───────────────────────── */}
       <div className="glass-1 p-5 rounded-2xl border border-[rgba(205,225,245,0.12)] space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[#EEF2F6]">
-            Pengeluaran vs Pemasukan —{' '}
-            <span className="text-[#A3AFBC] font-normal">
-              {period === 'week' ? 'Per hari' : period === 'month' ? 'Per minggu' : 'Per bulan'}
-            </span>
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-white/[0.05]">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h2 className="text-sm font-semibold text-[#EEF2F6]">
+              Pengeluaran vs Pemasukan
+            </h2>
+            <span className="hidden sm:inline text-white/20">·</span>
+            
+            {/* Minimalist & Clean Period Switcher directly on the chart card */}
+            <div className="flex items-center p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs">
+              {(['week', 'month', 'year'] as Period[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeriod(p)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                    period === p
+                      ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-xs'
+                      : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
+                  }`}
+                >
+                  {p === 'week' ? 'Mingguan' : p === 'month' ? 'Bulanan' : 'Tahunan'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center gap-3 text-[11px] text-[#A3AFBC]">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#EE5D6C' }} />
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full inline-block bg-[#EE5D6C]" />
               Keluar
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#4FD3A4' }} />
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full inline-block bg-[#4FD3A4]" />
               Masuk
             </span>
           </div>

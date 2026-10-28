@@ -1,4 +1,4 @@
-import { UserProfile, Transaction, AIMemory, ChatMessage } from '../types';
+import { UserProfile, Transaction, AIMemory, ChatMessage, ParsedVoiceItem, TransactionType, NeedWantType } from '../types';
 import { formatCurrency, stripEmoji } from '../utils/format';
 import { parseVoiceInput } from '../utils/voiceParser';
 
@@ -181,37 +181,50 @@ PANDUAN MENJAWAB:
     parts: [{ text: userPrompt }],
   });
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  let lastError: any = null;
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemInstructionText }],
-      },
-      contents: contentsPayload,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1000,
-      },
-    }),
-  });
+  for (const model of modelsToTry) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemInstructionText }],
+          },
+          contents: contentsPayload,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1000,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const textOutput = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (textOutput) {
+          return textOutput;
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        lastError = new Error(errorData.error?.message || `HTTP ${response.status}`);
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  const result = await response.json();
-  const textOutput = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textOutput) {
-    throw new Error('Tidak ada respon teks dari Gemini');
+  if (lastError) {
+    throw lastError;
   }
 
-  return textOutput;
+  throw new Error('Tidak ada respon teks dari model Gemini.');
 }
 
 // ─── Smart Local Financial Reasoning Engine ────────────────────────────────
@@ -219,8 +232,8 @@ function smartLocalFinancialReasoning(
   cleanPrompt: string,
   context: AIContext
 ): string {
-  const { profile, transactions, memories } = context;
-  const lower = cleanPrompt.toLowerCase();
+  const { profile, transactions } = context;
+  const lower = cleanPrompt.toLowerCase().trim();
   const firstName = profile.nama.split(' ')[0] || 'kamu';
 
   const now = new Date();
@@ -252,40 +265,73 @@ function smartLocalFinancialReasoning(
   if (daysLeft <= 0) daysLeft = 1;
   const safeDaily = Math.max(0, Math.round(netBalance / daysLeft));
 
-  // 1. Sapaan & Obrolan Kasual
-  if (/^(halo|hai|hei|pagi|siang|sore|malam|oy|bro|finai|assalamualaikum|tes|test)/i.test(lower)) {
-    return `Halo ${firstName}! Senang bisa ngobrol denganmu. Saat ini sisa saldo bulanmu adalah ${formatCurrency(netBalance)}, dengan batas aman belanja harian ${formatCurrency(safeDaily)} menjelang gajian tanggal ${payDay}. Ada yang ingin kamu diskusikan hari ini? Kamu bisa tanya analisis budget kencan, tips menabung dari gaji magang, atau catat pengeluaran baru langsung di sini.`;
+  // 1. Sapaan Kasual & Formal (hi, hai, hello, halo, pagi, dsb)
+  const isGreeting =
+    /^(hi|hai|hello|helo|hey|halo|hy|hola|assalamualaikum|pagi|siang|sore|malam|oy|bro|sis|min|finai|tes|test)\b/i.test(lower) ||
+    lower === 'hi' ||
+    lower === 'hai' ||
+    lower === 'halo' ||
+    lower === 'hey' ||
+    lower === 'hello';
+
+  if (isGreeting) {
+    return `Halo ${firstName}! Senang bisa ngobrol denganmu. Ada yang bisa saya bantu seputar keuanganmu hari ini? Kamu bisa cek batas aman belanja harian, analisis budget kencan, atau ketik transaksi pengeluaran baru langsung di sini!`;
   }
 
-  // 2. Siapa Kamu / Kemampuan FinAI
-  if (lower.includes('siapa kamu') || lower.includes('tentang kamu') || lower.includes('bisa apa')) {
-    return `Saya FinAI, asisten keuangan cerdas pribadi kamu. Saya dirancang khusus untuk memonitor keuangan anak magang seperti kamu (gaji pokok ${formatCurrency(profile.monthly_income)}), menjaga keseimbangan antara makan harian dan budget kencan bareng pacar, serta memberikan saran finansial yang realistis. Kamu juga bisa menghubungkan API Key Gemini gratis di atas jika ingin saya memiliki wawasan luas dari internet!`;
+  // 2. Tanya Kabar & Basa-basi
+  if (lower.includes('apa kabar') || lower.includes('gimana kabar') || lower.includes('lagi apa') || lower.includes('sehat')) {
+    return `Kabar saya sangat baik dan selalu siap memantau keuanganmu, ${firstName}! Posisi keuanganmu saat ini terpantau stabil dengan sisa saldo ${formatCurrency(netBalance)} menjelang gajian tanggal ${payDay}. Ada transaksi baru yang ingin dicatat atau ada hal yang ingin didiskusikan?`;
   }
 
-  // 3. Batas Aman Belanja & Sisa Saldo
-  if (lower.includes('aman') || lower.includes('hari ini') || lower.includes('sisa saldo') || lower.includes('uangku')) {
+  // 3. Terima Kasih & Apresiasi
+  if (/^(makasih|terima kasih|thanks|tq|thank you|makasii)/i.test(lower) || lower.includes('makasih') || lower.includes('terima kasih')) {
+    return `Sama-sama, ${firstName}! Senang bisa membantumu. Jaga terus ritme keuanganmu, dan jangan ragu panggil saya kapan saja kalau butuh pertimbangan finansial!`;
+  }
+
+  // 4. Afirmasi & Respon Singkat
+  if (/^(ok|oke|siap|sip|mantap|keren|yoi|baiklah|oke deh)\b/i.test(lower)) {
+    return `Siap, ${firstName}! Tetap semangat magang dan bijak dalam mengelola pengeluaran ya. Kalau butuh saran atau mau catat sesuatu, saya selalu ada di sini!`;
+  }
+
+  // 5. Bokek / Boros / Khawatir Uang Menipis
+  if (lower.includes('bokek') || lower.includes('boros') || lower.includes('uang abis') || lower.includes('duit abis') || lower.includes('habis uang') || lower.includes('pusing')) {
+    return `Tenang ${firstName}, jangan panik. Mari kita evaluasi bersama:\n- Sisa saldo aktifmu saat ini: ${formatCurrency(netBalance)}\n- Jarak gajian tanggal ${payDay}: ${daysLeft} hari lagi\n- Batas aman bertahan per hari: ${formatCurrency(safeDaily)}\n\nLangkah penyelamatan ala FinAI:\n1. Tahan dulu pengeluaran hiburan dan jajan kafe di luar rencana.\n2. Maksimalkan makan warteg atau menu hemat (budget Rp 15.000 - Rp 20.000 per hari).\n3. Untuk agenda kencan, pilih aktivitas hemat seperti jalan sore di taman atau nonton film di kos.\nKamu pasti bisa melewatinya sampai tanggal gajian tiba!`;
+  }
+
+  // 6. Dana Darurat
+  if (lower.includes('darurat') || lower.includes('emergency')) {
+    return `Panduan Dana Darurat untuk anak magang (gaji ${formatCurrency(profile.monthly_income)}):\n- Target awal yang realistis: Rp 500.000 - Rp 1.000.000.\n- Tempat penyimpanan: Simpan di rekening bank digital terpisah atau Reksadana Pasar Uang yang likuid (bisa ditarik kapan saja dan bebas biaya admin bulanan).\n- Aturan pakai: Hanya boleh dipakai untuk situasi darurat riil (misal motor mogok, berobat mendadak, atau kebutuhan keluarga mendesak), bukan untuk belanja diskon atau nongkrong.`;
+  }
+
+  // 7. Siapa Kamu / Kemampuan FinAI
+  if (lower.includes('siapa kamu') || lower.includes('kamu siapa') || lower.includes('tentang kamu') || lower.includes('bisa apa') || lower.includes('finai itu apa')) {
+    return `Saya FinAI, asisten keuangan cerdas pribadi kamu. Saya dirancang khusus untuk memonitor keuangan anak magang seperti kamu (gaji pokok ${formatCurrency(profile.monthly_income)}), menjaga keseimbangan antara makan harian dan budget kencan bareng pacar, serta memberikan saran finansial yang realistis. Kamu bisa bertanya apa saja seputar tips hemat, investasi pemula, atau langsung mencatat pengeluaran via chat dan suara.`;
+  }
+
+  // 8. Batas Aman Belanja & Sisa Saldo
+  if (lower.includes('aman') || lower.includes('hari ini') || lower.includes('sisa saldo') || lower.includes('saldo') || lower.includes('uangku') || lower.includes('sisa uang') || lower.includes('berapa duit')) {
     return `Berdasarkan kalkulasi terkini:\n- Sisa saldo aktif bulan ini: ${formatCurrency(netBalance)}\n- Jarak ke gajian berikutnya: ${daysLeft} hari (tanggal ${payDay})\n- Batas aman belanja harian: ${formatCurrency(safeDaily)} per hari\n\nMengingat kebiasaan makan siang harianmu hemat di kisaran Rp 10.000 hingga Rp 20.000, cashflow harianmu masih dalam zona aman.`;
   }
 
-  // 4. Analisis Pacaran & Kencan
-  if (lower.includes('kencan') || lower.includes('pacar') || lower.includes('date') || lower.includes('doi')) {
+  // 9. Analisis Pacaran & Kencan
+  if (lower.includes('kencan') || lower.includes('pacar') || lower.includes('date') || lower.includes('doi') || lower.includes('ngedate') || lower.includes('nonton')) {
     const dateBudget = profile.dating_budget_est || 600000;
     const isOver = datingExpense > dateBudget;
-    return `Evaluasi pos kencan untuk ${firstName}:\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)}\n- Target batas bulanan: ${formatCurrency(dateBudget)}\n- Status: ${isOver ? 'Melebihi target awal' : 'Masih dalam batas aman'}\n\nSaran FinAI:\nKarena kamu rutin bertemu 3-4 kali seminggu, kombinasikan jadwal kencan dengan aktivitas hemat seperti jalan santai di taman kota, memasak menu favorit berdua di kos, atau movie marathon via streaming. Cara ini menjaga hubungan tetap hangat tanpa membuat dompet magang kempis.`;
+    return `Evaluasi pos kencan untuk ${firstName}:\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)}\n- Target batas bulanan: ${formatCurrency(dateBudget)}\n- Status: ${isOver ? 'Melebihi target awal' : 'Masih dalam batas aman'}\n\nSaran FinAI:\nKarena kamu rutin bertemu 3-4 kali seminggu, variasikan jadwal kencan dengan aktivitas hemat seperti jalan santai di taman kota, memasak menu favorit berdua di kos, atau movie marathon via streaming. Cara ini menjaga hubungan tetap hangat tanpa membuat dompet magang kempis.`;
   }
 
-  // 5. Investasi, Reksadana, Saham, Emas, Kripto
-  if (lower.includes('investasi') || lower.includes('reksadana') || lower.includes('saham') || lower.includes('crypto') || lower.includes('emas') || lower.includes('bibit')) {
+  // 10. Investasi, Reksadana, Saham, Emas, Kripto
+  if (lower.includes('investasi') || lower.includes('reksadana') || lower.includes('saham') || lower.includes('crypto') || lower.includes('kripto') || lower.includes('emas') || lower.includes('bibit') || lower.includes('bareksa')) {
     return `Rekomendasi investasi untuk anak magang (gaji ${formatCurrency(profile.monthly_income)}):\n1. Prioritas Pertama: Amankan dana darurat minimal Rp 500.000 - Rp 1.000.000 di rekening terpisah atau e-wallet likuid.\n2. Reksadana Pasar Uang (RPU): Pilihan terbaik untuk pemula (bisa mulai dari Rp 10.000 di platform resmi seperti Bibit/Bareksa). Risikonya sangat rendah dan imbal hasilnya stabil 4-6% per tahun di atas bunga tabungan biasa.\n3. Emas Digital: Cocok untuk tabungan jangka menengah (1-3 tahun) sebagai pelindung inflasi.\n4. Saham & Kripto: Pelajari fundamentalnya terlebih dahulu dan hanya gunakan uang dingin (maksimal 5% dari tabungan) karena volatilitasnya tinggi.`;
   }
 
-  // 6. Pinjol, Paylater, Utang
-  if (lower.includes('pinjol') || lower.includes('paylater') || lower.includes('utang') || lower.includes('kredit')) {
+  // 11. Pinjol, Paylater, Utang
+  if (lower.includes('pinjol') || lower.includes('paylater') || lower.includes('utang') || lower.includes('kredit') || lower.includes('cicilan')) {
     return `Peringatan penting seputar Paylater & Pinjol untuk ${firstName}:\n- Bunga paylater berkisar 2% - 4% per bulan (bisa mencapai 30% - 50% per tahun). Dengan gaji magang Rp 1.500.000, cicilan sekecil apapun akan langsung membebani cashflow bulanan.\n- Risiko BI Checking / SLIK OJK: Keterlambatan bayar walau hanya Rp 50.000 dapat merusak reputasi kreditmu saat nanti ingin mengajukan KPR atau bekerja di sektor perbankan.\n- Prinsip FinAI: Hindari paylater untuk konsumsi harian atau nongkrong. Jika uang tunai belum cukup, tunda pembelian sampai tabungan terkumpul.`;
   }
 
-  // 7. Tips Mengatur Gaji Magang / Aturan 50-30-20
-  if (lower.includes('tips') || lower.includes('gaji') || lower.includes('50/30/20') || lower.includes('kelola') || lower.includes('mengatur')) {
+  // 12. Tips Mengatur Gaji Magang / Aturan 50-30-20
+  if (lower.includes('tips') || lower.includes('gaji') || lower.includes('50/30/20') || lower.includes('kelola') || lower.includes('mengatur') || lower.includes('nabung') || lower.includes('menabung')) {
     const salary = profile.monthly_income || 1500000;
     const needs = Math.round(salary * 0.5);
     const wants = Math.round(salary * 0.3);
@@ -294,11 +340,97 @@ function smartLocalFinancialReasoning(
     return `Strategi alokasi gaji magang Rp ${salary.toLocaleString('id-ID')} ala FinAI:\n- 50% Kebutuhan Pokok (${formatCurrency(needs)}): Makan harian hemat (Rp 15.000/hari x 30 = Rp 450.000), sisa Rp 300.000 untuk transport & bensin.\n- 30% Keinginan & Kencan (${formatCurrency(wants)}): Budget kencan dan nongkrong hemat dibagi rata sekitar Rp 100.000 - Rp 110.000 per minggu.\n- 20% Tabungan Darurat (${formatCurrency(savings)}): Langsung disisihkan di awal tiap tanggal gajian (${payDay}) sebelum digunakan untuk kebutuhan lain.`;
   }
 
-  // 8. Side Hustle / Cari Uang Tambahan
-  if (lower.includes('side hustle') || lower.includes('tambahan') || lower.includes('roblox') || lower.includes('mlbb') || lower.includes('cari duit')) {
+  // 13. Side Hustle / Cari Uang Tambahan
+  if (lower.includes('side hustle') || lower.includes('tambahan') || lower.includes('roblox') || lower.includes('mlbb') || lower.includes('cari duit') || lower.includes('freelance')) {
     return `Berdasarkan memorimu yang pernah jualan item Roblox & akun MLBB:\n- Aktifkan kembali bisnis digital game: Margin jual beli item game sangat menarik bagi sesama gamer dan bisa dikerjakan di luar jam magang tanpa modal besar.\n- Manfaatkan skill magangmu: Kamu juga bisa menawarkan jasa freelance kecil-kecilan (seperti entri data, desain media sosial sederhana, atau micro-task digital).\n- Tambahan penghasilan Rp 300.000 - Rp 500.000 per bulan dari side hustle akan langsung melonggarkan budget kencanmu secara signifikan!`;
   }
 
-  // 9. Pertanyaan Umum Lainnya
-  return `Saya memahami pertanyaanmu, ${firstName}. Dari ringkasan kondisi finansialmu saat ini:\n- Total pemasukan tercatat: ${formatCurrency(totalIncome)}\n- Total pengeluaran: ${formatCurrency(totalExpense)}\n- Saldo kas aktif: ${formatCurrency(netBalance)}\n\nKunci utamamu adalah menjaga konsistensi makan harian hemat dan mengontrol variasi biaya kencan mingguan. Jika kamu ingin saya memiliki akses pencarian internet yang tak terbatas dan kecerdasan model bahasa raksasa Google, kamu bisa mengaktifkan API Key Gemini gratis lewat tombol di atas!`;
+  // 14. Pertanyaan Umum / Fallback Cerdas
+  return `Pertanyaan yang bagus, ${firstName}! Sebagai asisten keuangan pribadimu, saya selalu siap mendampingi pengelolaan finansialmu.\n\nRingkasan status dompetmu saat ini:\n- Saldo aktif: ${formatCurrency(netBalance)}\n- Batas aman belanja: ${formatCurrency(safeDaily)}/hari (menuju gajian tgl ${payDay})\n\nKamu bisa tanyakan hal seperti:\n- "Berapa sisa aman belanja hari ini?"\n- "Tips kencan hemat agar gaji magang cukup"\n- "Rekomendasi investasi pemula untuk gaji 1.5 juta"\n- Atau ketik "catat makan warteg 20rb" untuk mencatat pengeluaran baru.`;
 }
+}
+
+/**
+ * Intelligent AI voice transaction parser:
+ * 1. If Gemini API key is configured -> sends to Google Gemini 2.0 / 1.5 Flash for natural language comprehension.
+ * 2. If no API key or call fails -> uses enhanced smart local parser.
+ */
+export async function parseVoiceInputWithAI(
+  spokenText: string,
+  categories: { id: string; name: string }[] = []
+): Promise<ParsedVoiceItem[]> {
+  const apiKey = getStoredGeminiKey();
+
+  if (apiKey) {
+    try {
+      const categoryNames = categories.map((c) => c.name).join(', ') || 'Makanan & Minuman, Transportasi, Kencan & Pacaran, Tagihan & Pulsa, Hiburan, Tabungan & Dana Darurat, Gaji Magang';
+      const prompt = `Kamu adalah AI parser pencatatan transaksi keuangan bahasa Indonesia.
+Tugas: Ekstrak SEMUA transaksi dari ucapan pengguna menjadi format JSON array murni tanpa markdown, tanpa backticks.
+Format JSON array:
+[
+  {
+    "type": "expense" | "income",
+    "amount": number (integer positif),
+    "category": string (pilih yang paling cocok dari: [${categoryNames}]),
+    "note": string (deskripsi ringkas rapi, contoh "Makan warteg", "Beli bensin")
+  }
+]
+Kalimat yang diucapkan: "${spokenText}"`;
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const textOut = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (textOut) {
+          const parsed = JSON.parse(textOut);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const now = new Date().toISOString();
+            const items: ParsedVoiceItem[] = parsed
+              .map((item: any) => {
+                const itemType: TransactionType = item.type === 'income' ? 'income' : 'expense';
+                const needWant: NeedWantType =
+                  itemType === 'income'
+                    ? 'saving'
+                    : item.category === 'Kencan & Pacaran' || item.category === 'Hiburan'
+                    ? 'want'
+                    : 'need';
+
+                return {
+                  id: 'parsed-' + Math.random().toString(36).slice(2, 7),
+                  type: itemType,
+                  amount: Math.abs(Number(item.amount)) || 0,
+                  category: String(item.category || 'Makanan & Minuman'),
+                  note: stripEmoji(item.note || 'Transaksi'),
+                  occurred_at: now,
+                  need_want: needWant,
+                  confidence: 0.99,
+                };
+              })
+              .filter((item: ParsedVoiceItem) => item.amount > 0);
+            return items;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Gemini voice parsing API error, falling back to smart local parser:', e);
+    }
+  }
+
+  // Fallback to high-accuracy smart local parser
+  return parseVoiceInput(spokenText);
+}
+

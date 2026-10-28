@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, X, Check, Trash2, Volume2, Sparkles, AlertCircle, RefreshCw, Send } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { parseVoiceInput } from '../../utils/voiceParser';
+import { parseVoiceInputWithAI, getStoredGeminiKey } from '../../services/aiService';
 import { ParsedVoiceItem } from '../../types';
 import { formatCurrency, stripEmoji } from '../../utils/format';
 import { CategoryIcon } from '../common/CategoryIcon';
@@ -27,8 +28,11 @@ export const VoiceModal: React.FC = () => {
   const timerRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
 
+  const hasGeminiKey = Boolean(getStoredGeminiKey());
+
   // Suggested voice templates
   const examplePhrases = [
+    'Saya habis makan warteg Rp20.000',
     'Tadi pagi sarapan nasi uduk 15 ribu sama isi bensin motor 25 ribu',
     'Nge-date nonton bioskop bareng pacar habis 120 ribu di Cinema XXI',
     'Beli kopi sachet 10 ribu pas istirahat magang',
@@ -143,52 +147,47 @@ export const VoiceModal: React.FC = () => {
   };
 
   // ── Stop Recording & Parse Text ───────────────────────────────────────────
-  const handleStopRecording = () => {
-    handleStopStream();
-    setRecordState('processing');
-
-    const spoken = liveTranscript.trim();
-
-    if (!spoken) {
-      setTimeout(() => {
-        setRecordState('idle');
-        setErrorMessage(
-          'Suara tidak terdeteksi atau mikrofon tidak menangkap ucapan. Coba ulangi dengan suara lebih jelas, atau gunakan kolom ketik di bawah.'
-        );
-      }, 500);
-      return;
-    }
-
-    setTimeout(() => {
-      processTranscription(spoken);
-    }, 400);
-  };
-
-  const processTranscription = (text: string) => {
+  const processTranscription = async (text: string) => {
     setTranscript(text);
-    const items = parseVoiceInput(text);
-    setParsedItems(items);
+    setRecordState('processing');
+    try {
+      const items = await parseVoiceInputWithAI(text, categories);
+      setParsedItems(items);
+    } catch (err) {
+      console.warn('Voice AI parse error, using smart fallback:', err);
+      const items = parseVoiceInput(text);
+      setParsedItems(items);
+    }
     setRecordState('confirm');
   };
 
+  const handleStopRecording = () => {
+    handleStopStream();
+    const spoken = liveTranscript.trim();
+
+    if (!spoken) {
+      setRecordState('idle');
+      setErrorMessage(
+        'Suara tidak terdeteksi atau mikrofon tidak menangkap ucapan. Coba ulangi dengan suara lebih jelas, atau gunakan kolom ketik di bawah.'
+      );
+      return;
+    }
+
+    processTranscription(spoken);
+  };
+
   const handleSelectExample = (text: string) => {
-    setRecordState('processing');
     setErrorMessage(null);
-    setTimeout(() => {
-      processTranscription(text);
-    }, 300);
+    processTranscription(text);
   };
 
   const handleManualSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = manualText.trim();
     if (!clean) return;
-    setRecordState('processing');
     setErrorMessage(null);
-    setTimeout(() => {
-      processTranscription(clean);
-      setManualText('');
-    }, 300);
+    setManualText('');
+    processTranscription(clean);
   };
 
   const handleSaveAll = () => {
@@ -280,6 +279,19 @@ export const VoiceModal: React.FC = () => {
                 <p className="text-xs text-[#A3AFBC] max-w-sm mx-auto leading-relaxed">
                   Bicara santai menggunakan Bahasa Indonesia. AI FinAI akan memecah ucapanmu menjadi nominal dan kategori otomatis.
                 </p>
+                <div className="pt-1 flex items-center justify-center">
+                  {hasGeminiKey ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] text-[#4FD3A4] font-medium">
+                      <Sparkles size={12} />
+                      Model AI: Gemini 2.0 Flash Aktif
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-[11px] text-[#A3AFBC]">
+                      <Sparkles size={12} className="text-[#E39A5E]" />
+                      Smart AI Parser Bawaan Aktif (Siap Pakai)
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Big Interactive Mic Button */}
@@ -390,8 +402,10 @@ export const VoiceModal: React.FC = () => {
           {recordState === 'processing' && (
             <div className="text-center space-y-4 py-12">
               <div className="w-12 h-12 rounded-full border-2 border-[#E39A5E] border-t-transparent animate-spin mx-auto" />
-              <p className="text-sm font-semibold text-[#EEF2F6]">Memproses Suara & AI...</p>
-              <p className="text-xs text-[#A3AFBC]">Memisahkan rincian belanja dan nominal uang</p>
+              <p className="text-sm font-semibold text-[#EEF2F6]">
+                {hasGeminiKey ? 'Menganalisis Suara dengan Gemini 2.0 Flash...' : 'Memproses Suara dengan AI Parser...'}
+              </p>
+              <p className="text-xs text-[#A3AFBC]">Memisahkan rincian belanja, kategori finansial, dan nominal uang</p>
             </div>
           )}
 
@@ -421,7 +435,7 @@ export const VoiceModal: React.FC = () => {
                   <span>{parsedItems.length} Transaksi Terdeteksi</span>
                   <span className="text-[#4FD3A4] font-medium flex items-center gap-1">
                     <Sparkles size={12} />
-                    <span>AI Parser Aktif</span>
+                    <span>{hasGeminiKey ? 'Gemini 2.0 Flash AI Aktif' : 'Smart AI Parser Aktif'}</span>
                   </span>
                 </div>
 

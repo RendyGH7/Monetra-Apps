@@ -13,7 +13,6 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  PanelLeftClose,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
@@ -104,17 +103,6 @@ export const SidebarNav: React.FC = () => {
               <p className="text-[11px] text-[#A3AFBC] whitespace-nowrap">Asisten Keuangan</p>
             </div>
           </div>
-
-          {!sidebarCollapsed && (
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="btn-ghost p-1.5 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer shrink-0 transition-colors"
-              title="Tutup Sidebar"
-            >
-              <PanelLeftClose size={18} />
-            </button>
-          )}
         </div>
 
         {/* Quick Voice Note CTA */}

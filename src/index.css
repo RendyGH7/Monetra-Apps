@@ -28,26 +28,26 @@
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg-base: #F8FAFC;
+  --bg-base: #EEF2F6;
   --bg-elevated: #FFFFFF;
-  --glass-fill: rgba(255, 255, 255, 0.85);
-  --glass-fill-strong: rgba(255, 255, 255, 0.96);
-  --glass-border: rgba(226, 232, 240, 0.9);
+  --glass-fill: #FFFFFF;
+  --glass-fill-strong: #FFFFFF;
+  --glass-border: rgba(203, 213, 225, 0.9);
   --glass-highlight: rgba(255, 255, 255, 1);
   --text-primary: #0F172A;
-  --text-secondary: #475569;
+  --text-secondary: #334155;
   --text-tertiary: #64748B;
-  --accent: #CF722D;
-  --accent-strong: #B25A19;
+  --accent: #C27838;
+  --accent-strong: #A85A1E;
   --accent-deep: #7C390B;
-  --accent-soft: rgba(207, 114, 45, 0.12);
+  --accent-soft: rgba(194, 120, 56, 0.12);
   --on-accent: #FFFFFF;
   --income: #059669;
   --expense: #E11D48;
   --warning: #D97706;
   --danger: #DC2626;
   --success: #059669;
-  --shadow-glass: 0 10px 25px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-glass: 0 1px 3px rgba(15, 23, 42, 0.05), 0 6px 18px -3px rgba(15, 23, 42, 0.07);
 }
 
 @theme {
@@ -314,67 +314,91 @@ body {
 }
 
 /* Text readability in light mode */
-[data-theme="light"] .text-\[\#EEF2F6\],
-[data-theme="light"] [class*="text-[#EEF2F6]"] {
+[data-theme="light"] .text-\[\#EEF2F6\] {
   color: #0F172A !important;
 }
 
-[data-theme="light"] .text-\[\#A3AFBC\],
-[data-theme="light"] [class*="text-[#A3AFBC]"] {
+[data-theme="light"] .text-\[\#A3AFBC\] {
   color: #475569 !important;
 }
 
-[data-theme="light"] .text-\[\#74808E\],
-[data-theme="light"] [class*="text-[#74808E]"] {
+[data-theme="light"] .text-\[\#74808E\] {
   color: #64748B !important;
 }
 
-[data-theme="light"] .hover\:text-\[\#EEF2F6\]:hover,
-[data-theme="light"] .group:hover .group-hover\:text-\[\#EEF2F6\] {
+[data-theme="light"] .hover\:text-\[\#EEF2F6\]:hover {
   color: #0F172A !important;
 }
 
 /* Card surfaces in light mode */
 [data-theme="light"] .glass-1 {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: #FFFFFF;
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 14px -2px rgba(15, 23, 42, 0.06);
 }
 
 [data-theme="light"] .glass-2 {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: #FFFFFF;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), 0 8px 24px -4px rgba(15, 23, 42, 0.08);
 }
 
 [data-theme="light"] .glass-3 {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: 0 20px 40px -6px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: #FFFFFF;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  box-shadow: 0 12px 32px -6px rgba(15, 23, 42, 0.12);
 }
 
-/* Borders in light mode */
-[data-theme="light"] [class*="border-[rgba(205,225,245"],
-[data-theme="light"] [class*="border-white/"] {
-  border-color: rgba(226, 232, 240, 0.85) !important;
+/* Sidebar in light mode: crisp white with clear border */
+[data-theme="light"] aside {
+  background-color: #FFFFFF !important;
+  border-right-color: #CBD5E1 !important;
+  box-shadow: 2px 0 12px rgba(15, 23, 42, 0.04);
 }
 
-/* Backgrounds in light mode */
-[data-theme="light"] .bg-\[\#070A0F\],
-[data-theme="light"] [class*="bg-[#070A0F]"] {
+/* Inset cards, metric pills & wells in light mode */
+[data-theme="light"] .bg-\[\#070A0F\] {
   background-color: var(--bg-base) !important;
 }
 
-[data-theme="light"] .bg-\[\#0D1219\],
-[data-theme="light"] [class*="bg-[#0D1219]"] {
-  background-color: var(--bg-elevated) !important;
+[data-theme="light"] .bg-\[\#0D1219\] {
+  background-color: #FFFFFF !important;
 }
 
+/* Inner pills / sub-containers inside white cards get a soft contrasting slate well */
+[data-theme="light"] .bg-white\/\[0\.02\],
+[data-theme="light"] .bg-white\/\[0\.03\],
 [data-theme="light"] .bg-white\/\[0\.04\],
 [data-theme="light"] .bg-white\/\[0\.05\],
 [data-theme="light"] .bg-white\/\[0\.06\],
 [data-theme="light"] .bg-white\/\[0\.08\] {
-  background-color: rgba(15, 23, 42, 0.04) !important;
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+}
+
+/* High-contrast financial numbers and indicator colors in light mode */
+[data-theme="light"] .text-\[\#4FD3A4\] {
+  color: #047857 !important;
+}
+
+[data-theme="light"] .text-\[\#EE5D6C\] {
+  color: #DC2626 !important;
+}
+
+[data-theme="light"] .text-\[\#E39A5E\] {
+  color: #B45309 !important;
+}
+
+[data-theme="light"] .bg-\[\#4FD3A4\]\/15 {
+  background-color: rgba(5, 150, 105, 0.14) !important;
+}
+
+[data-theme="light"] .bg-\[\#EE5D6C\]\/15 {
+  background-color: rgba(220, 38, 38, 0.14) !important;
+}
+
+[data-theme="light"] .bg-\[\#E39A5E\]\/15 {
+  background-color: rgba(217, 119, 6, 0.14) !important;
 }
 
 /* Form inputs & selects */
