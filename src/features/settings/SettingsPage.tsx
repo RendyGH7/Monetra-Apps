@@ -103,20 +103,31 @@ export const SettingsPage: React.FC = () => {
       {/* Google Account & Cloud Sync Status Card */}
       <div className="glass-2 p-5 rounded-2xl border-[rgba(205,225,245,0.15)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4] flex items-center justify-center shrink-0">
-            <ShieldCheck size={20} />
-          </div>
+          {profile.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt={profile.nama}
+              referrerPolicy="no-referrer"
+              className="w-10 h-10 rounded-xl object-cover border border-[#4FD3A4]/30 shrink-0 shadow-sm"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4] flex items-center justify-center shrink-0">
+              <ShieldCheck size={20} />
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-[#EEF2F6]">
-                Keamanan Data & Isolasi Akun Google
+                {profile.id === 'default' ? 'Keamanan Data Akun' : profile.nama}
               </h2>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#4FD3A4]/20 text-[#4FD3A4] font-medium">
-                RLS Aktif
+                {profile.id === 'default' ? 'Mode Tamu' : 'Terhubung Google'}
               </span>
             </div>
             <p className="text-xs text-[#A3AFBC] mt-1 leading-relaxed">
-              Database Supabase PostgreSQL menggunakan Row Level Security (RLS). Seluruh data transaksi dan memori AI terenkripsi dan hanya dapat diakses oleh akun Google kamu.
+              {profile.id === 'default'
+                ? 'Data tersimpan di penyimpanan lokal browser. Sambungkan akun Google untuk backup awan otomatis.'
+                : `Masuk sebagai ${profile.email || profile.nama}. Data kamu tersinkronisasi dengan akun Google.`}
             </p>
           </div>
         </div>
