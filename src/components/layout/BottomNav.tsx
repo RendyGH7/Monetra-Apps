@@ -5,12 +5,19 @@ import { useAppStore } from '../../store';
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab, setVoiceModalOpen } = useAppStore();
 
-  const navItems = [
-    { key: 'beranda' as const, label: 'Beranda', icon: Home },
-    { key: 'transaksi' as const, label: 'Transaksi', icon: ListOrdered },
-    { key: 'mic' as const, label: 'Bicara', icon: Mic, isMic: true },
-    { key: 'statistik' as const, label: 'Statistik', icon: BarChart3 },
-    { key: 'asisten' as const, label: 'Asisten', icon: Bot },
+  type NavTabKey = 'beranda' | 'transaksi' | 'statistik' | 'asisten';
+
+  const navItems: Array<{
+    key: NavTabKey | 'mic';
+    label: string;
+    icon: typeof Home;
+    isMic?: boolean;
+  }> = [
+    { key: 'beranda', label: 'Beranda', icon: Home },
+    { key: 'transaksi', label: 'Transaksi', icon: ListOrdered },
+    { key: 'mic', label: 'Bicara', icon: Mic, isMic: true },
+    { key: 'statistik', label: 'Statistik', icon: BarChart3 },
+    { key: 'asisten', label: 'Asisten', icon: Bot },
   ];
 
   return (
@@ -45,7 +52,7 @@ export const BottomNav: React.FC = () => {
             <button
               key={item.key}
               type="button"
-              onClick={() => setActiveTab(item.key)}
+              onClick={() => setActiveTab(item.key as NavTabKey)}
               aria-label={item.label}
               className={`flex flex-col items-center justify-center min-w-[56px] py-1 transition-colors ${
                 isActive ? 'text-[#E39A5E]' : 'text-[#A3AFBC] hover:text-[#EEF2F6]'

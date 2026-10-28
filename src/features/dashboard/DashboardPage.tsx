@@ -267,7 +267,7 @@ export const DashboardPage: React.FC = () => {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(val: number) => [formatCurrency(val), 'Pengeluaran']}
+                      formatter={(val: any) => [formatCurrency(Number(val) || 0), 'Pengeluaran']}
                       contentStyle={{
                         backgroundColor: '#0D1219',
                         borderColor: 'rgba(205,225,245,0.2)',

@@ -1,74 +1,86 @@
-import { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useAppStore } from './store';
+import { supabase } from './lib/supabase';
+import { SidebarNav } from './components/layout/SidebarNav';
+import { BottomNav } from './components/layout/BottomNav';
+import { DashboardPage } from './features/dashboard/DashboardPage';
+import { TransactionsPage } from './features/transactions/TransactionsPage';
+import { AnalyticsPage } from './features/analytics/AnalyticsPage';
+import { AssistantPage } from './features/assistant/AssistantPage';
+import { BudgetPage } from './features/budget/BudgetPage';
+import { SettingsPage } from './features/settings/SettingsPage';
+import { VoiceModal } from './components/voice/VoiceModal';
+import { QuickManualModal } from './components/common/QuickManualModal';
+import { Toast } from './components/common/Toast';
 
 export default function App() {
-  const [copied, setCopied] = useState(false);
+  const { activeTab, syncWithSupabaseUser, showToast } = useAppStore();
 
-  const copyPath = (path: string) => {
-    navigator.clipboard.writeText(path);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  useEffect(() => {
+    // Listen for Supabase Google Auth session changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          syncWithSupabaseUser(
+            session.user.id,
+            session.user.email,
+            session.user.user_metadata?.full_name || session.user.email
+          );
+          if (event === 'SIGNED_IN') {
+            showToast('Berhasil masuk dengan akun Google.');
+          }
+        }
+      }
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [syncWithSupabaseUser, showToast]);
+
+  const renderActiveView = () => {
+    switch (activeTab) {
+      case 'beranda':
+        return <DashboardPage />;
+      case 'transaksi':
+        return <TransactionsPage />;
+      case 'statistik':
+        return <AnalyticsPage />;
+      case 'asisten':
+        return <AssistantPage />;
+      case 'budget':
+        return <BudgetPage />;
+      case 'pengaturan':
+        return <SettingsPage />;
+      default:
+        return <DashboardPage />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col justify-between p-6 sm:p-12">
-      <header className="max-w-4xl w-full mx-auto flex items-center justify-between pb-6 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm tracking-tight">
-            M
-          </div>
-          <span className="font-semibold text-base tracking-tight text-white">
-            Monetra
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Antislop Aktif</span>
-        </div>
-      </header>
+    <div className="min-h-dvh bg-[#070A0F] text-[#EEF2F6] flex relative selection:bg-[#E39A5E]/20 selection:text-[#E39A5E]">
+      {/* Aurora Ambient Mesh Background */}
+      <div className="aurora-mesh" aria-hidden="true">
+        <div className="aurora-orb-1" />
+        <div className="aurora-orb-2" />
+        <div className="aurora-orb-3" />
+      </div>
 
-      <main className="max-w-xl w-full mx-auto my-12 text-center space-y-6">
-        <div className="space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-            Kanvas Siap Membangun
-          </h1>
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-            Struktur kode telah dibersihkan dari komentar dan pola template AI.
-            Sistem siap mengimplementasikan fitur lengkap sesuai berkas panduan.
-          </p>
-        </div>
+      {/* Desktop & Tablet Sidebar */}
+      <SidebarNav />
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 text-left space-y-3">
-          <p className="text-xs uppercase tracking-wider text-slate-400 font-medium">
-            Langkah Selanjutnya
-          </p>
-          <div className="space-y-2 text-sm text-slate-200">
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
-              <span className="font-mono text-xs text-indigo-300">prd.md</span>
-              <button
-                type="button"
-                onClick={() => copyPath('prd.md')}
-                className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded border border-slate-700 hover:border-slate-500 transition-colors cursor-pointer"
-              >
-                {copied ? 'Tersalin' : 'Salin Nama'}
-              </button>
-            </div>
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
-              <span className="font-mono text-xs text-indigo-300">design.md</span>
-              <button
-                type="button"
-                onClick={() => copyPath('design.md')}
-                className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded border border-slate-700 hover:border-slate-500 transition-colors cursor-pointer"
-              >
-                {copied ? 'Tersalin' : 'Salin Nama'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0 z-10 px-4 sm:px-6 md:px-8 pt-6 pb-20 md:pb-8">
+        {renderActiveView()}
       </main>
 
-      <footer className="max-w-4xl w-full mx-auto pt-6 border-t border-slate-800 text-center text-xs text-slate-300">
-        <span>React 19 + TypeScript + Tailwind CSS + Supabase</span>
-      </footer>
+      {/* Mobile Floating Bottom Nav */}
+      <BottomNav />
+
+      {/* Global Modals & Toast */}
+      <VoiceModal />
+      <QuickManualModal />
+      <Toast />
     </div>
   );
 }
