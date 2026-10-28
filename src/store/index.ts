@@ -25,6 +25,7 @@ interface AuthUser {
   id: string;
   email?: string;
   name?: string;
+  avatar_url?: string;
 }
 
 interface AppState {
@@ -70,7 +71,7 @@ interface AppState {
   addChatMessage: (msg: Omit<ChatMessage, 'id' | 'created_at'>) => void;
   clearChat: () => void;
 
-  syncWithSupabaseUser: (userId: string, email?: string, name?: string) => Promise<void>;
+  syncWithSupabaseUser: (userId: string, email?: string, name?: string, avatarUrl?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
