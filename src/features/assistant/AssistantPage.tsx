@@ -1,16 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Mic, Sparkles, Trash2, User, Copy, Check } from 'lucide-react';
+import { Bot, Send, Mic, MicOff, Sparkles, Trash2, User, Copy, Check, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { stripEmoji, formatTimeShort } from '../../utils/format';
 import { askFinAI } from '../../services/aiService';
 import { MarkdownMessage } from '../../components/common/MarkdownMessage';
+
+const getSpeechRecognition = () => {
+  if (typeof window === 'undefined') return null;
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+};
 
 export const AssistantPage: React.FC = () => {
   const {
     chatMessages,
     addChatMessage,
     clearChat,
-    setVoiceModalOpen,
     profile,
     transactions,
     wallets,
@@ -25,12 +29,97 @@ export const AssistantPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isTyping]);
+
+  // Clean up speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  // ── Dedicated Voice Prompting (Bicara bebas ke AI tanpa ngetik) ────────────
+  const startVoicePrompt = () => {
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) {
+      showToast('Browser Anda belum mendukung Web Speech API bawaan.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'id-ID';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let fullText = '';
+        for (let i = 0; i < event.results.length; i++) {
+          fullText += event.results[i][0].transcript + ' ';
+        }
+        setInput(fullText.trim());
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Voice prompt error:', event?.error);
+        if (event?.error === 'not-allowed') {
+          showToast('Izin akses mikrofon tidak diizinkan di browser.');
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('Failed to start voice prompt:', err);
+      setIsListening(false);
+    }
+  };
+
+  const stopVoicePrompt = (autoSend = false) => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    if (autoSend && input.trim()) {
+      handleSend(input.trim());
+    }
+  };
+
+  const toggleVoicePrompt = () => {
+    if (isListening) {
+      stopVoicePrompt();
+    } else {
+      startVoicePrompt();
+    }
+  };
 
   const quickQuestions = [
     'Siapakah aku dan apa saja data yang kamu ketahui?',
@@ -51,6 +140,10 @@ export const AssistantPage: React.FC = () => {
   const handleSend = async (userText: string) => {
     const cleanText = stripEmoji(userText).trim();
     if (!cleanText) return;
+
+    if (isListening) {
+      stopVoicePrompt(false);
+    }
 
     // Add user message
     addChatMessage({
@@ -227,26 +320,61 @@ export const AssistantPage: React.FC = () => {
         ))}
       </div>
 
+      {/* Listening Status Bar */}
+      {isListening && (
+        <div className="mt-2 px-3.5 py-2 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/40 flex items-center justify-between text-xs text-[#EEF2F6] animate-pulse">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#EE5D6C] animate-ping shrink-0" />
+            <span className="font-semibold text-[#E39A5E] shrink-0">Sedang mendengarkan...</span>
+            <span className="text-[11px] text-[#A3AFBC] truncate hidden sm:inline">
+              Bicara bebas topik apapun (curhat, info pribadi, pertanyaan, dsb)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => stopVoicePrompt(true)}
+            disabled={!input.trim()}
+            className="px-2.5 py-1 rounded-lg bg-[#E39A5E] hover:bg-[#CF8143] text-[#1C0E04] text-[11px] font-bold cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
+          >
+            Selesai & Kirim
+          </button>
+        </div>
+      )}
+
       {/* Input Bar */}
       <div className="pt-2 flex items-center gap-2 shrink-0">
         <button
           type="button"
-          onClick={() => setVoiceModalOpen(true)}
-          className="btn-press p-2.5 rounded-xl glass-2 border border-[#E39A5E]/40 text-[#E39A5E] hover:bg-[#E39A5E]/15 hover:border-[#E39A5E]/60 cursor-pointer shrink-0 shadow-xs"
-          title="Bicara via Suara"
+          onClick={toggleVoicePrompt}
+          className={`btn-press p-2.5 rounded-xl border cursor-pointer shrink-0 shadow-xs transition-all duration-200 flex items-center justify-center ${
+            isListening
+              ? 'bg-[#EE5D6C]/25 border-[#EE5D6C] text-[#EE5D6C] shadow-lg shadow-[#EE5D6C]/30 animate-pulse'
+              : 'glass-2 border-[#E39A5E]/40 text-[#E39A5E] hover:bg-[#E39A5E]/15 hover:border-[#E39A5E]/60'
+          }`}
+          title={isListening ? 'Klik untuk berhenti merekam suara' : 'Voice Prompt: Bicara ke FinAI tanpa harus mengetik'}
         >
-          <Mic size={18} strokeWidth={2.2} />
+          {isListening ? (
+            <MicOff size={18} strokeWidth={2.3} />
+          ) : (
+            <Mic size={18} strokeWidth={2.2} />
+          )}
         </button>
 
         <input
           type="text"
-          placeholder="Tanya tips keuangan, evaluasi budget, atau ketik 'catat makan 20rb'..."
+          placeholder={
+            isListening
+              ? 'Mendengarkan suaramu... silakan bicara bebas...'
+              : "Tanya apapun, curhat, cerita profilmu, atau ketik 'catat makan 20rb'..."
+          }
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSend(input);
           }}
-          className="input-glow flex-1 h-11 px-4 rounded-xl glass-1 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] border border-[var(--glass-border)] focus:border-[#E39A5E] outline-none shadow-xs"
+          className={`input-glow flex-1 h-11 px-4 rounded-xl glass-1 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] border outline-none shadow-xs transition-colors duration-200 ${
+            isListening ? 'border-[#EE5D6C]/60 bg-[#EE5D6C]/5' : 'border-[var(--glass-border)] focus:border-[#E39A5E]'
+          }`}
         />
 
         <button

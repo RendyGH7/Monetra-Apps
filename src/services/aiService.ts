@@ -210,9 +210,13 @@ TRANSAKSI TERAKHIR:
 ${recentTxSummary || 'Belum ada transaksi'}
 
 TUGAS BELAJAR MEMORI OTOMATIS:
-Jika dalam obrolan pengguna membagikan informasi baru tentang dirinya (seperti pekerjaan, nama pacar, kendaraan, tempat kos, target baru, kebiasaan, dsb), cantumkan tag rahasia berikut di paling akhir responmu:
-[AUTO_LEARN: <fakta ringkas yang perlu diingat secara permanen>]
+Pengguna dapat berbicara bebas menggunakan suara (Voice Prompt) mengenai topik apa saja, termasuk hal pribadi atau curhat yang tidak ada kaitannya dengan transaksi keuangan.
+Setiap kali pengguna membagikan informasi baru tentang dirinya (seperti pekerjaan, curhat, pacar/pasangan, kendaraan, tempat tinggal/kost, hobi, kebiasaan, laptop/gadget, atau target hidup), kamu WAJIB mencantumkan tag rahasia berikut di paling akhir responmu:
+[AUTO_LEARN: <fakta ringkas yang perlu diingat AI secara permanen>]
+Contoh: [AUTO_LEARN: Pengguna memiliki motor Honda Vario merah]
+Contoh: [AUTO_LEARN: Pacar pengguna bernama Sarah]
 Contoh: [AUTO_LEARN: Pengguna kost di daerah Kebon Jeruk dengan biaya 850rb per bulan]
+Fakta ini otomatis disimpan di memori eksklusif akun pengguna saat ini.
 
 PANDUAN MENJAWAB:
 1. Gunakan Bahasa Indonesia yang cerdas, ramah, luwes, dan berwawasan luas.
@@ -351,16 +355,38 @@ function smartLocalFinancialReasoning(
     return `Saat ini hari **${nowWIB.dayName}**, tanggal **${nowWIB.date} ${nowWIB.monthName} ${nowWIB.year}**, pukul **${nowWIB.timeString} WIB** (Waktu Indonesia Barat). Ada transaksi atau hal keuangan yang ingin kamu periksa?`;
   }
 
-  // Auto-detect and store facts in local brain
+  // Auto-detect and store facts in local brain (isolated by user_id/Google account)
+  let newlyLearnedFact: string | null = null;
   if (context.addMemory) {
-    if (lower.startsWith('saya punya ') || lower.startsWith('aku punya ') || lower.startsWith('motor saya ') || lower.startsWith('pacar saya ') || lower.startsWith('kos saya ')) {
-      context.addMemory({
-        user_id: profile.id,
-        type: 'context',
-        content: cleanPrompt,
-        importance: 3,
-      });
+    const isPersonalFact =
+      /(?:saya|aku|motor|pacar|kos|kost|mobil|kerja|hobi|gaji|tabungan|target|keluarga|teman|kuliah|kantor|laptop|hp|rumah|suka|senang|capek|lelah)\b/i.test(lower) &&
+      !lower.startsWith('siapakah ') &&
+      !lower.startsWith('siapa ') &&
+      !lower.startsWith('apa ') &&
+      !lower.startsWith('berapa ') &&
+      !lower.startsWith('bagaimana ') &&
+      !lower.startsWith('kenapa ') &&
+      !lower.includes('?') &&
+      cleanPrompt.length >= 6 &&
+      cleanPrompt.length <= 160;
+
+    if (isPersonalFact) {
+      const exists = (memories || []).some((m) => m.content.toLowerCase() === cleanPrompt.toLowerCase());
+      if (!exists) {
+        newlyLearnedFact = cleanPrompt;
+        context.addMemory({
+          user_id: profile.id,
+          type: 'context',
+          content: cleanPrompt,
+          importance: 3,
+        });
+      }
     }
+  }
+
+  // Response for newly shared personal facts
+  if (newlyLearnedFact) {
+    return `Terima kasih sudah berbagi, ${firstName}! Saya sudah mencatat dan menyimpan fakta ini ke dalam memori pribadi akun kamu: **"${newlyLearnedFact}"**.\n\nSaya akan mengingatnya di setiap percakapan kita berikutnya. Ada hal lain yang ingin kamu ceritakan atau tanyakan?`;
   }
 
   // 1. Siapakah Aku / Data Pengguna / Profil Terhubung
