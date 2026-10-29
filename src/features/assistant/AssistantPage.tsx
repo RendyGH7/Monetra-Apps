@@ -24,6 +24,8 @@ export const AssistantPage: React.FC = () => {
     addTransaction,
     addMemory,
     showToast,
+    assistantInitialPrompt,
+    setAssistantInitialPrompt,
   } = useAppStore();
 
   const [input, setInput] = useState('');
@@ -33,6 +35,14 @@ export const AssistantPage: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Pre-fill input if navigated from Insight or other prompt trigger
+  useEffect(() => {
+    if (assistantInitialPrompt) {
+      setInput(assistantInitialPrompt);
+      setAssistantInitialPrompt(null);
+    }
+  }, [assistantInitialPrompt, setAssistantInitialPrompt]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

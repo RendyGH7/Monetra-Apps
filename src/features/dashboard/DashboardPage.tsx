@@ -45,15 +45,19 @@ import {
   MONTHS_ID,
   MONTHS_SHORT_ID,
 } from '../../utils/format';
+import { getDailyInsight } from '../../utils/dailyInsight';
 
 export const DashboardPage: React.FC = () => {
   const {
     profile,
     transactions,
     categories,
+    wallets,
+    goals,
     setVoiceModalOpen,
     setQuickManualOpen,
     setActiveTab,
+    setAssistantInitialPrompt,
   } = useAppStore();
 
   // ── Live Clock (WIB UTC+7) ──────────────────────────────────────────────
@@ -111,9 +115,17 @@ export const DashboardPage: React.FC = () => {
     color: chartPalette[i % chartPalette.length],
   }));
 
-  const dateSpending = expenseByCategory['Kencan & Pacaran'] || 0;
-  const dateBudgetMonth = profile.dating_budget_est || 600000;
-  const isDatingOver = dateSpending > dateBudgetMonth;
+  // ── Intelligent Daily AI Insight (Refreshes automatically at 12:00 AM WIB) ──
+  const dailyInsight = useMemo(() => {
+    return getDailyInsight({
+      currentTimestamp,
+      profile,
+      transactions,
+      categories,
+      wallets,
+      goals,
+    });
+  }, [currentTimestamp, profile, transactions, categories, wallets, goals]);
 
   type StatPeriod = 'week' | 'month' | 'year';
   const [statPeriod, setStatPeriod] = useState<StatPeriod>('week');
@@ -626,39 +638,51 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Daily Insight Card */}
+      {/* AI Daily Insight Card - Berputar otomatis setiap hari jam 12 malam WIB */}
       <div className="card-lift glass-2 p-4 sm:p-5 rounded-2xl border-[rgba(205,225,245,0.15)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0 mt-0.5">
+        <div className="flex items-start gap-3.5 min-w-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+            dailyInsight.badgeType === 'warning'
+              ? 'bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-[#EE5D6C]'
+              : dailyInsight.badgeType === 'celebration'
+              ? 'bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4]'
+              : 'bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E]'
+          }`}>
             <Sparkles size={18} />
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-[#E39A5E]">
                 Insight AI Hari Ini
               </span>
-              {isDatingOver && (
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#EE5D6C]/20 text-[#EE5D6C] font-medium flex items-center gap-1">
-                  <AlertTriangle size={11} />
-                  <span>Pos Kencan Melebihi Batas</span>
-                </span>
-              )}
+              <span className="text-[10px] text-[var(--text-secondary)] font-medium">
+                · {dailyInsight.dayName}
+              </span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium flex items-center gap-1 ${
+                dailyInsight.badgeType === 'warning'
+                  ? 'bg-[#EE5D6C]/20 text-[#EE5D6C] border border-[#EE5D6C]/40'
+                  : dailyInsight.badgeType === 'celebration'
+                  ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] border border-[#4FD3A4]/40'
+                  : 'bg-white/[0.06] text-[#EEF2F6] border border-white/[0.08]'
+              }`}>
+                {dailyInsight.badgeType === 'warning' && <AlertTriangle size={11} />}
+                <span>{dailyInsight.badge}</span>
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-[#EEF2F6] leading-relaxed">
-              {transactions.length === 0
-                ? 'Belum ada transaksi tercatat. Mulai rekam pengeluaran harianmu dengan suara atau input manual untuk mendapatkan evaluasi finansial cerdas dari FinAI.'
-                : dateSpending > 0
-                ? `Total pengeluaran kencan bulan ini mencapai ${formatCurrency(dateSpending)}. Pantau terus arus kas harianmu agar keuangan tetap sehat.`
-                : 'Arus kas harianmu masih terpantau aman. Pertahankan kebiasaan mencatat transaksi secara rutin.'}
+              {dailyInsight.message}
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => setActiveTab('asisten')}
-          className="btn-primary group self-end sm:self-center shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25"
-          title="Buka Asisten FinAI"
+          onClick={() => {
+            setAssistantInitialPrompt(dailyInsight.suggestedPrompt);
+            setActiveTab('asisten');
+          }}
+          className="btn-primary group self-end sm:self-center shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25 hover:brightness-105 active:scale-95 transition-all"
+          title={`Tanyakan ini ke FinAI: "${dailyInsight.suggestedPrompt}"`}
         >
           <Sparkles size={14} className="transition-transform duration-300 group-hover:rotate-12" />
           <span>Tanya FinAI</span>

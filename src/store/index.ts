@@ -56,6 +56,8 @@ interface AppState {
   setQuickManualOpen: (open: boolean) => void;
   setAuthLoading: (v: boolean) => void;
   setAuthUser: (user: AuthUser | null) => void;
+  assistantInitialPrompt: string | null;
+  setAssistantInitialPrompt: (prompt: string | null) => void;
 
   updateProfile: (updates: Partial<UserProfile>) => void;
   addTransaction: (tx: Omit<Transaction, 'id' | 'created_at'>) => void;
@@ -165,6 +167,8 @@ export const useAppStore = create<AppState>((set, get) => {
     quickManualOpen: false,
     toast: null,
     lastDeletedTransaction: null,
+    assistantInitialPrompt: null,
+    setAssistantInitialPrompt: (prompt) => set({ assistantInitialPrompt: prompt }),
 
     setActiveTab: (tab) => set({ activeTab: tab }),
 
