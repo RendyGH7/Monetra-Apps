@@ -9,6 +9,9 @@ import {
   User,
   Check,
   RotateCcw,
+  Calendar,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
@@ -156,49 +159,126 @@ export const SettingsPage: React.FC = () => {
           <form onSubmit={handleSaveProfile} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-[#A3AFBC]">Nama Lengkap</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl glass-2 text-xs text-[#EEF2F6] mt-1 outline-none focus:border-[#E39A5E]"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[#A3AFBC]">Gaji Pokok Magang (Rp)</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value.replace(/[^\d]/g, ''))}
-                className="w-full h-10 px-3 rounded-xl glass-2 text-xs text-[#EEF2F6] mt-1 outline-none focus:border-[#E39A5E]"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[#A3AFBC]">Tanggal Gajian</label>
-              <input
-                type="number"
-                min={1}
-                max={31}
-                value={payDay}
-                onChange={(e) => setPayDay(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl glass-2 text-xs text-[#EEF2F6] mt-1 outline-none focus:border-[#E39A5E]"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[#A3AFBC]">Target Budget Kencan Bulanan (Rp)</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={datingBudget}
-                onChange={(e) => setDatingBudget(e.target.value.replace(/[^\d]/g, ''))}
-                className="w-full h-10 px-3 rounded-xl glass-2 text-xs text-[#EEF2F6] mt-1 outline-none focus:border-[#E39A5E]"
-              />
+              <div className="relative flex items-center mt-1">
+                <span className="absolute left-3 text-[#A3AFBC] pointer-events-none">
+                  <User size={14} />
+                </span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nama Pengguna"
+                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+                />
+              </div>
             </div>
 
-            <div className="sm:col-span-2 flex justify-end">
+            <div>
+              <label className="text-xs text-[#A3AFBC]">Gaji Pokok / Pemasukan Bulanan</label>
+              <div className="relative flex items-center mt-1">
+                <span className="absolute left-3 text-xs font-bold text-[#E39A5E] pointer-events-none">Rp</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={salary ? new Intl.NumberFormat('id-ID').format(Number(salary)) : ''}
+                  onChange={(e) => setSalary(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="0"
+                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] font-semibold num-tabular outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-[#A3AFBC]">Tanggal Gajian Bulanan</label>
+                <span className="text-[10px] text-[#E39A5E] font-medium num-tabular">
+                  Tiap tgl {payDay || 25}
+                </span>
+              </div>
+              <div className="relative flex items-center mt-1">
+                <div className="absolute left-3 text-[#E39A5E] flex items-center justify-center pointer-events-none">
+                  <Calendar size={14} />
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={payDay}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    const num = parseInt(val, 10);
+                    if (!val) setPayDay('');
+                    else if (num >= 1 && num <= 31) setPayDay(String(num));
+                    else if (num > 31) setPayDay('31');
+                  }}
+                  placeholder="25"
+                  className="w-full h-10 pl-9 pr-20 rounded-xl glass-2 text-xs text-[#EEF2F6] font-semibold num-tabular outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+                />
+                <div className="absolute right-1.5 flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = parseInt(payDay, 10) || 25;
+                      const next = cur > 1 ? cur - 1 : 31;
+                      setPayDay(String(next));
+                    }}
+                    className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-[#E39A5E]/20 text-[#A3AFBC] hover:text-[#E39A5E] border border-white/[0.08] hover:border-[#E39A5E]/40 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-xs"
+                    title="Kurangi tanggal"
+                  >
+                    <ChevronDown size={13} strokeWidth={2.5} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = parseInt(payDay, 10) || 25;
+                      const next = cur < 31 ? cur + 1 : 1;
+                      setPayDay(String(next));
+                    }}
+                    className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-[#E39A5E]/20 text-[#A3AFBC] hover:text-[#E39A5E] border border-white/[0.08] hover:border-[#E39A5E]/40 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-xs"
+                    title="Tambah tanggal"
+                  >
+                    <ChevronUp size={13} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+              {/* Quick shortcut chips */}
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className="text-[10px] text-[#74808E]">Umum:</span>
+                {[1, 25, 28, 30].map((day) => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => setPayDay(String(day))}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
+                      Number(payDay) === day
+                        ? 'bg-[#E39A5E]/25 text-[#E39A5E] border border-[#E39A5E]/50 font-bold shadow-xs'
+                        : 'bg-white/[0.04] text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.08] border border-white/[0.06]'
+                    }`}
+                  >
+                    Tgl {day}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="sm:col-span-1">
+              <label className="text-xs text-[#A3AFBC]">Target Budget Kencan Bulanan</label>
+              <div className="relative flex items-center mt-1">
+                <span className="absolute left-3 text-xs font-bold text-[#E39A5E] pointer-events-none">Rp</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={datingBudget ? new Intl.NumberFormat('id-ID').format(Number(datingBudget)) : ''}
+                  onChange={(e) => setDatingBudget(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="0"
+                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] font-semibold num-tabular outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-2 flex justify-end pt-1">
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-[#E39A5E] text-[#1C0E04] text-xs font-semibold hover:brightness-105 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold hover:brightness-105 active:scale-95 transition-all cursor-pointer shadow-md shadow-black/25"
               >
                 Simpan Perubahan
               </button>

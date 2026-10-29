@@ -622,6 +622,17 @@ input[type="submit"],
   background-color: rgba(217, 119, 6, 0.14) !important;
 }
 
+/* Hide ugly default browser number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 /* Form inputs & selects */
 [data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="light"] textarea,
