@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import { useAppStore } from './store';
 import { supabase } from './lib/supabase';
 import { SidebarNav } from './components/layout/SidebarNav';
@@ -20,6 +21,9 @@ export default function App() {
     authLoading,
     authUser,
     theme,
+    profile,
+    setActiveTab,
+    toggleTheme,
     setAuthLoading,
     setAuthUser,
     syncWithSupabaseUser,
@@ -131,8 +135,65 @@ export default function App() {
       {/* Desktop Sidebar */}
       <SidebarNav />
 
+      {/* Mobile Top App Bar (Header HP) */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-30 px-4 py-2.5 bg-[var(--bg-base)]/85 border-b border-[var(--glass-border)] flex items-center justify-between backdrop-blur-xl">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center font-bold font-display text-xs shadow-md shadow-black/25">
+            F
+          </div>
+          <div>
+            <h1 className="text-xs font-bold font-display text-[var(--text-primary)] leading-tight tracking-tight">FinAI</h1>
+            <p className="text-[10px] text-[var(--text-secondary)] leading-none">
+              {activeTab === 'beranda'
+                ? 'Beranda'
+                : activeTab === 'transaksi'
+                ? 'Transaksi'
+                : activeTab === 'statistik'
+                ? 'Statistik & Analisis'
+                : activeTab === 'asisten'
+                ? 'Asisten FinAI'
+                : activeTab === 'budget'
+                ? 'Budget & Target'
+                : 'Pengaturan & Akun'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-xl glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center cursor-pointer transition-colors"
+            title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+
+          {/* User Profile Avatar -> Tap to open Pengaturan */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('pengaturan')}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer ${
+              activeTab === 'pengaturan'
+                ? 'ring-2 ring-[#E39A5E] shadow-sm'
+                : 'border border-[var(--glass-border)]'
+            }`}
+            title="Buka Pengaturan & Akun"
+          >
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.nama} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs">
+                {(profile.nama || 'U').charAt(0).toUpperCase()}
+              </div>
+            )}
+          </button>
+        </div>
+      </header>
+
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 z-10 px-4 sm:px-6 md:px-8 pt-6 pb-28 sm:pb-32 md:pb-8">
+      <main className="flex-1 min-w-0 z-10 px-4 sm:px-6 md:px-8 pt-16 md:pt-6 pb-28 sm:pb-32 md:pb-8">
         {renderActiveView()}
       </main>
 

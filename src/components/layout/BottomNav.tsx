@@ -19,29 +19,29 @@ export const BottomNav: React.FC = () => {
     { key: 'mic', label: 'Bicara', icon: Mic, isMic: true },
     { key: 'statistik', label: 'Statistik', icon: BarChart3 },
     { key: 'asisten', label: 'Asisten', icon: Bot },
-    { key: 'pengaturan', label: 'Pengaturan', icon: Settings },
+    { key: 'pengaturan', label: 'Akun', icon: Settings },
   ];
 
   return (
     <nav
       aria-label="Navigasi bawah ponsel"
-      className="md:hidden fixed bottom-3 inset-x-3 z-40 max-w-md mx-auto pointer-events-none"
+      className="md:hidden fixed bottom-2.5 inset-x-2 z-40 max-w-lg mx-auto pointer-events-none"
     >
-      <div className="pointer-events-auto glass-3 rounded-[24px] border border-[var(--glass-border)] shadow-2xl backdrop-blur-xl flex items-center justify-between h-[66px] px-1 relative">
+      <div className="pointer-events-auto glass-3 rounded-[24px] border border-[var(--glass-border)] shadow-2xl backdrop-blur-xl flex items-center justify-between h-[64px] px-1 relative">
         {navItems.map((item) => {
           if (item.isMic) {
             return (
-              <div key="mic-center" className="flex-1 flex flex-col items-center justify-center relative -top-3.5">
+              <div key="mic-center" className="flex-1 flex flex-col items-center justify-center relative -top-3">
                 <button
                   type="button"
                   onClick={() => setVoiceModalOpen(true)}
                   aria-label="Rekam Pengeluaran Suara"
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-[#E39A5E]/35 border-2 border-[rgba(235,245,255,0.3)] ring-4 ring-[var(--bg-base)] active:scale-90 transition-transform duration-150 cursor-pointer"
+                  className="w-11 h-11 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-[#E39A5E]/35 border-2 border-[rgba(235,245,255,0.3)] ring-4 ring-[var(--bg-base)] active:scale-90 transition-transform duration-150 cursor-pointer"
                   title="Bicara untuk Catat Transaksi"
                 >
-                  <Mic size={22} strokeWidth={2.4} />
+                  <Mic size={20} strokeWidth={2.4} />
                 </button>
-                <span className="text-[10px] font-bold text-[#E39A5E] tracking-tight mt-1">
+                <span className="text-[9px] font-bold text-[#E39A5E] tracking-tight mt-1 leading-none">
                   Bicara
                 </span>
               </div>
@@ -57,7 +57,7 @@ export const BottomNav: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(item.key as NavTabKey)}
               aria-label={item.label}
-              className="flex-1 h-full flex flex-col items-center justify-center py-1 select-none cursor-pointer relative group transition-transform active:scale-92"
+              className="flex-1 min-w-0 h-full flex flex-col items-center justify-center py-1 select-none cursor-pointer relative group transition-transform active:scale-92"
             >
               {/* Icon Container with smooth active glow */}
               <div
@@ -68,15 +68,15 @@ export const BottomNav: React.FC = () => {
                 }`}
               >
                 <Icon
-                  size={19}
-                  strokeWidth={isActive ? 2.4 : 1.8}
+                  size={18}
+                  strokeWidth={isActive ? 2.3 : 1.75}
                   style={{ transition: 'stroke-width 0.15s ease' }}
                 />
               </div>
 
               {/* Label */}
               <span
-                className={`text-[10px] tracking-tight mt-0.5 transition-colors duration-150 ${
+                className={`text-[9px] tracking-tight mt-0.5 leading-none transition-colors duration-150 truncate max-w-[46px] ${
                   isActive
                     ? 'font-bold text-[var(--accent)]'
                     : 'font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'
