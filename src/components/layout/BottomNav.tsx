@@ -23,22 +23,23 @@ export const BottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Navigasi bawah ponsel"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2"
+      className="md:hidden fixed bottom-3 inset-x-3 z-40 max-w-md mx-auto pointer-events-none"
     >
-      <div className="glass-3 max-w-lg mx-auto flex items-center justify-around h-16 px-2 relative border border-[var(--glass-border)]">
+      <div className="pointer-events-auto glass-3 rounded-[24px] border border-[var(--glass-border)] shadow-2xl backdrop-blur-xl flex items-center justify-between h-[66px] px-1 relative">
         {navItems.map((item) => {
           if (item.isMic) {
             return (
-              <div key="mic-center" className="relative -top-5 flex flex-col items-center">
+              <div key="mic-center" className="flex-1 flex flex-col items-center justify-center relative -top-3.5">
                 <button
                   type="button"
                   onClick={() => setVoiceModalOpen(true)}
                   aria-label="Rekam Pengeluaran Suara"
-                  className="btn-primary w-[66px] h-[66px] rounded-full bg-gradient-to-b from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-black/40 border-2 border-[rgba(235,245,255,0.25)] cursor-pointer"
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-[#E39A5E]/35 border-2 border-[rgba(235,245,255,0.3)] ring-4 ring-[var(--bg-base)] active:scale-90 transition-transform duration-150 cursor-pointer"
+                  title="Bicara untuk Catat Transaksi"
                 >
-                  <Mic size={28} strokeWidth={2.2} />
+                  <Mic size={22} strokeWidth={2.4} />
                 </button>
-                <span className="text-[10px] font-medium text-[#E39A5E] mt-0.5 tracking-tight">
+                <span className="text-[10px] font-bold text-[#E39A5E] tracking-tight mt-1">
                   Bicara
                 </span>
               </div>
@@ -54,38 +55,42 @@ export const BottomNav: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(item.key as NavTabKey)}
               aria-label={item.label}
-              className={`chip-press relative flex flex-col items-center justify-center min-w-[56px] py-1 transition-colors ${
-                isActive ? 'text-[#E39A5E]' : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
-              }`}
+              className="flex-1 h-full flex flex-col items-center justify-center py-1 select-none cursor-pointer relative group transition-transform active:scale-92"
             >
-              {/* Active indicator dot above icon */}
-              <span
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-[#E39A5E] origin-center"
-                style={{
-                  transform: `translateX(-50%) scaleX(${isActive ? 1 : 0})`,
-                  transition: 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
-                  opacity: isActive ? 1 : 0,
-                }}
-              />
+              {/* Icon Container with smooth active glow */}
               <div
-                className="p-1 rounded-xl"
-                style={{
-                  background: isActive ? 'rgba(227,154,94,0.15)' : 'transparent',
-                  transition: 'background 0.18s ease',
-                }}
+                className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center ${
+                  isActive
+                    ? 'bg-[var(--accent-soft)] text-[var(--accent)] scale-105'
+                    : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'
+                }`}
               >
                 <Icon
-                  size={20}
-                  strokeWidth={isActive ? 2.2 : 1.75}
+                  size={19}
+                  strokeWidth={isActive ? 2.4 : 1.8}
                   style={{ transition: 'stroke-width 0.15s ease' }}
                 />
               </div>
+
+              {/* Label */}
               <span
-                className={`text-[11px] mt-0.5 ${isActive ? 'font-semibold text-[#EEF2F6]' : 'font-normal'}`}
-                style={{ transition: 'color 0.15s ease' }}
+                className={`text-[10px] tracking-tight mt-0.5 transition-colors duration-150 ${
+                  isActive
+                    ? 'font-bold text-[var(--accent)]'
+                    : 'font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'
+                }`}
               >
                 {item.label}
               </span>
+
+              {/* Minimalist active dot */}
+              <span
+                className="w-1 h-1 rounded-full bg-[var(--accent)] mt-0.5 transition-all duration-200"
+                style={{
+                  transform: isActive ? 'scale(1)' : 'scale(0)',
+                  opacity: isActive ? 1 : 0,
+                }}
+              />
             </button>
           );
         })}

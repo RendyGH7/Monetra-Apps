@@ -107,7 +107,12 @@ export default function App() {
   if (!authUser) {
     return (
       <>
-        <AuthScreen onContinueAsGuest={() => setAuthUser({ id: 'guest' })} />
+        <AuthScreen
+          onContinueAsGuest={() => {
+            setAuthUser({ id: 'guest', name: 'Tamu' });
+            syncWithSupabaseUser('guest', 'tamu@monetra.app', 'Tamu Monetra');
+          }}
+        />
         <Toast />
       </>
     );
@@ -127,7 +132,7 @@ export default function App() {
       <SidebarNav />
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 z-10 px-4 sm:px-6 md:px-8 pt-6 pb-20 md:pb-8">
+      <main className="flex-1 min-w-0 z-10 px-4 sm:px-6 md:px-8 pt-6 pb-28 sm:pb-32 md:pb-8">
         {renderActiveView()}
       </main>
 

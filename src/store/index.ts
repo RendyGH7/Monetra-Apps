@@ -78,24 +78,59 @@ interface AppState {
   signOut: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'finai_state_v1';
+const GLOBAL_THEME_KEY = 'finai_theme_pref';
+const LEGACY_STORAGE_KEY = 'finai_state_v1';
 
-function loadStoredState(): Partial<AppState> {
+export function getUserStorageKey(userId?: string | null): string {
+  if (!userId || userId === 'guest' || userId === 'default') return 'finai_user_guest';
+  const cleanId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `finai_user_${cleanId}`;
+}
+
+export function loadUserData(userId?: string | null): Partial<AppState> | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    const key = getUserStorageKey(userId);
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+    // If no user-specific key exists and user is guest, check legacy storage
+    if ((!userId || userId === 'guest') && localStorage.getItem(LEGACY_STORAGE_KEY)) {
+      const leg = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || '{}');
+      return leg;
+    }
+    return null;
   } catch {
-    return {};
+    return null;
+  }
+}
+
+export function saveUserData(userId: string | null | undefined, state: AppState): void {
+  try {
+    const key = getUserStorageKey(userId);
+    const dataToPersist = {
+      profile: state.profile,
+      categories: state.categories,
+      wallets: state.wallets,
+      transactions: state.transactions,
+      goals: state.goals,
+      memories: state.memories,
+      chatMessages: state.chatMessages,
+    };
+    localStorage.setItem(key, JSON.stringify(dataToPersist));
+  } catch (e) {
+    console.warn('Failed to save user data:', e);
   }
 }
 
 export const useAppStore = create<AppState>((set, get) => {
-  const saved = loadStoredState();
+  // Load initial guest or saved state
+  const saved = loadUserData('guest') || {};
+  const savedTheme = (localStorage.getItem(GLOBAL_THEME_KEY) as 'dark' | 'light') || saved.theme || 'dark';
 
   const initialState: AppState = {
     activeTab: 'beranda',
-    theme: saved.theme || 'dark',
+    theme: savedTheme,
     sidebarCollapsed: saved.sidebarCollapsed ?? false,
     authLoading: true,
     authUser: null,
@@ -111,7 +146,7 @@ export const useAppStore = create<AppState>((set, get) => {
         user_id: 'default',
         role: 'assistant',
         content:
-          'Halo Rendy. Saya FinAI, asisten keuangan pribadi kamu. Saya memantau keuangan magang dan jadwal nge-date kamu agar tetap seimbang dan aman. Kamu bisa langsung tekan tombol mikrofon atau ketik pengeluaran hari ini.',
+          'Halo! Saya FinAI, pusat kecerdasan finansialmu. Saya memantau keuangan, dompet, dan targetmu secara otomatis. Tekan tombol mikrofon atau ketik pesan untuk mulai.',
         created_at: new Date().toISOString(),
       },
     ],
@@ -125,25 +160,16 @@ export const useAppStore = create<AppState>((set, get) => {
     toggleTheme: () => {
       const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', nextTheme);
-      set((state) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, theme: nextTheme }));
-        return { theme: nextTheme };
-      });
+      localStorage.setItem(GLOBAL_THEME_KEY, nextTheme);
+      set({ theme: nextTheme });
     },
 
     toggleSidebar: () => {
-      set((state) => {
-        const next = !state.sidebarCollapsed;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, sidebarCollapsed: next }));
-        return { sidebarCollapsed: next };
-      });
+      set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed }));
     },
 
     setSidebarCollapsed: (collapsed: boolean) => {
-      set((state) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, sidebarCollapsed: collapsed }));
-        return { sidebarCollapsed: collapsed };
-      });
+      set({ sidebarCollapsed: collapsed });
     },
 
     showToast: (message, onUndo) => {
@@ -165,9 +191,10 @@ export const useAppStore = create<AppState>((set, get) => {
     updateProfile: (updates) => {
       set((state) => {
         const newProfile = { ...state.profile, ...updates };
-        const newState = { profile: newProfile };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...newState }));
-        return newState;
+        const next = { profile: newProfile };
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, ...next });
+        return next;
       });
     },
 
@@ -195,7 +222,8 @@ export const useAppStore = create<AppState>((set, get) => {
           transactions: updated,
           wallets: updatedWallets,
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...next }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, ...next });
         return next;
       });
 
@@ -224,7 +252,8 @@ export const useAppStore = create<AppState>((set, get) => {
           wallets: updatedWallets,
           lastDeletedTransaction: tx,
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...next }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, ...next });
         return next;
       });
 
@@ -244,7 +273,8 @@ export const useAppStore = create<AppState>((set, get) => {
           t.id === id ? { ...t, ...updates, note: updates.note ? stripEmoji(updates.note) : t.note } : t
         );
         const next = { transactions: nextTx };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...next }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, ...next });
         return next;
       });
       get().showToast('Transaksi diperbarui.');
@@ -258,7 +288,8 @@ export const useAppStore = create<AppState>((set, get) => {
       };
       set((state) => {
         const updated = [...state.categories, newCat];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, categories: updated }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, categories: updated });
         return { categories: updated };
       });
     },
@@ -271,7 +302,8 @@ export const useAppStore = create<AppState>((set, get) => {
       };
       set((state) => {
         const updated = [...state.goals, newGoal];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, goals: updated }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, goals: updated });
         return { goals: updated };
       });
       get().showToast('Target tabungan berhasil ditambahkan.');
@@ -282,7 +314,8 @@ export const useAppStore = create<AppState>((set, get) => {
         const updated = state.goals.map((g) =>
           g.id === id ? { ...g, current_amount: g.current_amount + amount } : g
         );
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, goals: updated }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, goals: updated });
         return { goals: updated };
       });
       get().showToast('Progres tabungan diperbarui.');
@@ -297,7 +330,8 @@ export const useAppStore = create<AppState>((set, get) => {
       };
       set((state) => {
         const updated = [newMem, ...state.memories];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, memories: updated }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, memories: updated });
         return { memories: updated };
       });
       get().showToast('Fakta memori baru disimpan oleh AI.');
@@ -306,7 +340,8 @@ export const useAppStore = create<AppState>((set, get) => {
     deleteMemory: (id) => {
       set((state) => {
         const filtered = state.memories.filter((m) => m.id !== id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, memories: filtered }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, memories: filtered });
         return { memories: filtered };
       });
       get().showToast('Memori AI dihapus.');
@@ -317,7 +352,8 @@ export const useAppStore = create<AppState>((set, get) => {
         const updated = state.memories.map((m) =>
           m.id === id ? { ...m, content: stripEmoji(content), updated_at: new Date().toISOString() } : m
         );
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, memories: updated }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, memories: updated });
         return { memories: updated };
       });
       get().showToast('Memori AI diperbarui.');
@@ -333,7 +369,8 @@ export const useAppStore = create<AppState>((set, get) => {
       };
       set((state) => {
         const updated = [...state.chatMessages, newMsg];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, chatMessages: updated }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, chatMessages: updated });
         return { chatMessages: updated };
       });
     },
@@ -349,28 +386,149 @@ export const useAppStore = create<AppState>((set, get) => {
             created_at: new Date().toISOString(),
           },
         ];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, chatMessages: initial }));
+        const uid = state.authUser?.id || state.profile.id;
+        saveUserData(uid, { ...state, chatMessages: initial });
         return { chatMessages: initial };
       });
     },
 
     syncWithSupabaseUser: async (userId, email, name, avatarUrl) => {
-      set((state) => {
-        const updatedProfile: UserProfile = {
-          ...state.profile,
+      // 1. Check if this Google user has their own isolated data saved
+      const savedUser = loadUserData(userId);
+      const authUserObj: AuthUser = { id: userId, email, name, avatar_url: avatarUrl };
+
+      if (savedUser && savedUser.profile) {
+        // Restore full isolated state for this Google account
+        const restoredProfile: UserProfile = {
+          ...savedUser.profile,
           id: userId,
-          email: email || state.profile.email,
-          nama: name || state.profile.nama,
-          avatar_url: avatarUrl || state.profile.avatar_url,
+          email: email || savedUser.profile.email,
+          nama: name || savedUser.profile.nama || 'Pengguna',
+          avatar_url: avatarUrl || savedUser.profile.avatar_url,
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, profile: updatedProfile }));
-        return { profile: updatedProfile };
-      });
+
+        const nextState = {
+          authUser: authUserObj,
+          profile: restoredProfile,
+          categories: savedUser.categories || INITIAL_CATEGORIES,
+          wallets: savedUser.wallets || INITIAL_WALLETS,
+          transactions: savedUser.transactions || [],
+          goals: savedUser.goals || [],
+          memories: savedUser.memories || [
+            {
+              id: 'mem-google-' + userId,
+              user_id: userId,
+              type: 'profile' as const,
+              content: `Akun Google terverifikasi: ${name || 'Pengguna'} (${email || '-'}).`,
+              importance: 3,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+          chatMessages: savedUser.chatMessages || [
+            {
+              id: 'msg-welcome-' + Date.now(),
+              user_id: userId,
+              role: 'assistant' as const,
+              content: `Halo ${name ? name.split(' ')[0] : 'kamu'}! Seluruh data keuangan, dompet, target tabungan, dan memori akun Google kamu telah tersambung aman. Ada yang ingin kamu tanyakan atau catat hari ini?`,
+              created_at: new Date().toISOString(),
+            },
+          ],
+        };
+
+        set(nextState);
+        saveUserData(userId, get());
+      } else {
+        // First time login with this Google account: initialize fresh, dedicated sandbox
+        const cleanName = name || 'Pengguna FinAI';
+        const newProfile: UserProfile = {
+          ...INITIAL_PROFILE,
+          id: userId,
+          email: email || '',
+          nama: cleanName,
+          avatar_url: avatarUrl || '',
+        };
+
+        const newMemories: AIMemory[] = [
+          {
+            id: 'mem-google-' + userId,
+            user_id: userId,
+            type: 'profile',
+            content: `Akun Google terverifikasi: ${cleanName} (${email || '-'}). Profil aktif.`,
+            importance: 3,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'mem-job-' + userId,
+            user_id: userId,
+            type: 'habit',
+            content: `Pekerjaan: Anak magang dengan gaji pokok Rp 1.500.000 per bulan. Gajian tiap tanggal 25.`,
+            importance: 3,
+            updated_at: new Date().toISOString(),
+          },
+        ];
+
+        const newChat: ChatMessage[] = [
+          {
+            id: 'msg-welcome-new-' + Date.now(),
+            user_id: userId,
+            role: 'assistant',
+            content: `Halo ${cleanName.split(' ')[0]}! Saya FinAI, pusat kecerdasan finansialmu yang terhubung langsung ke akun Google kamu. Semua data transaksi, dompet, dan memori kamu tersimpan secara terisolasi khusus di akun ini. Tekan tombol mikrofon atau ketik pesan untuk mulai!`,
+            created_at: new Date().toISOString(),
+          },
+        ];
+
+        const nextState = {
+          authUser: authUserObj,
+          profile: newProfile,
+          categories: INITIAL_CATEGORIES,
+          wallets: INITIAL_WALLETS,
+          transactions: INITIAL_TRANSACTIONS,
+          goals: INITIAL_GOALS,
+          memories: newMemories,
+          chatMessages: newChat,
+        };
+
+        set(nextState);
+        saveUserData(userId, get());
+      }
     },
 
     signOut: async () => {
-      await supabase.auth.signOut();
-      set({ profile: INITIAL_PROFILE, authUser: null });
+      // 1. Save state of current user before switching
+      const cur = get();
+      const currentUid = cur.authUser?.id || cur.profile.id;
+      if (currentUid) {
+        saveUserData(currentUid, cur);
+      }
+
+      // 2. Sign out from Supabase
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('Supabase signOut error:', err);
+      }
+
+      // 3. Clear auth user and reset to clean guest state
+      const guestSaved = loadUserData('guest');
+      set({
+        authUser: null,
+        profile: guestSaved?.profile || INITIAL_PROFILE,
+        categories: guestSaved?.categories || INITIAL_CATEGORIES,
+        wallets: guestSaved?.wallets || INITIAL_WALLETS,
+        transactions: guestSaved?.transactions || [],
+        goals: guestSaved?.goals || [],
+        memories: guestSaved?.memories || [],
+        chatMessages: guestSaved?.chatMessages || [
+          {
+            id: 'msg-logged-out-' + Date.now(),
+            user_id: 'guest',
+            role: 'assistant',
+            content: 'Kamu telah keluar dari akun. Masuk kembali dengan akun Google kamu untuk mengakses data pribadimu.',
+            created_at: new Date().toISOString(),
+          },
+        ],
+      });
+
       get().showToast('Kamu telah keluar dari akun.');
     },
   };

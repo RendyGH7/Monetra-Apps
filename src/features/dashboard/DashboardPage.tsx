@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Plus,
   BarChart3,
+  ChevronRight,
 } from 'lucide-react';
 import {
   PieChart,
@@ -319,21 +320,25 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="btn-ghost px-3 py-2 rounded-xl glass-1 border border-white/[0.08] text-xs font-medium text-[#EEF2F6] flex items-center gap-1.5 cursor-pointer"
+            className="btn-press px-3.5 py-2 rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:border-[#E39A5E]/40 flex items-center gap-2 cursor-pointer shadow-xs"
+            title="Catat Transaksi Manual Cepat"
           >
-            <Plus size={15} />
+            <div className="w-5 h-5 rounded-md bg-[#E39A5E]/15 text-[#E39A5E] flex items-center justify-center">
+              <Plus size={13} strokeWidth={2.5} />
+            </div>
             <span>Catat Cepat</span>
           </button>
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/30"
+            className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25"
+            title="Rekam Pengeluaran via Suara"
           >
-            <Mic size={15} strokeWidth={2.2} />
+            <Mic size={15} strokeWidth={2.4} />
             <span>Bicara</span>
           </button>
         </div>
@@ -429,16 +434,16 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Minimalist Clean Period Switcher */}
-          <div className="flex items-center p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-xs self-start sm:self-auto">
+          <div className="flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs self-start sm:self-auto gap-1">
             {(['week', 'month', 'year'] as StatPeriod[]).map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setStatPeriod(p)}
-                className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                className={`chip-press px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-180 ${
                   statPeriod === p
-                    ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-sm'
-                    : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
+                    ? 'bg-[#E39A5E] text-[#1C0E04] shadow-md shadow-[#E39A5E]/20'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.06]'
                 }`}
               >
                 {p === 'week' ? 'Mingguan' : p === 'month' ? 'Bulanan' : 'Tahunan'}
@@ -447,70 +452,20 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 Minimalist Clean Metric Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--expense)' }} />
-              Pengeluaran
-            </div>
-            <p className="text-sm sm:text-base font-bold num-tabular mt-1" style={{ color: 'var(--expense)' }}>
-              {formatCurrency(periodStats.totalExpense)}
-            </p>
-          </div>
-
-          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--income)' }} />
-              Pemasukan
-            </div>
-            <p className="text-sm sm:text-base font-bold num-tabular mt-1" style={{ color: 'var(--income)' }}>
-              {formatCurrency(periodStats.totalIncome)}
-            </p>
-          </div>
-
-          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: periodStats.net >= 0 ? 'var(--income)' : 'var(--expense)' }}
-              />
-              Arus Bersih
-            </div>
-            <p
-              className="text-sm sm:text-base font-bold num-tabular mt-1"
-              style={{ color: periodStats.net >= 0 ? 'var(--income)' : 'var(--expense)' }}
-            >
-              {periodStats.net >= 0 ? '+' : ''}
-              {formatCurrency(periodStats.net)}
-            </p>
-          </div>
-
-          <div className="bg-white/[0.03] border border-white/[0.07] p-2.5 sm:p-3 rounded-xl transition-colors">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wider text-[#A3AFBC]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
-              {periodStats.avgLabel}
-            </div>
-            <p className="text-sm sm:text-base font-bold num-tabular mt-1 text-[#EEF2F6]">
-              {formatCurrency(periodStats.avgValue)}
-            </p>
-          </div>
-        </div>
-
         {/* Detailed Statistical Area & Line Chart */}
         <div className="pt-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-[#A3AFBC] mb-2 px-1 gap-2">
-            <span className="text-[11px] text-[#74808E]">
+            <span className="text-[11px] text-[var(--text-tertiary)]">
               Tren {periodStats.chartSubtitle}
             </span>
-            <div className="flex items-center gap-1 bg-white/[0.03] p-0.5 rounded-lg border border-white/[0.05] text-[10px] self-start sm:self-auto">
+            <div className="flex items-center gap-1.5 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] text-[11px] self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setChartMetric('all')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                className={`chip-press px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   chartMetric === 'all'
-                    ? 'bg-white/[0.1] text-[#EEF2F6] font-semibold shadow-xs'
-                    : 'text-[#74808E] hover:text-[#A3AFBC]'
+                    ? 'bg-white/[0.14] text-[var(--text-primary)] font-semibold shadow-xs'
+                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 Semua
@@ -518,10 +473,10 @@ export const DashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setChartMetric('expense')}
-                className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer ${
+                className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   chartMetric === 'expense'
-                    ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-xs'
-                    : 'text-[#74808E] hover:text-[#E39A5E]'
+                    ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border border-[#E39A5E]/40 shadow-xs'
+                    : 'text-[var(--text-tertiary)] hover:text-[#E39A5E]'
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
@@ -530,10 +485,10 @@ export const DashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setChartMetric('income')}
-                className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer ${
+                className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   chartMetric === 'income'
-                    ? 'bg-[#4FD3A4]/15 text-[#4FD3A4] font-semibold border border-[#4FD3A4]/30 shadow-xs'
-                    : 'text-[#74808E] hover:text-[#4FD3A4]'
+                    ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] font-semibold border border-[#4FD3A4]/40 shadow-xs'
+                    : 'text-[var(--text-tertiary)] hover:text-[#4FD3A4]'
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4]" />
@@ -623,10 +578,11 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('statistik')}
-            className="btn-ghost self-start sm:self-auto text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+            className="btn-press group self-start sm:self-auto px-3.5 py-1.5 rounded-xl border border-[#E39A5E]/30 bg-[#E39A5E]/10 text-xs text-[#E39A5E] hover:bg-[#E39A5E]/20 hover:border-[#E39A5E]/50 flex items-center gap-1.5 font-semibold cursor-pointer shadow-xs"
+            title="Buka halaman statistik lengkap"
           >
             <span>Buka Analisis Lengkap</span>
-            <ArrowRight size={13} />
+            <ArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-1" />
           </button>
         </div>
       </div>
@@ -658,11 +614,12 @@ export const DashboardPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('asisten')}
-          className="btn-ghost self-end sm:self-center shrink-0 px-3.5 py-2 rounded-xl glass-1 border border-[#E39A5E]/30 text-xs font-medium text-[#E39A5E] hover:bg-[#E39A5E]/10 flex items-center gap-1 cursor-pointer"
-          style={{ transition: 'background 0.15s ease, border-color 0.15s ease' }}
+          className="btn-primary group self-end sm:self-center shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25"
+          title="Buka Asisten FinAI"
         >
-          <span>Tanya Asisten AI</span>
-          <ArrowRight size={14} />
+          <Sparkles size={14} className="transition-transform duration-300 group-hover:rotate-12" />
+          <span>Tanya FinAI</span>
+          <ArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-1" />
         </button>
       </div>
 
@@ -675,12 +632,11 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('statistik')}
-              className="text-xs text-[#E39A5E] cursor-pointer"
-              style={{ transition: 'opacity 0.15s ease' }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+              className="btn-press text-xs font-semibold text-[#E39A5E] bg-[#E39A5E]/10 hover:bg-[#E39A5E]/20 border border-[#E39A5E]/25 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+              title="Buka Analisis Kategori"
             >
-              Lihat Detail
+              <span>Lihat Detail</span>
+              <ChevronRight size={13} />
             </button>
           </div>
 
@@ -751,12 +707,11 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('transaksi')}
-              className="text-xs text-[#E39A5E] cursor-pointer"
-              style={{ transition: 'opacity 0.15s ease' }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+              className="btn-press text-xs font-semibold text-[#E39A5E] bg-[#E39A5E]/10 hover:bg-[#E39A5E]/20 border border-[#E39A5E]/25 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+              title="Buka Halaman Transaksi"
             >
-              Semua Transaksi ({transactions.length})
+              <span>Semua Transaksi ({transactions.length})</span>
+              <ChevronRight size={13} />
             </button>
           </div>
 
@@ -768,11 +723,13 @@ export const DashboardPage: React.FC = () => {
               return (
                 <div
                   key={tx.id}
-                  className="animate-row-in card-lift glass-2 p-3 rounded-xl flex items-center justify-between gap-3 border border-[rgba(205,225,245,0.1)] hover:border-[#E39A5E]/30"
+                  onClick={() => setActiveTab('transaksi')}
+                  className="group animate-row-in card-interactive glass-2 p-3 rounded-xl flex items-center justify-between gap-3 border border-[rgba(205,225,245,0.1)] hover:border-[#E39A5E]/40 cursor-pointer"
                   style={{ animationDelay: `${idx * 0.05}s` }}
+                  title="Klik untuk membuka riwayat transaksi"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                       <CategoryIcon
                         name={cat?.name || 'circle-ellipsis'}
                         size={17}
@@ -780,7 +737,7 @@ export const DashboardPage: React.FC = () => {
                       />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-[#EEF2F6] truncate">
+                      <p className="text-xs sm:text-sm font-medium text-[#EEF2F6] truncate group-hover:text-[#E39A5E] transition-colors">
                         {tx.note}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -794,7 +751,7 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`text-xs sm:text-sm font-semibold num-tabular ${
                         isExpense ? 'text-[#EE5D6C]' : 'text-[#4FD3A4]'
@@ -803,6 +760,7 @@ export const DashboardPage: React.FC = () => {
                       {isExpense ? '-' : '+'}
                       {formatCurrency(tx.amount)}
                     </span>
+                    <ChevronRight size={14} className="text-[#A3AFBC] opacity-0 group-hover:opacity-100 transition-all -translate-x-1 group-hover:translate-x-0" />
                   </div>
                 </div>
               );

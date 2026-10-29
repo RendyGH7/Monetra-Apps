@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Brain,
-  Trash2,
   Edit2,
-  Plus,
   ShieldCheck,
   Download,
   AlertCircle,
@@ -17,16 +14,13 @@ import { supabase } from '../../lib/supabase';
 import { stripEmoji } from '../../utils/format';
 
 export const SettingsPage: React.FC = () => {
-  const { profile, memories, deleteMemory, addMemory, updateProfile, showToast, signOut, transactions } =
-    useAppStore();
+  const { profile, updateProfile, showToast, signOut, transactions } = useAppStore();
 
   const [editingProfile, setEditingProfile] = useState(false);
   const [name, setName] = useState(profile.nama);
   const [salary, setSalary] = useState(String(profile.monthly_income));
   const [payDay, setPayDay] = useState(String(profile.pay_day));
   const [datingBudget, setDatingBudget] = useState(String(profile.dating_budget_est));
-  const [newMemoryText, setNewMemoryText] = useState('');
-  const [addMemOpen, setAddMemOpen] = useState(false);
 
   useEffect(() => {
     setName(profile.nama);
@@ -45,20 +39,6 @@ export const SettingsPage: React.FC = () => {
     });
     setEditingProfile(false);
     showToast('Profil finansial diperbarui.');
-  };
-
-  const handleAddMemory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemoryText.trim()) return;
-
-    addMemory({
-      user_id: profile.id,
-      type: 'habit',
-      content: stripEmoji(newMemoryText),
-      importance: 3,
-    });
-    setNewMemoryText('');
-    setAddMemOpen(false);
   };
 
   const handleExportData = () => {
@@ -244,86 +224,6 @@ export const SettingsPage: React.FC = () => {
               <p className="font-semibold text-[#E39A5E] mt-0.5 truncate">{profile.side_hustle_status}</p>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* What AI Knows About Me (AI Memories) */}
-      <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain size={18} className="text-[#E39A5E]" />
-            <h2 className="text-sm font-semibold text-[#EEF2F6]">
-              Yang AI Ketahui Tentang Saya (Memori Pribadi)
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => setAddMemOpen(true)}
-            className="text-xs text-[#E39A5E] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Plus size={14} />
-            <span>Tambah Memori</span>
-          </button>
-        </div>
-
-        <p className="text-xs text-[#A3AFBC] leading-relaxed">
-          AI menggunakan memori terisolasi ini untuk memberikan analisis dan saran yang tepat sasaran. Kamu bebas menambah, mengubah, atau menghapus fakta kapan saja.
-        </p>
-
-        <div className="space-y-2.5">
-          {memories.map((mem) => (
-            <div
-              key={mem.id}
-              className="glass-2 p-3.5 rounded-xl border-[rgba(205,225,245,0.1)] flex items-start justify-between gap-3"
-            >
-              <div className="space-y-1">
-                <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.06] text-[#E39A5E] uppercase font-mono tracking-wider">
-                  {mem.type}
-                </span>
-                <p className="text-xs sm:text-sm text-[#EEF2F6] leading-relaxed">
-                  {mem.content}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => deleteMemory(mem.id)}
-                aria-label="Hapus memori"
-                className="p-1 text-[#74808E] hover:text-[#EE5D6C] rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer shrink-0 mt-0.5"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {addMemOpen && (
-          <form onSubmit={handleAddMemory} className="p-3 rounded-xl glass-2 space-y-2 border border-[#E39A5E]/30">
-            <label className="text-xs font-medium text-[#EEF2F6]">Fakta Baru untuk Diingat AI:</label>
-            <input
-              type="text"
-              required
-              placeholder="Contoh: Saya sedang menabung untuk service motor bulan depan"
-              value={newMemoryText}
-              onChange={(e) => setNewMemoryText(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl glass-1 text-xs text-[#EEF2F6] focus:border-[#E39A5E] outline-none"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setAddMemOpen(false)}
-                className="px-3 py-1.5 text-xs text-[#A3AFBC] cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="px-3.5 py-1.5 rounded-lg bg-[#E39A5E] text-[#1C0E04] text-xs font-semibold cursor-pointer"
-              >
-                Simpan Memori
-              </button>
-            </div>
-          </form>
         )}
       </div>
 

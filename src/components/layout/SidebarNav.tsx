@@ -61,24 +61,30 @@ export const SidebarNav: React.FC = () => {
   return (
     <aside
       aria-label="Navigasi desktop"
-      className={`hidden md:flex flex-col justify-between h-screen sticky top-0 z-30 border-r border-[var(--glass-border)] bg-[var(--bg-base)]/85 backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] relative ${
-        sidebarCollapsed ? 'w-[74px] p-3' : 'w-64 p-4'
+      className={`hidden md:flex flex-col justify-between h-screen sticky top-0 z-30 border-r border-[var(--glass-border)] bg-[var(--bg-base)]/90 backdrop-blur-md transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] relative px-3 py-4 select-none ${
+        sidebarCollapsed ? 'w-[72px]' : 'w-64'
       }`}
     >
-      {/* Floating edge collapse/expand button */}
+      {/* Floating edge collapse/expand button on the side border */}
       <button
         type="button"
         onClick={toggleSidebar}
-        className="absolute -right-3.5 top-6 w-7 h-7 rounded-full glass-2 border border-[var(--glass-border)] text-[#A3AFBC] hover:text-[#EEF2F6] hover:border-[#E39A5E]/40 flex items-center justify-center shadow-lg z-40 transition-transform duration-200 hover:scale-110 cursor-pointer"
+        className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--bg-base)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[#E39A5E] hover:border-[#E39A5E]/70 hover:bg-[#E39A5E]/10 flex items-center justify-center shadow-lg shadow-black/25 z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 cursor-pointer group"
         title={sidebarCollapsed ? 'Buka Sidebar' : 'Tutup Sidebar'}
         aria-label={sidebarCollapsed ? 'Buka Sidebar' : 'Tutup Sidebar'}
       >
-        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        <ChevronLeft
+          size={14}
+          strokeWidth={2.2}
+          className={`transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            sidebarCollapsed ? 'rotate-180 text-[#E39A5E]' : 'group-hover:-translate-x-0.5'
+          }`}
+        />
       </button>
 
       <div className="space-y-6">
         {/* Brand Logo & Header */}
-        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-1 pt-1`}>
+        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-start'} px-1 pt-1`}>
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -93,39 +99,43 @@ export const SidebarNav: React.FC = () => {
               </svg>
             </button>
             <div
-              className={`overflow-hidden transition-all duration-300 ${
-                sidebarCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+              className={`overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                sidebarCollapsed
+                  ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none'
+                  : 'max-w-[160px] opacity-100 translate-x-0'
               }`}
             >
-              <span className="font-display font-bold text-lg tracking-tight text-[#EEF2F6] whitespace-nowrap block">
+              <span className="font-display font-bold text-lg tracking-tight text-[var(--text-primary)] whitespace-nowrap block">
                 FinAI
               </span>
-              <p className="text-[11px] text-[#A3AFBC] whitespace-nowrap">Asisten Keuangan</p>
+              <p className="text-[11px] text-[var(--text-secondary)] whitespace-nowrap">Asisten Keuangan</p>
             </div>
           </div>
         </div>
 
         {/* Quick Voice Note CTA */}
         <div className="px-0.5">
-          {sidebarCollapsed ? (
-            <button
-              type="button"
-              onClick={() => setVoiceModalOpen(true)}
-              className="btn-primary w-11 h-11 mx-auto rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] font-semibold text-sm flex items-center justify-center shadow-md shadow-black/30 cursor-pointer"
-              title="Rekam Pengeluaran Suara"
-            >
+          <button
+            type="button"
+            onClick={() => setVoiceModalOpen(true)}
+            className={`btn-primary h-11 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] font-semibold text-sm flex items-center shadow-md shadow-black/30 cursor-pointer overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              sidebarCollapsed ? 'w-12 mx-auto justify-center px-0' : 'w-full px-3.5 justify-start gap-2.5'
+            }`}
+            title="Rekam Pengeluaran Suara"
+          >
+            <div className="shrink-0 flex items-center justify-center">
               <Mic size={18} strokeWidth={2.2} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setVoiceModalOpen(true)}
-              className="btn-primary w-full h-11 px-4 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-black/30 cursor-pointer"
+            </div>
+            <span
+              className={`whitespace-nowrap overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                sidebarCollapsed
+                  ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none'
+                  : 'max-w-[160px] opacity-100 translate-x-0'
+              }`}
             >
-              <Mic size={18} strokeWidth={2.2} />
-              <span className="whitespace-nowrap">Rekam Pengeluaran</span>
-            </button>
-          )}
+              Rekam Pengeluaran
+            </span>
+          </button>
         </div>
 
         {/* Navigation list */}
@@ -139,39 +149,29 @@ export const SidebarNav: React.FC = () => {
                 key={item.key}
                 type="button"
                 onClick={() => setActiveTab(item.key)}
-                className={`group relative w-full flex items-center ${
-                  sidebarCollapsed ? 'justify-center px-0 py-3' : 'gap-3.5 px-3 py-2.5'
-                } rounded-xl cursor-pointer overflow-hidden transition-all duration-200 ${
-                  isActive
-                    ? 'glass-2 border-[#E39A5E]/30 text-[#EEF2F6] font-semibold'
-                    : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
+                className={`sidebar-nav-btn h-11 rounded-xl flex items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isActive ? 'is-active' : ''
+                } ${
+                  sidebarCollapsed ? 'w-12 mx-auto justify-center px-0' : 'w-full px-3 justify-start gap-3'
                 }`}
                 title={sidebarCollapsed ? item.label : undefined}
               >
                 {/* Left active accent bar */}
                 <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r-full bg-[#E39A5E]"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full bg-[#E39A5E]"
                   style={{
                     height: isActive ? '60%' : '0%',
-                    transition: 'height 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+                    transition: 'height 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                   }}
                 />
-                {/* Hover fill for inactive items */}
-                {!isActive && (
-                  <span
-                    className="absolute inset-0 rounded-xl bg-white/[0.04] opacity-0 group-hover:opacity-100"
-                    style={{ transition: 'opacity 0.15s ease' }}
-                  />
-                )}
-                <div
-                  className={isActive ? 'text-[#E39A5E]' : 'group-hover:text-[#EEF2F6]'}
-                  style={{ transition: 'color 0.15s ease' }}
-                >
+                <div className="nav-icon shrink-0 w-5 h-5 flex items-center justify-center">
                   <Icon size={20} strokeWidth={isActive ? 2.2 : 1.75} style={{ transition: 'stroke-width 0.15s ease' }} />
                 </div>
                 <span
-                  className={`text-sm tracking-tight text-left relative z-10 whitespace-nowrap transition-all duration-300 ${
-                    sidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-auto opacity-100'
+                  className={`text-sm tracking-tight text-left relative z-10 whitespace-nowrap overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    sidebarCollapsed
+                      ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none'
+                      : 'max-w-[160px] opacity-100 translate-x-0'
                   }`}
                 >
                   {item.label}
@@ -189,20 +189,26 @@ export const SidebarNav: React.FC = () => {
           <button
             type="button"
             onClick={toggleTheme}
-            className="icon-spin-hover btn-ghost p-2 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer"
+            className="icon-spin-hover btn-ghost p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer shrink-0"
             title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          {!sidebarCollapsed && (
-            <span className="text-[11px] text-[#A3AFBC] font-medium">
-              {theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}
-            </span>
-          )}
+          <span
+            className={`text-[11px] text-[var(--text-secondary)] font-medium whitespace-nowrap overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              sidebarCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[120px] opacity-100'
+            }`}
+          >
+            {theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}
+          </span>
         </div>
 
         {/* User Card */}
-        <div className={`glass-1 ${sidebarCollapsed ? 'p-2 flex-col gap-2' : 'p-2.5 flex-row justify-between'} rounded-xl flex items-center gap-2 transition-all duration-200`}>
+        <div
+          className={`glass-1 ${
+            sidebarCollapsed ? 'p-1.5 flex-col justify-center' : 'p-2.5 flex-row justify-between'
+          } rounded-xl flex items-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden`}
+        >
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0`}>
             {profile.avatar_url && !avatarError ? (
               <img
@@ -222,37 +228,41 @@ export const SidebarNav: React.FC = () => {
               </div>
             )}
             <div
-              className={`min-w-0 transition-all duration-300 ${
-                sidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-auto opacity-100'
+              className={`min-w-0 overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                sidebarCollapsed
+                  ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none'
+                  : 'max-w-[130px] opacity-100 translate-x-0'
               }`}
             >
-              <p className="text-xs font-semibold text-[#EEF2F6] truncate">
+              <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
                 {profile.nama}
               </p>
-              <p className="text-[10px] text-[#A3AFBC] truncate">
+              <p className="text-[10px] text-[var(--text-secondary)] truncate">
                 {profile.email || profile.internship_status}
               </p>
             </div>
           </div>
 
-          <div>
+          <div
+            className={`overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              sidebarCollapsed ? 'max-w-0 opacity-0 scale-75 pointer-events-none' : 'max-w-[50px] opacity-100 scale-100'
+            }`}
+          >
             {profile.id === 'default' && !authUser ? (
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className={`btn-ghost text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer ${
-                  sidebarCollapsed ? 'p-1' : 'px-1 py-0.5'
-                } rounded`}
+                className="btn-ghost text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer px-1 py-0.5 rounded whitespace-nowrap"
                 title="Hubungkan Google"
               >
                 <LogIn size={14} />
-                {!sidebarCollapsed && <span>Masuk</span>}
+                <span>Masuk</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={signOut}
-                className="btn-danger text-xs text-[#A3AFBC] hover:text-[#EE5D6C] flex items-center gap-1 cursor-pointer p-1.5 rounded-lg"
+                className="btn-danger text-xs text-[var(--text-secondary)] hover:text-[#EE5D6C] flex items-center gap-1 cursor-pointer p-1.5 rounded-lg"
                 title="Keluar dari Akun"
               >
                 <LogOut size={14} />

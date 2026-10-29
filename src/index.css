@@ -24,6 +24,11 @@
   --glass-blur-1: 20px;
   --glass-blur-2: 28px;
   --glass-blur-3: 40px;
+  --nav-hover-bg: rgba(255, 255, 255, 0.06);
+  --nav-hover-text: #EEF2F6;
+  --nav-active-bg: rgba(227, 154, 94, 0.14);
+  --nav-active-border: rgba(227, 154, 94, 0.35);
+  --nav-active-text: #EEF2F6;
 }
 
 [data-theme="light"] {
@@ -48,12 +53,16 @@
   --danger: #DC2626;
   --success: #059669;
   --shadow-glass: 0 1px 3px rgba(15, 23, 42, 0.05), 0 6px 18px -3px rgba(15, 23, 42, 0.07);
+  --nav-hover-bg: #E2E8F0;
+  --nav-hover-text: #0F172A;
+  --nav-active-bg: rgba(194, 120, 56, 0.12);
+  --nav-active-border: rgba(194, 120, 56, 0.38);
+  --nav-active-text: #0F172A;
 }
 
 @theme {
   --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --color-base: var(--bg-base);
   --color-elevated: var(--bg-elevated);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
@@ -175,6 +184,70 @@ body {
   scrollbar-width: none;
 }
 
+/* ─── Global Themed Scrollbars for the Entire App ────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(205, 225, 245, 0.22) transparent;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track,
+::-webkit-scrollbar-track-piece,
+*::-webkit-scrollbar-track-piece {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+  display: none !important;
+}
+
+::-webkit-resizer,
+*::-webkit-resizer {
+  display: none !important;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: rgba(205, 225, 245, 0.22) !important;
+  border-radius: 9999px !important;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(227, 154, 94, 0.75) !important;
+}
+
+/* Light Mode Global Scrollbars */
+[data-theme="light"] * {
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb,
+[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45) !important;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(194, 120, 56, 0.85) !important;
+}
+
 /* ─── Keyframes ─────────────────────────────────────────────────── */
 
 /* Modal: slide up from bottom (mobile sheet) */
@@ -238,54 +311,140 @@ body {
   animation-delay: var(--delay, 0s);
 }
 
-/* ─── Interactive utilities ─────────────────────────────────────────── */
+/* ─── Upgraded Interactive Click & Hover Micro-Interactions ─────── */
 
-/* Button press: scale down on :active */
+/* Global cursor & touch ergonomics */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+.clickable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Primary CTA: Luminous hover lift + snappy spring compression on click */
+.btn-primary {
+  position: relative;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.18s ease;
+  user-select: none;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 0 8px 24px -2px rgba(227, 154, 94, 0.42), 0 2px 8px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.08);
+}
+.btn-primary:active {
+  transform: translateY(1.5px) scale(0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  filter: brightness(0.95);
+  transition-duration: 0.08s;
+}
+
+/* Secondary & Tactile Button Press */
 .btn-press {
-  transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.18s ease,
+              border-color 0.18s ease,
+              box-shadow 0.18s ease,
+              color 0.18s ease;
+}
+.btn-press:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.15);
 }
 .btn-press:active {
-  transform: scale(0.96);
+  transform: translateY(1px) scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition-duration: 0.08s;
 }
 
-/* Primary CTA brightness lift on hover */
-.btn-primary {
-  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-}
-.btn-primary:hover  { filter: brightness(1.08); }
-.btn-primary:active { transform: scale(0.96); filter: brightness(0.96); }
-
-/* Ghost button */
+/* Ghost Button with subtle border glow */
 .btn-ghost {
-  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.18s ease,
+              border-color 0.18s ease,
+              color 0.18s ease,
+              box-shadow 0.18s ease;
 }
-.btn-ghost:hover  { background: rgba(255,255,255,0.05); }
-.btn-ghost:active { transform: scale(0.97); }
+.btn-ghost:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.btn-ghost:active {
+  transform: translateY(1px) scale(0.96);
+  background: rgba(255, 255, 255, 0.1);
+  transition-duration: 0.08s;
+}
 
-/* Danger hover (delete) */
+/* Danger Button (delete/cancel) */
 .btn-danger {
-  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              color 0.18s ease,
+              background-color 0.18s ease,
+              box-shadow 0.18s ease;
 }
-.btn-danger:hover  { color: #EE5D6C; background: rgba(238,93,108,0.08); }
-.btn-danger:active { transform: scale(0.94); }
+.btn-danger:hover {
+  transform: translateY(-1.5px);
+  color: #EE5D6C;
+  background: rgba(238, 93, 108, 0.12);
+  box-shadow: 0 4px 14px rgba(238, 93, 108, 0.2);
+}
+.btn-danger:active {
+  transform: translateY(1px) scale(0.94);
+  transition-duration: 0.08s;
+}
 
-/* Card lift — hover elevation bump */
-.card-lift {
-  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.2s ease,
-              border-color 0.15s ease;
+/* Interactive Card / List Item: tactile hover lift with glow */
+.card-lift,
+.card-interactive {
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.18s ease;
 }
-.card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+.card-lift:hover,
+.card-interactive:hover {
+  transform: translateY(-2.5px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+.card-lift:active,
+.card-interactive:active {
+  transform: translateY(0.5px) scale(0.985);
+  transition-duration: 0.08s;
 }
 
-/* Chip press */
+/* Filter Chips & Tabs: Spring bounce on click */
 .chip-press {
-  transition: background 0.12s ease, color 0.12s ease,
-              transform 0.08s ease, border-color 0.12s ease;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.15s ease,
+              color 0.15s ease,
+              border-color 0.15s ease,
+              box-shadow 0.18s ease;
 }
-.chip-press:active { transform: scale(0.95); }
+.chip-press:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.chip-press:active {
+  transform: translateY(1px) scale(0.93);
+  transition-duration: 0.08s;
+}
 
 /* Input focus glow */
 .input-glow {
@@ -293,7 +452,7 @@ body {
 }
 .input-glow:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(227,154,94,0.15);
+  box-shadow: 0 0 0 3px rgba(227, 154, 94, 0.2);
 }
 
 /* Progress bar fill transition — uses width change */
@@ -328,6 +487,54 @@ body {
 
 [data-theme="light"] .hover\:text-\[\#EEF2F6\]:hover {
   color: #0F172A !important;
+}
+
+[data-theme="light"] .group:hover .group-hover\:text-\[\#EEF2F6\],
+[data-theme="light"] .group:focus .group-hover\:text-\[\#EEF2F6\] {
+  color: #0F172A !important;
+}
+
+/* Sidebar Nav Item Styling */
+.sidebar-nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 0.75rem;
+  user-select: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.sidebar-nav-btn:not(.is-active) {
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.sidebar-nav-btn:not(.is-active):hover {
+  background-color: var(--nav-hover-bg) !important;
+  color: var(--nav-hover-text) !important;
+}
+
+.sidebar-nav-btn:not(.is-active) .nav-icon {
+  color: var(--text-secondary);
+  transition: color 0.16s ease;
+}
+
+.sidebar-nav-btn:not(.is-active):hover .nav-icon {
+  color: var(--nav-hover-text) !important;
+}
+
+.sidebar-nav-btn.is-active {
+  background-color: var(--nav-active-bg) !important;
+  border: 1px solid var(--nav-active-border) !important;
+  color: var(--nav-active-text) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-nav-btn.is-active .nav-icon {
+  color: var(--accent) !important;
 }
 
 /* Card surfaces in light mode */

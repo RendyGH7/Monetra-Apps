@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, X, Check, Trash2, Volume2, Sparkles, AlertCircle, RefreshCw, Send } from 'lucide-react';
+import { Mic, X, Check, Trash2, Volume2, AlertCircle, RefreshCw, Send } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { parseVoiceInput } from '../../utils/voiceParser';
-import { parseVoiceInputWithAI, getStoredGeminiKey } from '../../services/aiService';
+import { parseVoiceInputWithAI } from '../../services/aiService';
 import { ParsedVoiceItem } from '../../types';
 import { formatCurrency, stripEmoji } from '../../utils/format';
 import { CategoryIcon } from '../common/CategoryIcon';
@@ -27,17 +27,6 @@ export const VoiceModal: React.FC = () => {
 
   const timerRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
-
-  const hasGeminiKey = Boolean(getStoredGeminiKey());
-
-  // Suggested voice templates
-  const examplePhrases = [
-    'Saya habis makan warteg Rp20.000',
-    'Tadi pagi sarapan nasi uduk 15 ribu sama isi bensin motor 25 ribu',
-    'Nge-date nonton bioskop bareng pacar habis 120 ribu di Cinema XXI',
-    'Beli kopi sachet 10 ribu pas istirahat magang',
-    'Gaji pokok magang masuk 1.5 juta rupiah',
-  ];
 
   // Timer while recording
   useEffect(() => {
@@ -176,11 +165,6 @@ export const VoiceModal: React.FC = () => {
     processTranscription(spoken);
   };
 
-  const handleSelectExample = (text: string) => {
-    setErrorMessage(null);
-    processTranscription(text);
-  };
-
   const handleManualSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = manualText.trim();
@@ -279,19 +263,6 @@ export const VoiceModal: React.FC = () => {
                 <p className="text-xs text-[#A3AFBC] max-w-sm mx-auto leading-relaxed">
                   Bicara santai menggunakan Bahasa Indonesia. AI FinAI akan memecah ucapanmu menjadi nominal dan kategori otomatis.
                 </p>
-                <div className="pt-1 flex items-center justify-center">
-                  {hasGeminiKey ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] text-[#4FD3A4] font-medium">
-                      <Sparkles size={12} />
-                      Model AI: Gemini 2.0 Flash Aktif
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-[11px] text-[#A3AFBC]">
-                      <Sparkles size={12} className="text-[#E39A5E]" />
-                      Smart AI Parser Bawaan Aktif (Siap Pakai)
-                    </span>
-                  )}
-                </div>
               </div>
 
               {/* Big Interactive Mic Button */}
@@ -329,26 +300,6 @@ export const VoiceModal: React.FC = () => {
                   </button>
                 </div>
               </form>
-
-              {/* Example phrases to try */}
-              <div className="pt-4 border-t border-[rgba(205,225,245,0.1)] text-left space-y-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#74808E]">
-                  Atau coba contoh kalimat siap pakai ini:
-                </span>
-                <div className="space-y-1.5">
-                  {examplePhrases.map((phrase, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSelectExample(phrase)}
-                      className="chip-press w-full text-left p-2.5 rounded-xl glass-1 text-xs text-[#A3AFBC] hover:text-[#EEF2F6] flex items-center justify-between cursor-pointer border border-transparent hover:border-[#E39A5E]/40"
-                    >
-                      <span className="truncate pr-2">&quot;{phrase}&quot;</span>
-                      <Sparkles size={14} className="text-[#E39A5E] shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
@@ -403,7 +354,7 @@ export const VoiceModal: React.FC = () => {
             <div className="text-center space-y-4 py-12">
               <div className="w-12 h-12 rounded-full border-2 border-[#E39A5E] border-t-transparent animate-spin mx-auto" />
               <p className="text-sm font-semibold text-[#EEF2F6]">
-                {hasGeminiKey ? 'Menganalisis Suara dengan Gemini 2.0 Flash...' : 'Memproses Suara dengan AI Parser...'}
+                Memproses rekaman suara dengan FinAI...
               </p>
               <p className="text-xs text-[#A3AFBC]">Memisahkan rincian belanja, kategori finansial, dan nominal uang</p>
             </div>
@@ -433,10 +384,6 @@ export const VoiceModal: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs text-[#A3AFBC]">
                   <span>{parsedItems.length} Transaksi Terdeteksi</span>
-                  <span className="text-[#4FD3A4] font-medium flex items-center gap-1">
-                    <Sparkles size={12} />
-                    <span>{hasGeminiKey ? 'Gemini 2.0 Flash AI Aktif' : 'Smart AI Parser Aktif'}</span>
-                  </span>
                 </div>
 
                 {parsedItems.length === 0 ? (

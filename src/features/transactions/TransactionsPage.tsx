@@ -84,7 +84,7 @@ export const TransactionsPage: React.FC = () => {
         </div>
 
         {/* Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
           {[
             { label: 'Semua Tipe', value: 'all' as const, activeClass: 'bg-[#E39A5E] text-[#1C0E04]' },
             { label: 'Pengeluaran', value: 'expense' as const, activeClass: 'bg-[#EE5D6C] text-white' },
@@ -94,27 +94,27 @@ export const TransactionsPage: React.FC = () => {
               key={chip.value}
               type="button"
               onClick={() => setSelectedType(chip.value)}
-              className={`chip-press px-3 py-1.5 rounded-lg shrink-0 font-medium cursor-pointer ${
+              className={`chip-press px-3.5 py-1.5 rounded-xl shrink-0 text-xs font-semibold cursor-pointer shadow-xs transition-all ${
                 selectedType === chip.value
-                  ? chip.activeClass
-                  : 'glass-2 text-[#A3AFBC] hover:text-[#EEF2F6]'
+                  ? `${chip.activeClass} shadow-md`
+                  : 'glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40'
               }`}
             >
               {chip.label}
             </button>
           ))}
 
-          <span className="text-[#74808E] px-1">|</span>
+          <span className="text-[var(--text-tertiary)] px-1">|</span>
 
           {categories.map((c) => (
             <button
               key={c.id}
               type="button"
               onClick={() => setSelectedCategory(selectedCategory === c.id ? 'all' : c.id)}
-              className={`chip-press px-3 py-1.5 rounded-lg shrink-0 font-medium flex items-center gap-1.5 cursor-pointer ${
+              className={`chip-press px-3 py-1.5 rounded-xl shrink-0 text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-xs transition-all ${
                 selectedCategory === c.id
-                  ? 'bg-white/[0.15] text-[#EEF2F6] border border-[#E39A5E]/40'
-                  : 'glass-2 text-[#A3AFBC] hover:text-[#EEF2F6]'
+                  ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border border-[#E39A5E]/50 shadow-sm'
+                  : 'glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40'
               }`}
             >
               <CategoryIcon name={c.name} size={13} color={c.color} />
@@ -166,26 +166,20 @@ export const TransactionsPage: React.FC = () => {
                     return (
                       <div
                         key={tx.id}
-                        className="group relative p-3.5 sm:p-4 flex items-center justify-between gap-3 animate-row-in"
+                        className="group relative p-3.5 sm:p-4 flex items-center justify-between gap-3 animate-row-in card-interactive rounded-xl border border-transparent hover:border-[#E39A5E]/30"
                         style={{
                           animationDelay: `${rowIdx * 0.04}s`,
-                          transition: 'background 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.025)';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = 'transparent';
+                          transition: 'all 0.18s ease',
                         }}
                       >
                         {/* Left accent reveal on hover */}
                         <span
-                          className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#E39A5E] opacity-0 group-hover:opacity-100 rounded-r-full"
+                          className="absolute left-0 top-2 bottom-2 w-1 bg-[#E39A5E] opacity-0 group-hover:opacity-100 rounded-r-full"
                           style={{ transition: 'opacity 0.2s ease' }}
                         />
 
                         <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                             <CategoryIcon
                               name={cat?.name || 'circle-ellipsis'}
                               size={19}
@@ -193,7 +187,7 @@ export const TransactionsPage: React.FC = () => {
                             />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs sm:text-sm font-medium text-[#EEF2F6] truncate">
+                            <p className="text-xs sm:text-sm font-medium text-[#EEF2F6] truncate group-hover:text-[#E39A5E] transition-colors">
                               {tx.note}
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -226,8 +220,8 @@ export const TransactionsPage: React.FC = () => {
                             type="button"
                             onClick={() => deleteTransaction(tx.id)}
                             aria-label="Hapus transaksi"
-                            className="btn-danger p-1.5 rounded-lg text-[#74808E] cursor-pointer"
-                            title="Hapus"
+                            className="btn-danger p-2 rounded-xl text-[#74808E] hover:text-[#EE5D6C] hover:bg-[#EE5D6C]/15 border border-transparent hover:border-[#EE5D6C]/30 transition-all cursor-pointer shadow-xs"
+                            title="Hapus Transaksi"
                           >
                             <Trash2 size={16} />
                           </button>
