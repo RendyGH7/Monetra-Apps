@@ -694,15 +694,15 @@ export const DashboardPage: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="h-52 relative flex items-center justify-center">
+              <div className="h-60 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={58}
-                      outerRadius={82}
+                      innerRadius={74}
+                      outerRadius={100}
                       paddingAngle={4}
                       cornerRadius={6}
                       dataKey="value"
@@ -744,17 +744,17 @@ export const DashboardPage: React.FC = () => {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200 select-none">
                   {activeDonutIndex !== null && pieData[activeDonutIndex] ? (
-                    <div className="flex flex-col items-center justify-center text-center px-4">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-secondary)] truncate max-w-[120px]">
+                    <div className="flex flex-col items-center justify-center text-center px-4 max-w-[136px]">
+                      <span className="text-[11px] font-semibold text-[var(--text-secondary)] truncate max-w-[125px]">
                         {pieData[activeDonutIndex].name}
                       </span>
-                      <span className="font-display font-bold text-base text-[var(--text-primary)] num-tabular">
+                      <span className="font-display font-bold text-lg text-[var(--text-primary)] num-tabular tracking-tight mt-0.5">
                         {formatCurrency(pieData[activeDonutIndex].value)}
                       </span>
                       <span
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5"
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 num-tabular"
                         style={{
                           backgroundColor: `${pieData[activeDonutIndex].color}25`,
                           color: pieData[activeDonutIndex].color,
@@ -765,14 +765,11 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center text-center px-4">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)]">
-                        Total Keluar
+                      <span className="text-[11px] font-medium text-[var(--text-secondary)] tracking-wide">
+                        Total
                       </span>
-                      <span className="font-display font-bold text-base text-[var(--text-primary)] num-tabular">
+                      <span className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)] num-tabular tracking-tight mt-0.5">
                         {formatCurrency(totalExpense)}
-                      </span>
-                      <span className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-                        {pieData.length} Kategori
                       </span>
                     </div>
                   )}
