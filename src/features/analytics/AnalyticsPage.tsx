@@ -19,35 +19,24 @@ import {
 import { useAppStore } from '../../store';
 import { Heart, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Minus, BarChart3, ArrowRight, PieChart as DonutIcon } from 'lucide-react';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
-import { formatCurrency, formatCompact } from '../../utils/format';
+import {
+  formatCurrency,
+  formatCompact,
+  formatDateIndo,
+  formatTimeShort,
+  getWIBParts,
+  getNowWIBParts,
+  getWIBStartOfWeek,
+  getWIBStartOfMonth,
+  getWIBStartOfYear,
+  getDaysInWIBMonth,
+  DAYS_SHORT_ID,
+  MONTHS_ID,
+  MONTHS_SHORT_ID,
+} from '../../utils/format';
 
 // ─── Type ────────────────────────────────────────────────────────────────────
 type Period = 'week' | 'month' | 'year';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const DAYS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-
-function startOfDay(d: Date) {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c;
-}
-
-function startOfWeek(d: Date) {
-  const c = startOfDay(new Date(d));
-  c.setDate(c.getDate() - c.getDay()); // Sunday
-  return c;
-}
-
-/** ISO week number (Mon-start) */
-function isoWeek(d: Date) {
-  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
-  const year = t.getUTCFullYear();
-  const jan4 = new Date(Date.UTC(year, 0, 4));
-  return Math.ceil((((t as any) - (jan4 as any)) / 86400000 + 1) / 7);
-}
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -76,42 +65,41 @@ export const AnalyticsPage: React.FC = () => {
     '#CDBFA3', '#4FA8A0', '#B5603A', '#8A9AA8',
   ];
 
-  // ── Date window calculations ─────────────────────────────────────────────
-  const now = new Date();
+  // ── Date window calculations (WIB UTC+7) ──────────────────────────────────
+  const nowWIB = getNowWIBParts();
 
   const windows = useMemo(() => {
-    const todayStart = startOfDay(now);
-
     if (period === 'week') {
-      const weekStart = startOfWeek(now);
-      const prevWeekStart = new Date(weekStart);
-      prevWeekStart.setDate(prevWeekStart.getDate() - 7);
-      const prevWeekEnd = new Date(weekStart);
+      const weekStart = getWIBStartOfWeek();
+      const prevWeekStart = weekStart - 7 * 86400000;
+      const prevWeekEnd = weekStart;
       return { current: weekStart, prevStart: prevWeekStart, prevEnd: prevWeekEnd };
     }
     if (period === 'month') {
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevMonthEnd = new Date(monthStart);
+      const monthStart = getWIBStartOfMonth();
+      const prevYear = nowWIB.month === 0 ? nowWIB.year - 1 : nowWIB.year;
+      const prevMonth = nowWIB.month === 0 ? 11 : nowWIB.month - 1;
+      const prevMonthStart = Date.UTC(prevYear, prevMonth, 1) - (7 * 3600 * 1000);
+      const prevMonthEnd = monthStart;
       return { current: monthStart, prevStart: prevMonthStart, prevEnd: prevMonthEnd };
     }
     // year
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-    const prevYearStart = new Date(now.getFullYear() - 1, 0, 1);
-    const prevYearEnd = new Date(yearStart);
+    const yearStart = getWIBStartOfYear();
+    const prevYearStart = Date.UTC(nowWIB.year - 1, 0, 1) - (7 * 3600 * 1000);
+    const prevYearEnd = yearStart;
     return { current: yearStart, prevStart: prevYearStart, prevEnd: prevYearEnd };
-  }, [period, now.toDateString()]);
+  }, [period]);
 
-  // ── Filter transactions for current & previous period ────────────────────
+  // ── Filter transactions for current & previous period (WIB) ──────────────
   const currentTx = useMemo(() =>
-    transactions.filter((t) => new Date(t.occurred_at) >= windows.current),
+    transactions.filter((t) => new Date(t.occurred_at).getTime() >= windows.current),
     [transactions, windows]
   );
 
   const prevTx = useMemo(() =>
     transactions.filter((t) => {
-      const d = new Date(t.occurred_at);
-      return d >= windows.prevStart && d < windows.prevEnd;
+      const ms = new Date(t.occurred_at).getTime();
+      return ms >= windows.prevStart && ms < windows.prevEnd;
     }),
     [transactions, windows]
   );
@@ -130,31 +118,28 @@ export const AnalyticsPage: React.FC = () => {
   const expenseDelta = prevExpense > 0 ? Math.round(((totalExpense - prevExpense) / prevExpense) * 100) : null;
   const incomeDelta = prevIncome > 0 ? Math.round(((totalIncome - prevIncome) / prevIncome) * 100) : null;
 
-  // ── Periodic Statistics Calculation (Mingguan / Bulanan / Tahunan) ─────────
+  // ── Periodic Statistics Calculation (Mingguan / Bulanan / Tahunan in WIB) ──
   const periodStats = useMemo(() => {
-    const today = new Date();
+    const todayWIB = getNowWIBParts();
 
     if (period === 'week') {
-      const dayOfWeek = (today.getDay() + 6) % 7;
-      const startOfWeekDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOfWeek, 0, 0, 0);
-      const endOfWeekDate = new Date(startOfWeekDate);
-      endOfWeekDate.setDate(endOfWeekDate.getDate() + 7);
-
-      const prevStart = new Date(startOfWeekDate);
-      prevStart.setDate(prevStart.getDate() - 7);
-      const prevEnd = new Date(startOfWeekDate);
+      const startOfWeek = getWIBStartOfWeek();
+      const endOfWeek = startOfWeek + 7 * 86400000;
+      const prevStart = startOfWeek - 7 * 86400000;
+      const prevEnd = startOfWeek;
 
       const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
       const fullDayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      const currentDayIdx = (todayWIB.day + 6) % 7; // Monday = 0
+
       const daysData = dayLabels.map((lbl, idx) => {
-        const dObj = new Date(startOfWeekDate);
-        dObj.setDate(dObj.getDate() + idx);
+        const dParts = getWIBParts(startOfWeek + idx * 86400000);
         return {
           label: lbl,
-          fullLabel: `${fullDayNames[idx]}, ${dObj.getDate()} ${dObj.toLocaleDateString('id-ID', { month: 'short' })}`,
+          fullLabel: `${fullDayNames[idx]}, ${dParts.date} ${dParts.monthShort}`,
           expense: 0,
           income: 0,
-          isCurrent: idx === dayOfWeek,
+          isCurrent: idx === currentDayIdx,
         };
       });
 
@@ -163,9 +148,10 @@ export const AnalyticsPage: React.FC = () => {
       let prevExp = 0;
 
       transactions.forEach((t) => {
-        const d = new Date(t.occurred_at);
-        if (d >= startOfWeekDate && d < endOfWeekDate) {
-          const dIdx = (d.getDay() + 6) % 7;
+        const tMs = new Date(t.occurred_at).getTime();
+        if (tMs >= startOfWeek && tMs < endOfWeek) {
+          const tParts = getWIBParts(t.occurred_at);
+          const dIdx = (tParts.day + 6) % 7;
           if (t.type === 'expense') {
             totalExp += t.amount;
             daysData[dIdx].expense += t.amount;
@@ -173,7 +159,7 @@ export const AnalyticsPage: React.FC = () => {
             totalInc += t.amount;
             daysData[dIdx].income += t.amount;
           }
-        } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
+        } else if (tMs >= prevStart && tMs < prevEnd && t.type === 'expense') {
           prevExp += t.amount;
         }
       });
@@ -196,22 +182,26 @@ export const AnalyticsPage: React.FC = () => {
     }
 
     if (period === 'month') {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-      const prevStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const prevEnd = new Date(startOfMonth);
+      const startOfMonth = getWIBStartOfMonth();
+      const daysInMonth = getDaysInWIBMonth(todayWIB.year, todayWIB.month);
+      const nextMonthYear = todayWIB.month === 11 ? todayWIB.year + 1 : todayWIB.year;
+      const nextMonthNum = todayWIB.month === 11 ? 0 : todayWIB.month + 1;
+      const endOfMonth = Date.UTC(nextMonthYear, nextMonthNum, 1) - (7 * 3600 * 1000);
 
-      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const prevYear = todayWIB.month === 0 ? todayWIB.year - 1 : todayWIB.year;
+      const prevMonth = todayWIB.month === 0 ? 11 : todayWIB.month - 1;
+      const prevStart = Date.UTC(prevYear, prevMonth, 1) - (7 * 3600 * 1000);
+      const prevEnd = startOfMonth;
+
       const monthData = Array.from({ length: daysInMonth }, (_, idx) => {
         const dayNum = idx + 1;
-        const dObj = new Date(today.getFullYear(), today.getMonth(), dayNum);
-        const dayName = dObj.toLocaleDateString('id-ID', { weekday: 'short' });
+        const dParts = getWIBParts(Date.UTC(todayWIB.year, todayWIB.month, dayNum) - (7 * 3600 * 1000));
         return {
           label: `${dayNum}`,
-          fullLabel: `${dayName}, ${dayNum} ${today.toLocaleDateString('id-ID', { month: 'short' })}`,
+          fullLabel: `${dParts.dayShort}, ${dayNum} ${todayWIB.monthShort}`,
           expense: 0,
           income: 0,
-          isCurrent: dayNum === today.getDate(),
+          isCurrent: dayNum === todayWIB.date,
         };
       });
 
@@ -220,9 +210,9 @@ export const AnalyticsPage: React.FC = () => {
       let prevExp = 0;
 
       transactions.forEach((t) => {
-        const d = new Date(t.occurred_at);
-        if (d >= startOfMonth && d < endOfMonth) {
-          const dayNum = d.getDate();
+        const tParts = getWIBParts(t.occurred_at);
+        if (tParts.year === todayWIB.year && tParts.month === todayWIB.month) {
+          const dayNum = tParts.date;
           const idx = dayNum - 1;
           if (idx >= 0 && idx < monthData.length) {
             if (t.type === 'expense') {
@@ -233,13 +223,16 @@ export const AnalyticsPage: React.FC = () => {
               monthData[idx].income += t.amount;
             }
           }
-        } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
-          prevExp += t.amount;
+        } else {
+          const tMs = new Date(t.occurred_at).getTime();
+          if (tMs >= prevStart && tMs < prevEnd && t.type === 'expense') {
+            prevExp += t.amount;
+          }
         }
       });
 
       const delta = prevExp > 0 ? Math.round(((totalExp - prevExp) / prevExp) * 100) : null;
-      const avg = Math.round(totalExp / Math.max(1, today.getDate()));
+      const avg = Math.round(totalExp / Math.max(1, todayWIB.date));
 
       return {
         title: 'Bulan Ini',
@@ -256,22 +249,17 @@ export const AnalyticsPage: React.FC = () => {
     }
 
     // year
-    const startOfYear = new Date(today.getFullYear(), 0, 1);
-    const endOfYear = new Date(today.getFullYear() + 1, 0, 1);
-    const prevStart = new Date(today.getFullYear() - 1, 0, 1);
-    const prevEnd = new Date(startOfYear);
+    const startOfYear = getWIBStartOfYear();
+    const endOfYear = Date.UTC(todayWIB.year + 1, 0, 1) - (7 * 3600 * 1000);
+    const prevStart = Date.UTC(todayWIB.year - 1, 0, 1) - (7 * 3600 * 1000);
+    const prevEnd = startOfYear;
 
-    const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-    const monthsFull = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-    ];
-    const monthsData = monthsShort.map((lbl, idx) => ({
+    const monthsData = MONTHS_SHORT_ID.map((lbl, idx) => ({
       label: lbl,
-      fullLabel: `${monthsFull[idx]} ${today.getFullYear()}`,
+      fullLabel: `${MONTHS_ID[idx]} ${todayWIB.year}`,
       expense: 0,
       income: 0,
-      isCurrent: idx === today.getMonth(),
+      isCurrent: idx === todayWIB.month,
     }));
 
     let totalExp = 0;
@@ -279,9 +267,9 @@ export const AnalyticsPage: React.FC = () => {
     let prevExp = 0;
 
     transactions.forEach((t) => {
-      const d = new Date(t.occurred_at);
-      if (d >= startOfYear && d < endOfYear) {
-        const mIdx = d.getMonth();
+      const tParts = getWIBParts(t.occurred_at);
+      if (tParts.year === todayWIB.year) {
+        const mIdx = tParts.month;
         if (t.type === 'expense') {
           totalExp += t.amount;
           monthsData[mIdx].expense += t.amount;
@@ -289,13 +277,16 @@ export const AnalyticsPage: React.FC = () => {
           totalInc += t.amount;
           monthsData[mIdx].income += t.amount;
         }
-      } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
-        prevExp += t.amount;
+      } else {
+        const tMs = new Date(t.occurred_at).getTime();
+        if (tMs >= prevStart && tMs < prevEnd && t.type === 'expense') {
+          prevExp += t.amount;
+        }
       }
     });
 
     const delta = prevExp > 0 ? Math.round(((totalExp - prevExp) / prevExp) * 100) : null;
-    const avg = Math.round(totalExp / (today.getMonth() + 1));
+    const avg = Math.round(totalExp / (todayWIB.month + 1));
 
     return {
       title: 'Tahun Ini',

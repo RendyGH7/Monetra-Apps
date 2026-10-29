@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Mic,
   TrendingDown,
@@ -12,6 +12,7 @@ import {
   BarChart3,
   ChevronRight,
   PieChart as DonutIcon,
+  Clock,
 } from 'lucide-react';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import {
@@ -27,7 +28,23 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { useAppStore } from '../../store';
-import { formatCurrency, formatTimeShort, formatCompact } from '../../utils/format';
+import {
+  formatCurrency,
+  formatTimeShort,
+  formatCompact,
+  formatDateIndo,
+  formatDateTimeWIB,
+  getWIBParts,
+  getNowWIBParts,
+  getWIBGreeting,
+  getWIBStartOfWeek,
+  getWIBStartOfMonth,
+  getWIBStartOfYear,
+  getDaysInWIBMonth,
+  DAYS_SHORT_ID,
+  MONTHS_ID,
+  MONTHS_SHORT_ID,
+} from '../../utils/format';
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -39,13 +56,22 @@ export const DashboardPage: React.FC = () => {
     setActiveTab,
   } = useAppStore();
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  // ── Live Clock (WIB UTC+7) ──────────────────────────────────────────────
+  const [currentTimestamp, setCurrentTimestamp] = useState<number>(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 10000); // sync every 10s
+    return () => clearInterval(timer);
+  }, []);
+
+  const nowWIB = getWIBParts(currentTimestamp);
+  const currentMonth = nowWIB.month;
+  const currentYear = nowWIB.year;
 
   const thisMonthTx = transactions.filter((t) => {
-    const d = new Date(t.occurred_at);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    const p = getWIBParts(t.occurred_at);
+    return p.month === currentMonth && p.year === currentYear;
   });
 
   const totalIncome = thisMonthTx
@@ -58,7 +84,7 @@ export const DashboardPage: React.FC = () => {
 
   const netBalance = totalIncome - totalExpense;
 
-  const todayDate = now.getDate();
+  const todayDate = nowWIB.date;
   const payDay = profile.pay_day || 25;
   let daysLeft = payDay > todayDate ? payDay - todayDate : 30 - todayDate + payDay;
   if (daysLeft <= 0) daysLeft = 1;
@@ -95,29 +121,26 @@ export const DashboardPage: React.FC = () => {
   const [activeDonutIndex, setActiveDonutIndex] = useState<number | null>(null);
 
   const periodStats = useMemo(() => {
-    const today = new Date();
+    const todayWIB = getWIBParts(currentTimestamp);
 
     if (statPeriod === 'week') {
-      const dayOfWeek = (today.getDay() + 6) % 7;
-      const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOfWeek, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(endOfWeek.getDate() + 7);
-
-      const prevStart = new Date(startOfWeek);
-      prevStart.setDate(prevStart.getDate() - 7);
-      const prevEnd = new Date(startOfWeek);
+      const startOfWeek = getWIBStartOfWeek(currentTimestamp);
+      const endOfWeek = startOfWeek + 7 * 86400000;
+      const prevStart = startOfWeek - 7 * 86400000;
+      const prevEnd = startOfWeek;
 
       const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
       const fullDayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      const currentDayIdx = (todayWIB.day + 6) % 7; // Monday = 0
+
       const daysData = dayLabels.map((lbl, idx) => {
-        const dObj = new Date(startOfWeek);
-        dObj.setDate(dObj.getDate() + idx);
+        const dParts = getWIBParts(startOfWeek + idx * 86400000);
         return {
           label: lbl,
-          fullLabel: `${fullDayNames[idx]}, ${dObj.getDate()} ${dObj.toLocaleDateString('id-ID', { month: 'short' })}`,
+          fullLabel: `${fullDayNames[idx]}, ${dParts.date} ${dParts.monthShort}`,
           expense: 0,
           income: 0,
-          isCurrent: idx === dayOfWeek,
+          isCurrent: idx === currentDayIdx,
         };
       });
 
@@ -126,9 +149,10 @@ export const DashboardPage: React.FC = () => {
       let prevExpense = 0;
 
       transactions.forEach((t) => {
-        const d = new Date(t.occurred_at);
-        if (d >= startOfWeek && d < endOfWeek) {
-          const dIdx = (d.getDay() + 6) % 7;
+        const tMs = new Date(t.occurred_at).getTime();
+        if (tMs >= startOfWeek && tMs < endOfWeek) {
+          const tParts = getWIBParts(t.occurred_at);
+          const dIdx = (tParts.day + 6) % 7;
           if (t.type === 'expense') {
             totalExpense += t.amount;
             daysData[dIdx].expense += t.amount;
@@ -136,7 +160,7 @@ export const DashboardPage: React.FC = () => {
             totalIncome += t.amount;
             daysData[dIdx].income += t.amount;
           }
-        } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
+        } else if (tMs >= prevStart && tMs < prevEnd && t.type === 'expense') {
           prevExpense += t.amount;
         }
       });
@@ -159,22 +183,26 @@ export const DashboardPage: React.FC = () => {
     }
 
     if (statPeriod === 'month') {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-      const prevStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const prevEnd = new Date(startOfMonth);
+      const startOfMonth = getWIBStartOfMonth(currentTimestamp);
+      const daysInMonth = getDaysInWIBMonth(todayWIB.year, todayWIB.month);
+      const nextMonthYear = todayWIB.month === 11 ? todayWIB.year + 1 : todayWIB.year;
+      const nextMonthNum = todayWIB.month === 11 ? 0 : todayWIB.month + 1;
+      const endOfMonth = Date.UTC(nextMonthYear, nextMonthNum, 1) - (7 * 3600 * 1000);
 
-      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const prevYear = todayWIB.month === 0 ? todayWIB.year - 1 : todayWIB.year;
+      const prevMonth = todayWIB.month === 0 ? 11 : todayWIB.month - 1;
+      const prevStart = Date.UTC(prevYear, prevMonth, 1) - (7 * 3600 * 1000);
+      const prevEnd = startOfMonth;
+
       const monthData = Array.from({ length: daysInMonth }, (_, idx) => {
         const dayNum = idx + 1;
-        const dObj = new Date(today.getFullYear(), today.getMonth(), dayNum);
-        const dayName = dObj.toLocaleDateString('id-ID', { weekday: 'short' });
+        const dParts = getWIBParts(Date.UTC(todayWIB.year, todayWIB.month, dayNum) - (7 * 3600 * 1000));
         return {
           label: `${dayNum}`,
-          fullLabel: `${dayName}, ${dayNum} ${today.toLocaleDateString('id-ID', { month: 'short' })}`,
+          fullLabel: `${dParts.dayShort}, ${dayNum} ${todayWIB.monthShort}`,
           expense: 0,
           income: 0,
-          isCurrent: dayNum === today.getDate(),
+          isCurrent: dayNum === todayWIB.date,
         };
       });
 
@@ -183,9 +211,9 @@ export const DashboardPage: React.FC = () => {
       let prevExpense = 0;
 
       transactions.forEach((t) => {
-        const d = new Date(t.occurred_at);
-        if (d >= startOfMonth && d < endOfMonth) {
-          const dayNum = d.getDate();
+        const tParts = getWIBParts(t.occurred_at);
+        if (tParts.year === todayWIB.year && tParts.month === todayWIB.month) {
+          const dayNum = tParts.date;
           const idx = dayNum - 1;
           if (idx >= 0 && idx < monthData.length) {
             if (t.type === 'expense') {
@@ -196,13 +224,16 @@ export const DashboardPage: React.FC = () => {
               monthData[idx].income += t.amount;
             }
           }
-        } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
-          prevExpense += t.amount;
+        } else {
+          const tMs = new Date(t.occurred_at).getTime();
+          if (tMs >= prevStart && tMs < prevEnd && t.type === 'expense') {
+            prevExpense += t.amount;
+          }
         }
       });
 
       const delta = prevExpense > 0 ? Math.round(((totalExpense - prevExpense) / prevExpense) * 100) : null;
-      const avg = Math.round(totalExpense / Math.max(1, today.getDate()));
+      const avg = Math.round(totalExpense / Math.max(1, todayWIB.date));
 
       return {
         title: 'Bulan Ini',
@@ -219,22 +250,17 @@ export const DashboardPage: React.FC = () => {
     }
 
     // year
-    const startOfYear = new Date(today.getFullYear(), 0, 1);
-    const endOfYear = new Date(today.getFullYear() + 1, 0, 1);
-    const prevStart = new Date(today.getFullYear() - 1, 0, 1);
-    const prevEnd = new Date(startOfYear);
+    const startOfYear = getWIBStartOfYear(currentTimestamp);
+    const endOfYear = Date.UTC(todayWIB.year + 1, 0, 1) - (7 * 3600 * 1000);
+    const prevStart = Date.UTC(todayWIB.year - 1, 0, 1) - (7 * 3600 * 1000);
+    const prevEnd = startOfYear;
 
-    const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-    const monthsFull = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-    ];
-    const monthsData = monthsShort.map((lbl, idx) => ({
+    const monthsData = MONTHS_SHORT_ID.map((lbl, idx) => ({
       label: lbl,
-      fullLabel: `${monthsFull[idx]} ${today.getFullYear()}`,
+      fullLabel: `${MONTHS_ID[idx]} ${todayWIB.year}`,
       expense: 0,
       income: 0,
-      isCurrent: idx === today.getMonth(),
+      isCurrent: idx === todayWIB.month,
     }));
 
     let totalExpense = 0;
@@ -242,9 +268,9 @@ export const DashboardPage: React.FC = () => {
     let prevExpense = 0;
 
     transactions.forEach((t) => {
-      const d = new Date(t.occurred_at);
-      if (d >= startOfYear && d < endOfYear) {
-        const mIdx = d.getMonth();
+      const tParts = getWIBParts(t.occurred_at);
+      if (tParts.year === todayWIB.year) {
+        const mIdx = tParts.month;
         if (t.type === 'expense') {
           totalExpense += t.amount;
           monthsData[mIdx].expense += t.amount;
@@ -252,13 +278,16 @@ export const DashboardPage: React.FC = () => {
           totalIncome += t.amount;
           monthsData[mIdx].income += t.amount;
         }
-      } else if (d >= prevStart && d < prevEnd && t.type === 'expense') {
-        prevExpense += t.amount;
+      } else {
+        const tMs = new Date(t.occurred_at).getTime();
+        if (tMs >= prevStart && tMs < prevEnd && t.type === 'expense') {
+          prevExpense += t.amount;
+        }
       }
     });
 
     const delta = prevExpense > 0 ? Math.round(((totalExpense - prevExpense) / prevExpense) * 100) : null;
-    const avg = Math.round(totalExpense / (today.getMonth() + 1));
+    const avg = Math.round(totalExpense / (todayWIB.month + 1));
 
     return {
       title: 'Tahun Ini',
@@ -272,7 +301,7 @@ export const DashboardPage: React.FC = () => {
       avgLabel: 'Rata-rata/bulan',
       avgValue: avg,
     };
-  }, [transactions, statPeriod]);
+  }, [transactions, statPeriod, currentTimestamp]);
 
   // Minimalist Custom Tooltip for Dashboard Line Chart
   const MinimalChartTooltip = ({ active, payload }: any) => {
@@ -311,13 +340,20 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24 md:pb-12">
-      {/* Top Greeting and Status */}
+      {/* Top Greeting and Status with Live Indonesia WIB Clock */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
-            Halo, {profile.nama}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
+              {getWIBGreeting()}, {profile.nama}
+            </h1>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-[#EEF2F6] shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4] animate-pulse" />
+              <Clock size={12} className="text-[#E39A5E]" />
+              <span className="num-tabular font-medium">{formatDateIndo(currentTimestamp)} · {formatTimeShort(currentTimestamp, true)}</span>
+            </div>
+          </div>
+          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-1">
             Gaji magang Rp 1.500.000 · Gajian tiap tanggal {profile.pay_day} · {daysLeft} hari menuju gajian
           </p>
         </div>

@@ -1,5 +1,5 @@
 import { UserProfile, Transaction, AIMemory, ChatMessage, ParsedVoiceItem, TransactionType, NeedWantType, Wallet, Goal, Category } from '../types';
-import { formatCurrency, stripEmoji } from '../utils/format';
+import { formatCurrency, stripEmoji, getWIBParts, getNowWIBParts, formatDateTimeWIB } from '../utils/format';
 import { parseVoiceInput } from '../utils/voiceParser';
 
 export const GEMINI_API_KEY_STORAGE = 'finai_gemini_api_key';
@@ -134,13 +134,13 @@ async function queryGeminiAPI(
 ): Promise<string> {
   const { profile, transactions, memories, chatHistory, wallets, goals } = context;
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const nowWIB = getNowWIBParts();
+  const currentMonth = nowWIB.month;
+  const currentYear = nowWIB.year;
 
   const thisMonthTx = transactions.filter((t) => {
-    const d = new Date(t.occurred_at);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    const p = getWIBParts(t.occurred_at);
+    return p.month === currentMonth && p.year === currentYear;
   });
 
   const totalIncome = thisMonthTx
@@ -155,7 +155,7 @@ async function queryGeminiAPI(
     .filter((t) => t.note.toLowerCase().includes('date') || t.note.toLowerCase().includes('pacar'))
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const todayDate = now.getDate();
+  const todayDate = nowWIB.date;
   const payDay = profile.pay_day || 25;
   let daysLeft = payDay > todayDate ? payDay - todayDate : 30 - todayDate + payDay;
   if (daysLeft <= 0) daysLeft = 1;
@@ -172,12 +172,18 @@ async function queryGeminiAPI(
 
   const recentTxSummary = transactions
     .slice(0, 6)
-    .map((t) => `${t.note}: ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)} (${t.occurred_at.split('T')[0]})`)
+    .map((t) => `${t.note}: ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)} (${formatDateTimeWIB(t.occurred_at)})`)
     .join(', ');
 
   const systemInstructionText = `
 Kamu adalah FinAI, pusat kecerdasan finansial (Core Financial Brain) yang tersambung ke seluruh bagian proyek ini untuk akun pengguna saat ini.
 Kamu memiliki akses ke data profil, akun Google, rincian dompet dan saldo, target tabungan, histori transaksi, serta memori otomatis.
+
+WAKTU & ZONA SAAT INI (INDONESIA WIB / UTC+7):
+- Hari & Tanggal: ${nowWIB.dayName}, ${nowWIB.date} ${nowWIB.monthName} ${nowWIB.year}
+- Jam & Menit: ${nowWIB.timeString} WIB (Waktu Indonesia Barat)
+- Tahun: ${nowWIB.year}, Bulan: ${nowWIB.monthName} (Bulan ke-${nowWIB.month + 1})
+Setiap kali pengguna menanyakan waktu, jam, menit, hari, tanggal, bulan, atau tahun, selalu jawab persis mengikuti Waktu Indonesia Barat (WIB) ini.
 
 PROFIL PENGGUNA:
 - Nama: ${profile.nama}
@@ -303,13 +309,13 @@ function smartLocalFinancialReasoning(
   const lower = cleanPrompt.toLowerCase().trim();
   const firstName = profile.nama.split(' ')[0] || 'kamu';
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const nowWIB = getNowWIBParts();
+  const currentMonth = nowWIB.month;
+  const currentYear = nowWIB.year;
 
   const thisMonthTx = transactions.filter((t) => {
-    const d = new Date(t.occurred_at);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    const p = getWIBParts(t.occurred_at);
+    return p.month === currentMonth && p.year === currentYear;
   });
 
   const totalIncome = thisMonthTx
@@ -326,11 +332,24 @@ function smartLocalFinancialReasoning(
     .filter((t) => t.note.toLowerCase().includes('date') || t.note.toLowerCase().includes('pacar'))
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const todayDate = now.getDate();
+  const todayDate = nowWIB.date;
   const payDay = profile.pay_day || 25;
   let daysLeft = payDay > todayDate ? payDay - todayDate : 30 - todayDate + payDay;
   if (daysLeft <= 0) daysLeft = 1;
   const safeDaily = Math.max(0, Math.round(netBalance / daysLeft));
+
+  // Time / Date inquiry response in WIB
+  if (
+    lower.includes('jam berapa') ||
+    lower.includes('pukul berapa') ||
+    lower.includes('waktu sekarang') ||
+    lower.includes('tanggal berapa') ||
+    lower.includes('hari apa') ||
+    lower.includes('bulan apa') ||
+    lower.includes('tahun berapa')
+  ) {
+    return `Saat ini hari **${nowWIB.dayName}**, tanggal **${nowWIB.date} ${nowWIB.monthName} ${nowWIB.year}**, pukul **${nowWIB.timeString} WIB** (Waktu Indonesia Barat). Ada transaksi atau hal keuangan yang ingin kamu periksa?`;
+  }
 
   // Auto-detect and store facts in local brain
   if (context.addMemory) {

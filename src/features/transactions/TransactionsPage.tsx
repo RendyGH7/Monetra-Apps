@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, Trash2, Calendar, Mic } from 'lucide-react';
 import { useAppStore } from '../../store';
-import { formatCurrency, formatDateIndo, formatTimeShort } from '../../utils/format';
+import { formatCurrency, formatDateIndo, formatTimeShort, getWIBDateString } from '../../utils/format';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { TransactionType } from '../../types';
 
@@ -30,7 +30,7 @@ export const TransactionsPage: React.FC = () => {
 
   const grouped: Record<string, typeof transactions> = {};
   filtered.forEach((t) => {
-    const dStr = t.occurred_at.split('T')[0];
+    const dStr = getWIBDateString(t.occurred_at);
     if (!grouped[dStr]) grouped[dStr] = [];
     grouped[dStr].push(t);
   });
