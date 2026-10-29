@@ -154,49 +154,56 @@ export const BudgetPage: React.FC = () => {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {goals.map((g) => {
-            const pct = Math.min(100, Math.round((g.current_amount / g.target_amount) * 100));
+        {goals.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[#A3AFBC] space-y-1">
+            <p className="font-medium text-[#EEF2F6]">Belum ada target tabungan</p>
+            <p className="text-[11px]">Gunakan tombol Tambah Target di atas untuk membuat target keuangan pertamamu</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {goals.map((g) => {
+              const pct = Math.min(100, Math.round((g.current_amount / g.target_amount) * 100));
 
-            return (
-              <div
-                key={g.id}
-                className="card-lift glass-2 p-4 rounded-xl border-[rgba(205,225,245,0.1)] space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-semibold text-[#EEF2F6]">
-                    {g.name}
-                  </span>
-                  <span className="text-xs font-bold text-[#4FD3A4] num-tabular">{pct}%</span>
-                </div>
+              return (
+                <div
+                  key={g.id}
+                  className="card-lift glass-2 p-4 rounded-xl border-[rgba(205,225,245,0.1)] space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-semibold text-[#EEF2F6]">
+                      {g.name}
+                    </span>
+                    <span className="text-xs font-bold text-[#4FD3A4] num-tabular">{pct}%</span>
+                  </div>
 
-                <div className="w-full h-2.5 rounded-full bg-white/[0.08] overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#E39A5E] to-[#4FD3A4] rounded-full progress-fill"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
+                  <div className="w-full h-2.5 rounded-full bg-white/[0.08] overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#E39A5E] to-[#4FD3A4] rounded-full progress-fill"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
 
-                <div className="flex items-center justify-between text-xs text-[#A3AFBC]">
-                  <span>Terkumpul: {formatCurrency(g.current_amount)}</span>
-                  <span>Target: {formatCurrency(g.target_amount)}</span>
-                </div>
+                  <div className="flex items-center justify-between text-xs text-[#A3AFBC]">
+                    <span>Terkumpul: {formatCurrency(g.current_amount)}</span>
+                    <span>Target: {formatCurrency(g.target_amount)}</span>
+                  </div>
 
-                <div className="pt-2 flex items-center justify-between border-t border-white/[0.06]">
-                  <span className="text-[11px] text-[#74808E]">Tenggat: {g.deadline || '2026-12-31'}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateGoalProgress(g.id, 50000)}
-                    className="chip-press px-2.5 py-1 rounded-lg bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-xs text-[#4FD3A4] font-medium hover:bg-[#4FD3A4]/25 cursor-pointer"
-                    style={{ transition: 'background 0.15s ease' }}
-                  >
-                    + Rp 50.000
-                  </button>
+                  <div className="pt-2 flex items-center justify-between border-t border-white/[0.06]">
+                    <span className="text-[11px] text-[#74808E]">Tenggat: {g.deadline || '2026-12-31'}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateGoalProgress(g.id, 50000)}
+                      className="chip-press px-2.5 py-1 rounded-lg bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-xs text-[#4FD3A4] font-medium hover:bg-[#4FD3A4]/25 cursor-pointer"
+                      style={{ transition: 'background 0.15s ease' }}
+                    >
+                      + Rp 50.000
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Add Goal Modal */}

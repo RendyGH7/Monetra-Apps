@@ -8,13 +8,14 @@ import {
   LogOut,
   User,
   Check,
+  RotateCcw,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
 import { stripEmoji } from '../../utils/format';
 
 export const SettingsPage: React.FC = () => {
-  const { profile, updateProfile, showToast, signOut, transactions } = useAppStore();
+  const { profile, updateProfile, showToast, signOut, transactions, resetAllData } = useAppStore();
 
   const [editingProfile, setEditingProfile] = useState(false);
   const [name, setName] = useState(profile.nama);
@@ -242,6 +243,28 @@ export const SettingsPage: React.FC = () => {
         >
           <Download size={15} />
           <span>Ekspor JSON</span>
+        </button>
+      </div>
+
+      {/* Danger Zone: Reset All Data */}
+      <div className="glass-1 p-5 rounded-2xl border border-[#EE5D6C]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold text-[#EE5D6C]">Kosongkan Semua Data</h2>
+          <p className="text-xs text-[#A3AFBC] mt-0.5">
+            Hapus seluruh catatan transaksi, target, memori AI, dan kembalikan saldo ke Rp 0.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm('Apakah kamu yakin ingin mengosongkan seluruh data transaksi dan saldo? Tindakan ini tidak dapat dibatalkan.')) {
+              resetAllData();
+            }
+          }}
+          className="px-4 py-2 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/40 text-[#EE5D6C] text-xs font-semibold hover:bg-[#EE5D6C]/25 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 self-start sm:self-center"
+        >
+          <RotateCcw size={14} />
+          <span>Kosongkan Data</span>
         </button>
       </div>
     </div>

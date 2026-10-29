@@ -73,13 +73,29 @@ interface AppState {
 
   addChatMessage: (msg: Omit<ChatMessage, 'id' | 'created_at'>) => void;
   clearChat: () => void;
+  resetAllData: () => void;
 
   syncWithSupabaseUser: (userId: string, email?: string, name?: string, avatarUrl?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const GLOBAL_THEME_KEY = 'finai_theme_pref';
-const LEGACY_STORAGE_KEY = 'finai_state_v1';
+const RESET_EMPTY_FLAG = 'finai_reset_empty_v2';
+
+// One-time purge of legacy dummy/seed data so the app starts completely clean & empty
+try {
+  if (typeof window !== 'undefined' && localStorage.getItem(RESET_EMPTY_FLAG) !== 'true') {
+    Object.keys(localStorage).forEach((k) => {
+      if (k.startsWith('finai_user_') || k.startsWith('finai_state_')) {
+        localStorage.removeItem(k);
+      }
+    });
+    localStorage.setItem(RESET_EMPTY_FLAG, 'true');
+  }
+} catch {
+  // Ignore storage errors in restricted contexts
+}
+
 
 export function getUserStorageKey(userId?: string | null): string {
   if (!userId || userId === 'guest' || userId === 'default') return 'finai_user_guest';
@@ -93,11 +109,6 @@ export function loadUserData(userId?: string | null): Partial<AppState> | null {
     const raw = localStorage.getItem(key);
     if (raw) {
       return JSON.parse(raw);
-    }
-    // If no user-specific key exists and user is guest, check legacy storage
-    if ((!userId || userId === 'guest') && localStorage.getItem(LEGACY_STORAGE_KEY)) {
-      const leg = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || '{}');
-      return leg;
     }
     return null;
   } catch {
@@ -146,7 +157,7 @@ export const useAppStore = create<AppState>((set, get) => {
         user_id: 'default',
         role: 'assistant',
         content:
-          'Halo! Saya FinAI, pusat kecerdasan finansialmu. Saya memantau keuangan, dompet, dan targetmu secara otomatis. Tekan tombol mikrofon atau ketik pesan untuk mulai.',
+          'Halo! Saya FinAI, asisten keuangan pribadimu. Belum ada transaksi yang dicatat. Tekan tombol mikrofon atau ketik pesan untuk mulai mencatat pengeluaran atau pemasukan.',
         created_at: new Date().toISOString(),
       },
     ],
@@ -392,6 +403,40 @@ export const useAppStore = create<AppState>((set, get) => {
       });
     },
 
+    resetAllData: () => {
+      const currentAuth = get().authUser;
+      const cleanProfile: UserProfile = {
+        ...INITIAL_PROFILE,
+        id: currentAuth?.id || 'default',
+        nama: currentAuth?.name || 'Rendy',
+        email: currentAuth?.email || '',
+      };
+      const cleanWallets: Wallet[] = [
+        { id: 'wallet-cash', user_id: cleanProfile.id, name: 'Dompet Tunai', type: 'cash', balance: 0 },
+        { id: 'wallet-bank', user_id: cleanProfile.id, name: 'Rekening Bank', type: 'bank', balance: 0 },
+        { id: 'wallet-ewallet', user_id: cleanProfile.id, name: 'E-Wallet', type: 'ewallet', balance: 0 },
+      ];
+      set({
+        profile: cleanProfile,
+        transactions: [],
+        goals: [],
+        memories: [],
+        wallets: cleanWallets,
+        chatMessages: [
+          {
+            id: 'msg-reset-' + Date.now(),
+            user_id: cleanProfile.id,
+            role: 'assistant',
+            content:
+              'Semua data transaksi, target, dan riwayat telah dikosongkan. Kamu bisa mulai mencatat dari awal!',
+            created_at: new Date().toISOString(),
+          },
+        ],
+        toast: { message: 'Semua data berhasil dikosongkan' },
+      });
+      saveUserData(currentAuth?.id, get());
+    },
+
     syncWithSupabaseUser: async (userId, email, name, avatarUrl) => {
       // 1. Check if this Google user has their own isolated data saved
       const savedUser = loadUserData(userId);
@@ -448,31 +493,14 @@ export const useAppStore = create<AppState>((set, get) => {
           avatar_url: avatarUrl || '',
         };
 
-        const newMemories: AIMemory[] = [
-          {
-            id: 'mem-google-' + userId,
-            user_id: userId,
-            type: 'profile',
-            content: `Akun Google terverifikasi: ${cleanName} (${email || '-'}). Profil aktif.`,
-            importance: 3,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: 'mem-job-' + userId,
-            user_id: userId,
-            type: 'habit',
-            content: `Pekerjaan: Anak magang dengan gaji pokok Rp 1.500.000 per bulan. Gajian tiap tanggal 25.`,
-            importance: 3,
-            updated_at: new Date().toISOString(),
-          },
-        ];
+        const newMemories: AIMemory[] = [];
 
         const newChat: ChatMessage[] = [
           {
             id: 'msg-welcome-new-' + Date.now(),
             user_id: userId,
             role: 'assistant',
-            content: `Halo ${cleanName.split(' ')[0]}! Saya FinAI, pusat kecerdasan finansialmu yang terhubung langsung ke akun Google kamu. Semua data transaksi, dompet, dan memori kamu tersimpan secara terisolasi khusus di akun ini. Tekan tombol mikrofon atau ketik pesan untuk mulai!`,
+            content: `Halo ${cleanName.split(' ')[0]}! Saya FinAI, asisten keuanganmu yang terhubung dengan akun Google kamu. Data keuanganmu masih bersih dan siap kamu gunakan. Tekan mikrofon atau ketik pesan untuk mencatat transaksi pertamamu!`,
             created_at: new Date().toISOString(),
           },
         ];
@@ -482,8 +510,8 @@ export const useAppStore = create<AppState>((set, get) => {
           profile: newProfile,
           categories: INITIAL_CATEGORIES,
           wallets: INITIAL_WALLETS,
-          transactions: INITIAL_TRANSACTIONS,
-          goals: INITIAL_GOALS,
+          transactions: [],
+          goals: [],
           memories: newMemories,
           chatMessages: newChat,
         };

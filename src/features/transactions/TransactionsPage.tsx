@@ -127,9 +127,13 @@ export const TransactionsPage: React.FC = () => {
       {/* Grouped Transaction List */}
       {sortedDates.length === 0 ? (
         <div className="glass-1 p-12 rounded-2xl text-center space-y-3 border-[rgba(205,225,245,0.12)]">
-          <p className="text-sm font-medium text-[#EEF2F6]">Tidak ada transaksi yang cocok</p>
+          <p className="text-sm font-medium text-[#EEF2F6]">
+            {transactions.length === 0 ? 'Belum ada transaksi yang dicatat' : 'Tidak ada transaksi yang cocok'}
+          </p>
           <p className="text-xs text-[#A3AFBC]">
-            Coba ubah kata kunci pencarian atau rekam transaksi baru menggunakan tombol mikrofon.
+            {transactions.length === 0
+              ? 'Mulai catat transaksi pertama kamu dengan tombol mikrofon atau tombol Tambah Manual.'
+              : 'Coba ubah kata kunci pencarian atau filter yang dipilih.'}
           </p>
         </div>
       ) : (

@@ -353,7 +353,9 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <p className="text-xs sm:text-sm text-[#A3AFBC] mt-1">
-            Gaji magang Rp 1.500.000 · Gajian tiap tanggal {profile.pay_day} · {daysLeft} hari menuju gajian
+            {profile.monthly_income > 0
+              ? `Pemasukan bulanan ${formatCurrency(profile.monthly_income)} · Gajian tiap tanggal ${profile.pay_day} · ${daysLeft} hari menuju gajian`
+              : 'Belum ada transaksi tercatat · Rekam suara atau tambah manual untuk mulai mencatat'}
           </p>
         </div>
 
@@ -442,7 +444,7 @@ export const DashboardPage: React.FC = () => {
             <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-[#4FD3A4] to-[#E39A5E] rounded-full progress-fill"
-                style={{ width: `${Math.min(100, Math.max(10, (netBalance / (profile.monthly_income || 1500000)) * 100))}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, profile.monthly_income > 0 ? (netBalance / profile.monthly_income) * 100 : 0))}%` }}
               />
             </div>
             <p className="text-[10px] text-[#74808E] mt-1 text-right">
@@ -858,8 +860,14 @@ export const DashboardPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-2.5">
-            {transactions.slice(0, 5).map((tx, idx) => {
+          {transactions.length === 0 ? (
+            <div className="py-10 text-center text-xs text-[#A3AFBC] space-y-1">
+              <p className="font-medium text-[#EEF2F6]">Belum ada transaksi</p>
+              <p className="text-[11px]">Tekan tombol mikrofon untuk merekam suara atau klik tombol + untuk catat cepat</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {transactions.slice(0, 5).map((tx, idx) => {
               const cat = categories.find((c) => c.id === tx.category_id);
               const isExpense = tx.type === 'expense';
 
@@ -908,7 +916,8 @@ export const DashboardPage: React.FC = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
