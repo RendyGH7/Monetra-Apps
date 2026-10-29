@@ -415,33 +415,14 @@ export const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24 md:pb-12">
-      {/* ── Header + Period Tabs ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
-            Statistik & Analisis
-          </h1>
-          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
-            Pola konsumsi {periodLabel.toLowerCase()} dan evaluasi kesehatan finansial
-          </p>
-        </div>
-
-        <div className="flex items-center p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs self-start sm:self-auto">
-          {(['week', 'month', 'year'] as Period[]).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                period === p
-                  ? 'bg-[#E39A5E]/15 text-[#E39A5E] font-semibold border border-[#E39A5E]/30 shadow-xs'
-                  : 'text-[#A3AFBC] hover:text-[#EEF2F6]'
-              }`}
-            >
-              {p === 'week' ? 'Mingguan' : p === 'month' ? 'Bulanan' : 'Tahunan'}
-            </button>
-          ))}
-        </div>
+      {/* ── Header ───────────────────────────────────────────────────────── */}
+      <div>
+        <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
+          Statistik & Analisis
+        </h1>
+        <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
+          Pola konsumsi {periodLabel.toLowerCase()} dan evaluasi kesehatan finansial
+        </p>
       </div>
 
       {/* ── Summary Stat Cards ───────────────────────────────────────────── */}
