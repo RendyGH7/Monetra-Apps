@@ -416,7 +416,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* ── Minimalist Periodic Statistics (Mingguan / Bulanan / Tahunan) ── */}
-      <div className="card-lift glass-2 p-5 rounded-2xl border border-[var(--glass-border)] space-y-4">
+      <div className="card-hover-subtle glass-2 p-5 rounded-2xl border border-[var(--glass-border)] space-y-4">
         {/* Header with Title and Minimalist Period Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">

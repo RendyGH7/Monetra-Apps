@@ -427,6 +427,20 @@ input[type="submit"],
   transition-duration: 0.08s;
 }
 
+/* Card with hover elevation only: no active click depression, default cursor */
+.card-hover-subtle {
+  cursor: default;
+  transition: box-shadow 0.24s ease, border-color 0.2s ease;
+}
+.card-hover-subtle:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border-color: rgba(205, 225, 245, 0.22);
+}
+[data-theme="light"] .card-hover-subtle:hover {
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  border-color: rgba(203, 213, 225, 0.95);
+}
+
 /* Filter Chips & Tabs: Spring bounce on click */
 .chip-press {
   user-select: none;
