@@ -12,6 +12,8 @@ import {
   Calendar,
   ChevronUp,
   ChevronDown,
+  Briefcase,
+  TrendingUp,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
@@ -21,28 +23,28 @@ export const SettingsPage: React.FC = () => {
   const { profile, updateProfile, showToast, signOut, transactions, resetAllData } = useAppStore();
 
   const [editingProfile, setEditingProfile] = useState(false);
-  const [name, setName] = useState(profile.nama);
+  const [status, setStatus] = useState(profile.internship_status || '-');
   const [salary, setSalary] = useState(String(profile.monthly_income));
   const [payDay, setPayDay] = useState(String(profile.pay_day));
-  const [datingBudget, setDatingBudget] = useState(String(profile.dating_budget_est));
+  const [sideHustle, setSideHustle] = useState(profile.side_hustle_status || '-');
 
   useEffect(() => {
-    setName(profile.nama);
+    setStatus(profile.internship_status || '-');
     setSalary(String(profile.monthly_income));
     setPayDay(String(profile.pay_day));
-    setDatingBudget(String(profile.dating_budget_est));
-  }, [profile.nama, profile.monthly_income, profile.pay_day, profile.dating_budget_est]);
+    setSideHustle(profile.side_hustle_status || '-');
+  }, [profile.internship_status, profile.monthly_income, profile.pay_day, profile.side_hustle_status]);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfile({
-      nama: stripEmoji(name),
-      monthly_income: parseInt(salary.replace(/[^\d]/g, ''), 10) || 1500000,
+      internship_status: stripEmoji(status).trim() || '-',
+      monthly_income: parseInt(salary.replace(/[^\d]/g, ''), 10) || 0,
       pay_day: parseInt(payDay, 10) || 25,
-      dating_budget_est: parseInt(datingBudget.replace(/[^\d]/g, ''), 10) || 600000,
+      side_hustle_status: stripEmoji(sideHustle).trim() || '-',
     });
     setEditingProfile(false);
-    showToast('Profil finansial diperbarui.');
+    showToast('Profil finansial berhasil diperbarui.');
   };
 
   const handleExportData = () => {
@@ -158,39 +160,39 @@ export const SettingsPage: React.FC = () => {
         {editingProfile ? (
           <form onSubmit={handleSaveProfile} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-[#A3AFBC]">Nama Lengkap</label>
+              <label className="text-xs text-[#A3AFBC]">Status</label>
               <div className="relative flex items-center mt-1">
                 <span className="absolute left-3 text-[#A3AFBC] pointer-events-none">
-                  <User size={14} />
+                  <Briefcase size={14} />
                 </span>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Nama Pengguna"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  placeholder="Status (misal: Karyawan, Magang, dll)"
                   className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-[#A3AFBC]">Gaji Pokok / Pemasukan Bulanan</label>
+              <label className="text-xs text-[#A3AFBC]">Gaji Bulanan</label>
               <div className="relative flex items-center mt-1">
-                <span className="absolute left-3 text-xs font-bold text-[#E39A5E] pointer-events-none">Rp</span>
+                <span className="absolute left-3 text-xs font-bold text-[#4FD3A4] pointer-events-none">Rp</span>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={salary ? new Intl.NumberFormat('id-ID').format(Number(salary)) : ''}
                   onChange={(e) => setSalary(e.target.value.replace(/[^\d]/g, ''))}
                   placeholder="0"
-                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] font-semibold num-tabular outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] font-semibold num-tabular outline-none border border-[var(--glass-border)] focus:border-[#4FD3A4] transition-all"
                 />
               </div>
             </div>
 
             <div className="sm:col-span-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-[#A3AFBC]">Tanggal Gajian Bulanan</label>
+                <label className="text-xs text-[#A3AFBC]">Tanggal Gajian</label>
                 <span className="text-[10px] text-[#E39A5E] font-medium num-tabular">
                   Tiap tgl {payDay || 25}
                 </span>
@@ -261,16 +263,17 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div className="sm:col-span-1">
-              <label className="text-xs text-[#A3AFBC]">Target Budget Kencan Bulanan</label>
+              <label className="text-xs text-[#A3AFBC]">Bisnis Sampingan</label>
               <div className="relative flex items-center mt-1">
-                <span className="absolute left-3 text-xs font-bold text-[#E39A5E] pointer-events-none">Rp</span>
+                <span className="absolute left-3 text-[#A3AFBC] pointer-events-none">
+                  <TrendingUp size={14} />
+                </span>
                 <input
                   type="text"
-                  inputMode="numeric"
-                  value={datingBudget ? new Intl.NumberFormat('id-ID').format(Number(datingBudget)) : ''}
-                  onChange={(e) => setDatingBudget(e.target.value.replace(/[^\d]/g, ''))}
-                  placeholder="0"
-                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] font-semibold num-tabular outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+                  value={sideHustle}
+                  onChange={(e) => setSideHustle(e.target.value)}
+                  placeholder="Bisnis Sampingan (misal: Toko Online, Freelance, atau -)"
+                  className="w-full h-10 pl-9 pr-3 rounded-xl glass-2 text-xs text-[#EEF2F6] outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
                 />
               </div>
             </div>
@@ -288,7 +291,7 @@ export const SettingsPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div className="p-3 rounded-xl glass-2">
               <p className="text-[#A3AFBC]">Status</p>
-              <p className="font-semibold text-[#EEF2F6] mt-0.5">{profile.internship_status}</p>
+              <p className="font-semibold text-[#EEF2F6] mt-0.5">{profile.internship_status || '-'}</p>
             </div>
             <div className="p-3 rounded-xl glass-2">
               <p className="text-[#A3AFBC]">Gaji Bulanan</p>
@@ -302,7 +305,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl glass-2">
               <p className="text-[#A3AFBC]">Bisnis Sampingan</p>
-              <p className="font-semibold text-[#E39A5E] mt-0.5 truncate">{profile.side_hustle_status}</p>
+              <p className="font-semibold text-[#E39A5E] mt-0.5 truncate">{profile.side_hustle_status || '-'}</p>
             </div>
           </div>
         )}
