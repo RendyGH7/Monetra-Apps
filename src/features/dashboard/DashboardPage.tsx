@@ -11,7 +11,9 @@ import {
   Plus,
   BarChart3,
   ChevronRight,
+  PieChart as DonutIcon,
 } from 'lucide-react';
+import { CategoryIcon } from '../../components/common/CategoryIcon';
 import {
   PieChart,
   Pie,
@@ -26,7 +28,6 @@ import {
 } from 'recharts';
 import { useAppStore } from '../../store';
 import { formatCurrency, formatTimeShort, formatCompact } from '../../utils/format';
-import { CategoryIcon } from '../../components/common/CategoryIcon';
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -91,6 +92,7 @@ export const DashboardPage: React.FC = () => {
   type StatPeriod = 'week' | 'month' | 'year';
   const [statPeriod, setStatPeriod] = useState<StatPeriod>('week');
   const [chartMetric, setChartMetric] = useState<'all' | 'expense' | 'income'>('all');
+  const [activeDonutIndex, setActiveDonutIndex] = useState<number | null>(null);
 
   const periodStats = useMemo(() => {
     const today = new Date();
@@ -626,13 +628,22 @@ export const DashboardPage: React.FC = () => {
       {/* Analytics & Recent Transactions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Category Donut Chart */}
-        <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] lg:col-span-2 space-y-4">
+        <div className="card-hover-subtle glass-2 p-5 rounded-2xl border border-[var(--glass-border)] lg:col-span-2 space-y-4 shadow-lg">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-[#EEF2F6]">Distribusi Pengeluaran</h2>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
+                <DonutIcon size={16} />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Distribusi Pengeluaran</h2>
+                <p className="text-[11px] text-[var(--text-secondary)]">Bulan Ini · {pieData.length} Kategori</p>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => setActiveTab('statistik')}
-              className="btn-press text-xs font-semibold text-[#E39A5E] bg-[#E39A5E]/10 hover:bg-[#E39A5E]/20 border border-[#E39A5E]/25 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+              className="btn-press text-xs font-semibold text-[#E39A5E] bg-[#E39A5E]/10 hover:bg-[#E39A5E]/20 border border-[#E39A5E]/25 px-2.5 py-1.5 rounded-xl flex items-center gap-1 cursor-pointer transition-all shadow-xs"
               title="Buka Analisis Kategori"
             >
               <span>Lihat Detail</span>
@@ -641,60 +652,160 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {pieData.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#A3AFBC]">
-              Belum ada data pengeluaran bulan ini.
+            <div className="py-14 text-center text-xs text-[var(--text-secondary)] space-y-1">
+              <p className="font-medium text-[var(--text-primary)]">Belum ada pengeluaran bulan ini</p>
+              <p className="text-[11px]">Catat transaksi baru untuk melihat distribusi</p>
             </div>
           ) : (
             <>
-              <div className="h-48 relative">
+              <div className="h-52 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
-                      paddingAngle={3}
+                      innerRadius={58}
+                      outerRadius={82}
+                      paddingAngle={4}
+                      cornerRadius={6}
                       dataKey="value"
-                      strokeWidth={0}
+                      stroke="transparent"
+                      onMouseEnter={(_, index) => setActiveDonutIndex(index)}
+                      onMouseLeave={() => setActiveDonutIndex(null)}
                     >
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          opacity={activeDonutIndex === null || activeDonutIndex === index ? 1 : 0.4}
+                          style={{
+                            transition: 'opacity 0.2s ease, transform 0.2s ease',
+                            cursor: 'pointer',
+                            outline: 'none',
+                          }}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(val: any) => [formatCurrency(Number(val) || 0), 'Pengeluaran']}
-                      contentStyle={{
-                        backgroundColor: '#0D1219',
-                        borderColor: 'rgba(205,225,245,0.2)',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        color: '#EEF2F6',
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data: any = payload[0];
+                          return (
+                            <div className="glass-2 border border-[var(--glass-border)] rounded-xl px-3 py-2 shadow-xl backdrop-blur-md text-xs space-y-1">
+                              <div className="flex items-center gap-1.5 font-semibold text-[var(--text-primary)]">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.payload.color }} />
+                                <span>{data.name}</span>
+                              </div>
+                              <p className="text-[var(--text-secondary)]">
+                                Pengeluaran: <strong className="text-[var(--text-primary)] num-tabular">{formatCurrency(data.value)}</strong>
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] text-[#A3AFBC] uppercase">Total</span>
-                  <span className="text-xs font-bold text-[#EEF2F6] num-tabular">
-                    {formatCurrency(totalExpense)}
-                  </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                  {activeDonutIndex !== null && pieData[activeDonutIndex] ? (
+                    <div className="flex flex-col items-center justify-center text-center px-4">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-secondary)] truncate max-w-[120px]">
+                        {pieData[activeDonutIndex].name}
+                      </span>
+                      <span className="font-display font-bold text-base text-[var(--text-primary)] num-tabular">
+                        {formatCurrency(pieData[activeDonutIndex].value)}
+                      </span>
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5"
+                        style={{
+                          backgroundColor: `${pieData[activeDonutIndex].color}25`,
+                          color: pieData[activeDonutIndex].color,
+                        }}
+                      >
+                        {totalExpense > 0 ? Math.round((pieData[activeDonutIndex].value / totalExpense) * 100) : 0}%
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center px-4">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)]">
+                        Total Keluar
+                      </span>
+                      <span className="font-display font-bold text-base text-[var(--text-primary)] num-tabular">
+                        {formatCurrency(totalExpense)}
+                      </span>
+                      <span className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                        {pieData.length} Kategori
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2 border-t border-[rgba(205,225,245,0.08)]">
-                {pieData.slice(0, 4).map((entry, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                      <span className="text-[#A3AFBC] truncate max-w-[130px]">{entry.name}</span>
+              {/* Category Rows with Icons and Progress Bar */}
+              <div className="space-y-1.5 pt-3 border-t border-[rgba(205,225,245,0.08)]">
+                {pieData.slice(0, 4).map((entry, idx) => {
+                  const pct = totalExpense > 0 ? Math.round((entry.value / totalExpense) * 100) : 0;
+                  const isHovered = activeDonutIndex === idx;
+
+                  return (
+                    <div
+                      key={idx}
+                      onMouseEnter={() => setActiveDonutIndex(idx)}
+                      onMouseLeave={() => setActiveDonutIndex(null)}
+                      className={`p-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                        isHovered
+                          ? 'bg-white/[0.08] shadow-xs'
+                          : 'hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
+                            style={{
+                              backgroundColor: `${entry.color}15`,
+                              borderColor: `${entry.color}35`,
+                              color: entry.color,
+                            }}
+                          >
+                            <CategoryIcon name={entry.name} size={14} color={entry.color} />
+                          </div>
+                          <span className="font-medium text-[var(--text-primary)] truncate max-w-[120px] sm:max-w-[140px]">
+                            {entry.name}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md num-tabular"
+                            style={{
+                              backgroundColor: `${entry.color}18`,
+                              color: entry.color,
+                            }}
+                          >
+                            {pct}%
+                          </span>
+                          <span className="font-semibold text-xs text-[var(--text-primary)] num-tabular">
+                            {formatCurrency(entry.value)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Micro Progress Bar */}
+                      <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: entry.color,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <span className="font-semibold text-[#EEF2F6] num-tabular">
-                      {formatCurrency(entry.value)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}

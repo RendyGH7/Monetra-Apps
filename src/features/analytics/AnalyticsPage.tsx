@@ -17,8 +17,9 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { useAppStore } from '../../store';
+import { Heart, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Minus, BarChart3, ArrowRight, PieChart as DonutIcon } from 'lucide-react';
+import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { formatCurrency, formatCompact } from '../../utils/format';
-import { Heart, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Minus, BarChart3, ArrowRight } from 'lucide-react';
 
 // ─── Type ────────────────────────────────────────────────────────────────────
 type Period = 'week' | 'month' | 'year';
@@ -68,6 +69,7 @@ export const AnalyticsPage: React.FC = () => {
   const { transactions, categories, profile } = useAppStore();
   const [period, setPeriod] = useState<Period>('week');
   const [chartMetric, setChartMetric] = useState<'all' | 'expense' | 'income'>('all');
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null);
 
   const chartPalette = [
     '#E39A5E', '#4FD3A4', '#6FA8D6', '#EE5D6C',
@@ -649,64 +651,174 @@ export const AnalyticsPage: React.FC = () => {
       {/* ── Category Donut + 50/30/20 ────────────────────────────────────── */}
       <div id="category-distribution" className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Donut */}
-        <div className="glass-1 p-5 rounded-2xl border border-[rgba(205,225,245,0.12)] lg:col-span-2 space-y-4">
-          <h2 className="text-sm font-semibold text-[#EEF2F6]">Distribusi per Kategori</h2>
+        <div className="card-hover-subtle glass-2 p-5 rounded-2xl border border-[var(--glass-border)] lg:col-span-2 space-y-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
+                <DonutIcon size={16} />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Distribusi per Kategori</h2>
+                <p className="text-[11px] text-[var(--text-secondary)]">{periodLabel} · {pieData.length} Kategori</p>
+              </div>
+            </div>
+          </div>
+
           {pieData.length === 0 ? (
-            <div className="py-14 text-center text-xs text-[#A3AFBC]">
-              Belum ada data pengeluaran pada periode ini.
+            <div className="py-14 text-center text-xs text-[var(--text-secondary)] space-y-1">
+              <p className="font-medium text-[var(--text-primary)]">Belum ada data pengeluaran pada periode ini</p>
+              <p className="text-[11px]">Transaksi yang dicatat akan dikelompokkan otomatis di sini</p>
             </div>
           ) : (
             <>
-              <div className="h-48 relative">
+              <div className="h-52 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={52}
-                      outerRadius={76}
-                      paddingAngle={3}
+                      innerRadius={58}
+                      outerRadius={82}
+                      paddingAngle={4}
+                      cornerRadius={6}
                       dataKey="value"
-                      strokeWidth={0}
+                      stroke="transparent"
+                      onMouseEnter={(_, index) => setActiveCategoryIndex(index)}
+                      onMouseLeave={() => setActiveCategoryIndex(null)}
                     >
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          opacity={activeCategoryIndex === null || activeCategoryIndex === index ? 1 : 0.4}
+                          style={{
+                            transition: 'opacity 0.2s ease, transform 0.2s ease',
+                            cursor: 'pointer',
+                            outline: 'none',
+                          }}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
-                      content={<CustomTooltip />}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data: any = payload[0];
+                          return (
+                            <div className="glass-2 border border-[var(--glass-border)] rounded-xl px-3 py-2 shadow-xl backdrop-blur-md text-xs space-y-1">
+                              <div className="flex items-center gap-1.5 font-semibold text-[var(--text-primary)]">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.payload.color }} />
+                                <span>{data.name}</span>
+                              </div>
+                              <p className="text-[var(--text-secondary)]">
+                                Pengeluaran: <strong className="text-[var(--text-primary)] num-tabular">{formatCurrency(data.value)}</strong>
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] text-[#74808E] uppercase tracking-wide">Total</span>
-                  <span className="text-sm font-bold text-[#EEF2F6] num-tabular">
-                    {formatCurrency(totalExpense)}
-                  </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+                  {activeCategoryIndex !== null && pieData[activeCategoryIndex] ? (
+                    <div className="flex flex-col items-center justify-center text-center px-4">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-secondary)] truncate max-w-[120px]">
+                        {pieData[activeCategoryIndex].name}
+                      </span>
+                      <span className="font-display font-bold text-base text-[var(--text-primary)] num-tabular">
+                        {formatCurrency(pieData[activeCategoryIndex].value)}
+                      </span>
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5"
+                        style={{
+                          backgroundColor: `${pieData[activeCategoryIndex].color}25`,
+                          color: pieData[activeCategoryIndex].color,
+                        }}
+                      >
+                        {totalExpense > 0 ? Math.round((pieData[activeCategoryIndex].value / totalExpense) * 100) : 0}%
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center px-4">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)]">
+                        Total Keluar
+                      </span>
+                      <span className="font-display font-bold text-base text-[var(--text-primary)] num-tabular">
+                        {formatCurrency(totalExpense)}
+                      </span>
+                      <span className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                        {pieData.length} Kategori
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2 border-t border-[rgba(205,225,245,0.08)]">
-                {pieData.slice(0, 5).map((entry, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                      <span className="text-[#A3AFBC] truncate max-w-[120px]">{entry.name}</span>
+              {/* Category Rows with Icons and Progress Bar */}
+              <div className="space-y-1.5 pt-3 border-t border-[rgba(205,225,245,0.08)]">
+                {pieData.slice(0, 5).map((entry, idx) => {
+                  const pct = totalExpense > 0 ? Math.round((entry.value / totalExpense) * 100) : 0;
+                  const isHovered = activeCategoryIndex === idx;
+
+                  return (
+                    <div
+                      key={idx}
+                      onMouseEnter={() => setActiveCategoryIndex(idx)}
+                      onMouseLeave={() => setActiveCategoryIndex(null)}
+                      className={`p-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                        isHovered
+                          ? 'bg-white/[0.08] shadow-xs'
+                          : 'hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
+                            style={{
+                              backgroundColor: `${entry.color}15`,
+                              borderColor: `${entry.color}35`,
+                              color: entry.color,
+                            }}
+                          >
+                            <CategoryIcon name={entry.name} size={14} color={entry.color} />
+                          </div>
+                          <span className="font-medium text-[var(--text-primary)] truncate max-w-[120px] sm:max-w-[140px]">
+                            {entry.name}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md num-tabular"
+                            style={{
+                              backgroundColor: `${entry.color}18`,
+                              color: entry.color,
+                            }}
+                          >
+                            {pct}%
+                          </span>
+                          <span className="font-semibold text-xs text-[var(--text-primary)] num-tabular">
+                            {formatCurrency(entry.value)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Micro Progress Bar */}
+                      <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: entry.color,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[#74808E]">
-                        {totalExpense > 0 ? Math.round((entry.value / totalExpense) * 100) : 0}%
-                      </span>
-                      <span className="font-semibold text-[#EEF2F6] num-tabular">
-                        {formatCurrency(entry.value)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
