@@ -348,7 +348,6 @@ export const DashboardPage: React.FC = () => {
               {getWIBGreeting()}, {profile.nama}
             </h1>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-[#EEF2F6] shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4] animate-pulse" />
               <Clock size={12} className="text-[#E39A5E]" />
               <span className="num-tabular font-medium">{formatDateIndo(currentTimestamp)} · {formatTimeShort(currentTimestamp, true)}</span>
             </div>
