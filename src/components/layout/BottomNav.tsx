@@ -1,11 +1,11 @@
 import React from 'react';
-import { Home, ListOrdered, BarChart3, Bot, Mic } from 'lucide-react';
+import { Home, ListOrdered, BarChart3, Bot, Mic, Target, Settings } from 'lucide-react';
 import { useAppStore } from '../../store';
 
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab, setVoiceModalOpen } = useAppStore();
 
-  type NavTabKey = 'beranda' | 'transaksi' | 'statistik' | 'asisten';
+  type NavTabKey = 'beranda' | 'transaksi' | 'budget' | 'statistik' | 'asisten' | 'pengaturan';
 
   const navItems: Array<{
     key: NavTabKey | 'mic';
@@ -15,9 +15,11 @@ export const BottomNav: React.FC = () => {
   }> = [
     { key: 'beranda', label: 'Beranda', icon: Home },
     { key: 'transaksi', label: 'Transaksi', icon: ListOrdered },
+    { key: 'budget', label: 'Budget', icon: Target },
     { key: 'mic', label: 'Bicara', icon: Mic, isMic: true },
     { key: 'statistik', label: 'Statistik', icon: BarChart3 },
     { key: 'asisten', label: 'Asisten', icon: Bot },
+    { key: 'pengaturan', label: 'Pengaturan', icon: Settings },
   ];
 
   return (
