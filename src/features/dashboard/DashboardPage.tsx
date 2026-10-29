@@ -750,7 +750,7 @@ export const DashboardPage: React.FC = () => {
                       <span className="text-[11px] font-semibold text-[var(--text-secondary)] truncate max-w-[125px]">
                         {pieData[activeDonutIndex].name}
                       </span>
-                      <span className="font-display font-bold text-lg text-[var(--text-primary)] num-tabular tracking-tight mt-0.5">
+                      <span className="font-display font-bold text-sm sm:text-base text-[var(--text-primary)] num-tabular tracking-tight mt-0.5">
                         {formatCurrency(pieData[activeDonutIndex].value)}
                       </span>
                       <span
@@ -768,7 +768,7 @@ export const DashboardPage: React.FC = () => {
                       <span className="text-[11px] font-medium text-[var(--text-secondary)] tracking-wide">
                         Total
                       </span>
-                      <span className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)] num-tabular tracking-tight mt-0.5">
+                      <span className="font-display font-bold text-base sm:text-lg text-[var(--text-primary)] num-tabular tracking-tight mt-0.5">
                         {formatCurrency(totalExpense)}
                       </span>
                     </div>
