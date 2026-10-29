@@ -645,7 +645,11 @@ export const DashboardPage: React.FC = () => {
               )}
             </div>
             <p className="text-xs sm:text-sm text-[#EEF2F6] leading-relaxed">
-              Total pengeluaran kencan bulan ini mencapai <span className="font-semibold text-[#E39A5E] num-tabular">{formatCurrency(dateSpending)}</span> ({Math.round((dateSpending / (profile.monthly_income || 1500000)) * 100)}% dari gaji magang). Pertahankan makan harian di batas Rp 15.000 agar cashflow tetap aman.
+              {transactions.length === 0
+                ? 'Belum ada transaksi tercatat. Mulai rekam pengeluaran harianmu dengan suara atau input manual untuk mendapatkan evaluasi finansial cerdas dari FinAI.'
+                : dateSpending > 0
+                ? `Total pengeluaran kencan bulan ini mencapai ${formatCurrency(dateSpending)}. Pantau terus arus kas harianmu agar keuangan tetap sehat.`
+                : 'Arus kas harianmu masih terpantau aman. Pertahankan kebiasaan mencatat transaksi secara rutin.'}
             </p>
           </div>
         </div>
