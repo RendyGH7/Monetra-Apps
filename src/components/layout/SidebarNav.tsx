@@ -183,31 +183,37 @@ export const SidebarNav: React.FC = () => {
       </div>
 
       {/* Bottom Profile and Settings section */}
-      <div className="space-y-3 pt-4 border-t border-[rgba(205,225,245,0.1)]">
+      <div className="space-y-2 pt-3 border-t border-[rgba(205,225,245,0.1)]">
         {/* Theme toggle */}
         <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-1`}>
           <button
             type="button"
             onClick={toggleTheme}
-            className="icon-spin-hover btn-ghost p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer shrink-0"
+            className={`icon-spin-hover btn-ghost rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer shrink-0 ${
+              sidebarCollapsed ? 'w-11 h-10 flex items-center justify-center p-0' : 'p-2'
+            }`}
             title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <span
-            className={`text-[11px] text-[var(--text-secondary)] font-medium whitespace-nowrap overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              sidebarCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[120px] opacity-100'
-            }`}
-          >
-            {theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}
-          </span>
+          {!sidebarCollapsed && (
+            <span className="text-[11px] text-[var(--text-secondary)] font-medium whitespace-nowrap overflow-hidden">
+              {theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}
+            </span>
+          )}
         </div>
 
         {/* User Card */}
         <div
+          onClick={() => {
+            if (sidebarCollapsed) setActiveTab('pengaturan');
+          }}
           className={`glass-1 ${
-            sidebarCollapsed ? 'p-1.5 flex-col justify-center' : 'p-2.5 flex-row justify-between'
-          } rounded-xl flex items-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden`}
+            sidebarCollapsed
+              ? 'w-11 h-11 mx-auto p-0 justify-center cursor-pointer hover:border-[#E39A5E]/50 hover:bg-white/[0.04]'
+              : 'w-full p-2.5 flex-row justify-between gap-2.5'
+          } rounded-xl flex items-center transition-all duration-200 overflow-hidden group`}
+          title={sidebarCollapsed ? `${profile.nama} · Buka Pengaturan` : undefined}
         >
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0`}>
             {profile.avatar_url && !avatarError ? (
@@ -216,59 +222,53 @@ export const SidebarNav: React.FC = () => {
                 alt={profile.nama}
                 referrerPolicy="no-referrer"
                 onError={() => setAvatarError(true)}
-                className="w-8 h-8 rounded-lg object-cover border border-[#E39A5E]/40 shrink-0 shadow-sm"
+                className="w-8 h-8 rounded-lg object-cover border border-[#E39A5E]/40 shrink-0 shadow-sm group-hover:border-[#E39A5E]/70 transition-colors"
                 title={`${profile.nama} (${profile.email || 'Akun Google'})`}
               />
             ) : (
               <div
-                className="w-8 h-8 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs shrink-0"
+                className="w-8 h-8 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs shrink-0 group-hover:border-[#E39A5E]/60 transition-colors"
                 title={`${profile.nama} (${profile.email || 'Akun Google'})`}
               >
                 {(profile.nama || 'U').charAt(0).toUpperCase()}
               </div>
             )}
-            <div
-              className={`min-w-0 overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                sidebarCollapsed
-                  ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none'
-                  : 'max-w-[130px] opacity-100 translate-x-0'
-              }`}
-            >
-              <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
-                {profile.nama}
-              </p>
-              <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                {profile.email || profile.internship_status}
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={`overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              sidebarCollapsed ? 'max-w-0 opacity-0 scale-75 pointer-events-none' : 'max-w-[50px] opacity-100 scale-100'
-            }`}
-          >
-            {profile.id === 'default' && !authUser ? (
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="btn-ghost text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer px-1 py-0.5 rounded whitespace-nowrap"
-                title="Hubungkan Google"
-              >
-                <LogIn size={14} />
-                <span>Masuk</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={signOut}
-                className="btn-danger text-xs text-[var(--text-secondary)] hover:text-[#EE5D6C] flex items-center gap-1 cursor-pointer p-1.5 rounded-lg"
-                title="Keluar dari Akun"
-              >
-                <LogOut size={14} />
-              </button>
+            {!sidebarCollapsed && (
+              <div className="min-w-0 overflow-hidden">
+                <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                  {profile.nama}
+                </p>
+                <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                  {profile.email || profile.internship_status}
+                </p>
+              </div>
             )}
           </div>
+
+          {!sidebarCollapsed && (
+            <div className="shrink-0">
+              {profile.id === 'default' && !authUser ? (
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="btn-ghost text-xs text-[#E39A5E] hover:underline flex items-center gap-1 font-medium cursor-pointer px-1 py-0.5 rounded whitespace-nowrap"
+                  title="Hubungkan Google"
+                >
+                  <LogIn size={14} />
+                  <span>Masuk</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="btn-danger text-xs text-[var(--text-secondary)] hover:text-[#EE5D6C] flex items-center gap-1 cursor-pointer p-1.5 rounded-lg"
+                  title="Keluar dari Akun"
+                >
+                  <LogOut size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </aside>
