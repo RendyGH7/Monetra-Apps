@@ -84,20 +84,20 @@ export const TransactionsPage: React.FC = () => {
         </div>
 
         {/* Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5 px-1 -my-1 -mx-1 text-xs">
           {[
-            { label: 'Semua Tipe', value: 'all' as const, activeClass: 'bg-[#E39A5E] text-[#1C0E04]' },
-            { label: 'Pengeluaran', value: 'expense' as const, activeClass: 'bg-[#EE5D6C] text-white' },
-            { label: 'Pemasukan', value: 'income' as const, activeClass: 'bg-[#4FD3A4] text-[#1C0E04]' },
+            { label: 'Semua Tipe', value: 'all' as const, activeClass: 'bg-[#E39A5E] text-[#1C0E04] border-transparent' },
+            { label: 'Pengeluaran', value: 'expense' as const, activeClass: 'bg-[#EE5D6C] text-white border-transparent' },
+            { label: 'Pemasukan', value: 'income' as const, activeClass: 'bg-[#4FD3A4] text-[#1C0E04] border-transparent' },
           ].map((chip) => (
             <button
               key={chip.value}
               type="button"
               onClick={() => setSelectedType(chip.value)}
-              className={`chip-press px-3.5 py-1.5 rounded-xl shrink-0 text-xs font-semibold cursor-pointer shadow-xs transition-all ${
+              className={`chip-press px-3.5 py-1.5 rounded-xl shrink-0 text-xs font-semibold cursor-pointer shadow-xs transition-all border ${
                 selectedType === chip.value
                   ? `${chip.activeClass} shadow-md`
-                  : 'glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40'
+                  : 'glass-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40'
               }`}
             >
               {chip.label}
