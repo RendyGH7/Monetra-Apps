@@ -5,16 +5,29 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { SidebarNav } from './components/layout/SidebarNav';
 import { BottomNav } from './components/layout/BottomNav';
 import { FloatingMascot } from './components/layout/FloatingMascot';
-import { DashboardPage } from './features/dashboard/DashboardPage';
-import { TransactionsPage } from './features/transactions/TransactionsPage';
-import { AnalyticsPage } from './features/analytics/AnalyticsPage';
-import { AssistantPage } from './features/assistant/AssistantPage';
-import { BudgetPage } from './features/budget/BudgetPage';
-import { SettingsPage } from './features/settings/SettingsPage';
-import { AuthScreen } from './features/auth/AuthScreen';
 import { VoiceModal } from './components/voice/VoiceModal';
 import { QuickManualModal } from './components/common/QuickManualModal';
 import { Toast } from './components/common/Toast';
+
+// ── Code Splitting via React.lazy untuk performa instan & hemat memori ──
+const DashboardPage = React.lazy(() => import('./features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const TransactionsPage = React.lazy(() => import('./features/transactions/TransactionsPage').then((m) => ({ default: m.TransactionsPage })));
+const AnalyticsPage = React.lazy(() => import('./features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })));
+const AssistantPage = React.lazy(() => import('./features/assistant/AssistantPage').then((m) => ({ default: m.AssistantPage })));
+const BudgetPage = React.lazy(() => import('./features/budget/BudgetPage').then((m) => ({ default: m.BudgetPage })));
+const SettingsPage = React.lazy(() => import('./features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const AuthScreen = React.lazy(() => import('./features/auth/AuthScreen').then((m) => ({ default: m.AuthScreen })));
+
+const PageSkeleton = () => (
+  <div className="space-y-4 max-w-5xl mx-auto py-4 animate-pulse">
+    <div className="h-8 w-44 rounded-xl bg-white/[0.04]" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="h-28 rounded-2xl bg-white/[0.03] md:col-span-2" />
+      <div className="h-28 rounded-2xl bg-white/[0.03]" />
+    </div>
+    <div className="h-56 rounded-2xl bg-white/[0.03]" />
+  </div>
+);
 
 export default function App() {
   const {
@@ -87,15 +100,16 @@ export default function App() {
   }, []);
 
   const renderActiveView = () => {
-    switch (activeTab) {
-      case 'beranda':     return <DashboardPage />;
-      case 'transaksi':   return <TransactionsPage />;
-      case 'statistik':   return <AnalyticsPage />;
-      case 'asisten':     return <AssistantPage />;
-      case 'budget':      return <BudgetPage />;
-      case 'pengaturan':  return <SettingsPage />;
-      default:            return <DashboardPage />;
-    }
+    return (
+      <React.Suspense fallback={<PageSkeleton />}>
+        {activeTab === 'beranda' && <DashboardPage />}
+        {activeTab === 'transaksi' && <TransactionsPage />}
+        {activeTab === 'statistik' && <AnalyticsPage />}
+        {activeTab === 'asisten' && <AssistantPage />}
+        {activeTab === 'budget' && <BudgetPage />}
+        {activeTab === 'pengaturan' && <SettingsPage />}
+      </React.Suspense>
+    );
   };
 
   // ── Loading state — while Supabase resolves the session ─────────────────
@@ -123,12 +137,14 @@ export default function App() {
   if (!authUser) {
     return (
       <>
-        <AuthScreen
-          onContinueAsGuest={() => {
-            setAuthUser({ id: 'guest', name: 'Tamu' });
-            syncWithSupabaseUser('guest', 'tamu@monetra.app', 'Tamu Monetra');
-          }}
-        />
+        <React.Suspense fallback={null}>
+          <AuthScreen
+            onContinueAsGuest={() => {
+              setAuthUser({ id: 'guest', name: 'Tamu' });
+              syncWithSupabaseUser('guest', 'tamu@monetra.app', 'Tamu Monetra');
+            }}
+          />
+        </React.Suspense>
         <Toast />
       </>
     );

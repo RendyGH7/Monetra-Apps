@@ -46,6 +46,27 @@ import {
 } from '../../utils/format';
 import { getDailyInsight } from '../../utils/dailyInsight';
 
+// ── Komponen Jam WIB Terisolasi (Mencegah re-render seluruh halaman setiap detik) ──
+const LiveWIBClock: React.FC = React.memo(() => {
+  const [timestamp, setTimestamp] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimestamp(Date.now());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-[#EEF2F6] shadow-xs">
+      <Clock size={12} className="text-[#E39A5E]" />
+      <span className="num-tabular font-medium">
+        {formatDateIndo(timestamp)} · {formatTimeShort(timestamp, true)}
+      </span>
+    </div>
+  );
+});
+
 export const DashboardPage: React.FC = () => {
   const {
     profile,
@@ -59,33 +80,27 @@ export const DashboardPage: React.FC = () => {
     setAssistantInitialPrompt,
   } = useAppStore();
 
-  // ── Live Clock (WIB UTC+7) ──────────────────────────────────────────────
-  const [currentTimestamp, setCurrentTimestamp] = useState<number>(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTimestamp(Date.now());
-    }, 10000); // sync every 10s
-    return () => clearInterval(timer);
-  }, []);
-
-  const nowWIB = getWIBParts(currentTimestamp);
+  const nowWIB = useMemo(() => getNowWIBParts(), []);
   const currentMonth = nowWIB.month;
   const currentYear = nowWIB.year;
 
-  const thisMonthTx = transactions.filter((t) => {
-    const p = getWIBParts(t.occurred_at);
-    return p.month === currentMonth && p.year === currentYear;
-  });
+  const thisMonthTx = useMemo(() => {
+    return transactions.filter((t) => {
+      const p = getWIBParts(t.occurred_at);
+      return p.month === currentMonth && p.year === currentYear;
+    });
+  }, [transactions, currentMonth, currentYear]);
 
-  const totalIncome = thisMonthTx
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalExpense = thisMonthTx
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const netBalance = totalIncome - totalExpense;
+  const { totalIncome, totalExpense, netBalance } = useMemo(() => {
+    let inc = 0;
+    let exp = 0;
+    for (let i = 0; i < thisMonthTx.length; i++) {
+      const t = thisMonthTx[i];
+      if (t.type === 'income') inc += t.amount;
+      else exp += t.amount;
+    }
+    return { totalIncome: inc, totalExpense: exp, netBalance: inc - exp };
+  }, [thisMonthTx]);
 
   const todayDate = nowWIB.date;
   const payDay = profile.pay_day || 25;
@@ -94,14 +109,18 @@ export const DashboardPage: React.FC = () => {
 
   const safeDailySpend = Math.max(0, Math.round(netBalance / daysLeft));
 
-  const expenseByCategory: Record<string, number> = {};
-  thisMonthTx
-    .filter((t) => t.type === 'expense')
-    .forEach((t) => {
-      const cat = categories.find((c) => c.id === t.category_id);
-      const name = cat?.name || 'Lainnya';
-      expenseByCategory[name] = (expenseByCategory[name] || 0) + t.amount;
-    });
+  const expenseByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (let i = 0; i < thisMonthTx.length; i++) {
+      const t = thisMonthTx[i];
+      if (t.type === 'expense') {
+        const cat = categories.find((c) => c.id === t.category_id);
+        const name = cat?.name || 'Lainnya';
+        map[name] = (map[name] || 0) + t.amount;
+      }
+    }
+    return map;
+  }, [thisMonthTx, categories]);
 
   const chartPalette = [
     '#E39A5E', '#4FD3A4', '#6FA8D6', '#EE5D6C',

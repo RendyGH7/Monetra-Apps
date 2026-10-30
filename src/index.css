@@ -21,9 +21,9 @@
   --danger: #E0343F;
   --success: #4FD3A4;
   --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.35);
-  --glass-blur-1: 20px;
-  --glass-blur-2: 28px;
-  --glass-blur-3: 40px;
+  --glass-blur-1: 12px;
+  --glass-blur-2: 16px;
+  --glass-blur-3: 20px;
   --nav-hover-bg: rgba(255, 255, 255, 0.06);
   --nav-hover-text: #EEF2F6;
   --nav-active-bg: rgba(227, 154, 94, 0.14);
@@ -136,43 +136,64 @@ body {
   outline-offset: 2px;
 }
 
-/* Subtle background aura mesh */
+/* Subtle background aura mesh - Hardware Accelerated & GPU Friendly */
 .aurora-mesh {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
+  transform: translateZ(0);
+  contain: strict;
 }
 
 .aurora-orb-1 {
   position: absolute;
   top: -10%;
   left: -10%;
-  width: 60vmax;
-  height: 60vmax;
-  background: radial-gradient(circle, rgba(29, 78, 115, 0.28) 0%, rgba(29, 78, 115, 0) 70%);
-  filter: blur(100px);
+  width: 50vmax;
+  height: 50vmax;
+  background: radial-gradient(circle, rgba(29, 78, 115, 0.22) 0%, rgba(29, 78, 115, 0) 70%);
+  transform: translate3d(0, 0, 0);
+  filter: blur(40px);
 }
 
 .aurora-orb-2 {
   position: absolute;
   bottom: -15%;
   right: -10%;
-  width: 50vmax;
-  height: 50vmax;
-  background: radial-gradient(circle, rgba(14, 77, 85, 0.20) 0%, rgba(14, 77, 85, 0) 70%);
-  filter: blur(100px);
+  width: 45vmax;
+  height: 45vmax;
+  background: radial-gradient(circle, rgba(14, 77, 85, 0.16) 0%, rgba(14, 77, 85, 0) 70%);
+  transform: translate3d(0, 0, 0);
+  filter: blur(40px);
 }
 
 .aurora-orb-3 {
   position: absolute;
   top: 40%;
   right: 15%;
-  width: 35vmax;
-  height: 35vmax;
-  background: radial-gradient(circle, rgba(217, 138, 82, 0.07) 0%, rgba(217, 138, 82, 0) 70%);
-  filter: blur(100px);
+  width: 30vmax;
+  height: 30vmax;
+  background: radial-gradient(circle, rgba(217, 138, 82, 0.05) 0%, rgba(217, 138, 82, 0) 70%);
+  transform: translate3d(0, 0, 0);
+  filter: blur(40px);
+}
+
+/* Optimasi Khusus Perangkat Mobile: Mengurangi beban GPU hingga 4x lipat */
+@media (max-width: 768px) {
+  :root {
+    --glass-blur-1: 6px;
+    --glass-blur-2: 8px;
+    --glass-blur-3: 10px;
+  }
+  .aurora-orb-1,
+  .aurora-orb-2 {
+    filter: blur(25px);
+  }
+  .aurora-orb-3 {
+    display: none;
+  }
 }
 
 /* Hide scrollbar for category horizontal scroll */
