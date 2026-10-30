@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useAppStore } from './store';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { SidebarNav } from './components/layout/SidebarNav';
 import { BottomNav } from './components/layout/BottomNav';
 import { FloatingMascot } from './components/layout/FloatingMascot';
@@ -38,41 +38,52 @@ export default function App() {
 
   // ── Resolve Supabase session on first load ──────────────────────────────
   useEffect(() => {
-    // 1. Check current session immediately
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const u = session.user;
-        const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email;
-        const avatarUrl = u.user_metadata?.avatar_url || u.user_metadata?.picture;
-        setAuthUser({ id: u.id, email: u.email, name, avatar_url: avatarUrl });
-        syncWithSupabaseUser(u.id, u.email, name, avatarUrl);
-      }
+    if (!isSupabaseConfigured) {
       setAuthLoading(false);
-    });
+      return;
+    }
 
-    // 2. Subscribe to future auth changes (sign-in after OAuth redirect, sign-out)
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        const u = session.user;
-        const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email;
-        const avatarUrl = u.user_metadata?.avatar_url || u.user_metadata?.picture;
-        setAuthUser({ id: u.id, email: u.email, name, avatar_url: avatarUrl });
-        syncWithSupabaseUser(u.id, u.email, name, avatarUrl);
-        if (event === 'SIGNED_IN') {
-          showToast('Berhasil masuk dengan akun Google.');
+    try {
+      // 1. Check current session immediately
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const u = session.user;
+          const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email;
+          const avatarUrl = u.user_metadata?.avatar_url || u.user_metadata?.picture;
+          setAuthUser({ id: u.id, email: u.email, name, avatar_url: avatarUrl });
+          syncWithSupabaseUser(u.id, u.email, name, avatarUrl);
         }
-      } else {
-        setAuthUser(null);
-        if (event === 'SIGNED_OUT') {
-          showToast('Kamu telah keluar dari akun.');
+        setAuthLoading(false);
+      }).catch(() => {
+        setAuthLoading(false);
+      });
+
+      // 2. Subscribe to future auth changes (sign-in after OAuth redirect, sign-out)
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          const u = session.user;
+          const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email;
+          const avatarUrl = u.user_metadata?.avatar_url || u.user_metadata?.picture;
+          setAuthUser({ id: u.id, email: u.email, name, avatar_url: avatarUrl });
+          syncWithSupabaseUser(u.id, u.email, name, avatarUrl);
+          if (event === 'SIGNED_IN') {
+            showToast('Berhasil masuk dengan akun Google.');
+          }
+        } else {
+          setAuthUser(null);
+          if (event === 'SIGNED_OUT') {
+            showToast('Kamu telah keluar dari akun.');
+          }
         }
-      }
+        setAuthLoading(false);
+      });
+
+      return () => {
+        authListener?.subscription.unsubscribe();
+      };
+    } catch {
       setAuthLoading(false);
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
+    }
   }, []);
 
   const renderActiveView = () => {
@@ -139,8 +150,8 @@ export default function App() {
       {/* Mobile Top App Bar (Header HP) */}
       <header className="md:hidden fixed top-0 inset-x-0 z-30 px-4 py-2.5 bg-[var(--bg-base)]/85 border-b border-[var(--glass-border)] flex items-center justify-between backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center font-bold font-display text-xs shadow-md shadow-black/25">
-            F
+          <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md shadow-black/25 border border-[rgba(235,245,255,0.2)] shrink-0 flex items-center justify-center">
+            <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-xs font-bold font-display text-[var(--text-primary)] leading-tight tracking-tight">FinAI</h1>

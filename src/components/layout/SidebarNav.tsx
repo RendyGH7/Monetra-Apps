@@ -89,14 +89,12 @@ export const SidebarNav: React.FC = () => {
             <button
               type="button"
               onClick={sidebarCollapsed ? toggleSidebar : undefined}
-              className={`w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-md shadow-black/40 border border-[rgba(235,245,255,0.3)] shrink-0 ${
-                sidebarCollapsed ? 'cursor-pointer hover:scale-105 transition-transform' : ''
+              className={`w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.25)] shrink-0 flex items-center justify-center transition-all ${
+                sidebarCollapsed ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
               }`}
               title={sidebarCollapsed ? 'Buka Sidebar' : 'FinAI'}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 13h2l2-6 3 12 3-8 2 4h2l3-7 3 5h2" />
-              </svg>
+              <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
             </button>
             <div
               className={`overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${

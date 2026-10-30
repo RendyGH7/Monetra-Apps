@@ -72,10 +72,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onContinueAsGuest }) => 
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative z-10">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] flex items-center justify-center shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.3)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C0E04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M2 13h2l2-6 3 12 3-8 2 4h2l3-7 3 5h2" />
-            </svg>
+          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.25)] shrink-0 flex items-center justify-center">
+            <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
           </div>
           <span className="font-display font-bold text-xl tracking-tight text-[#EEF2F6]">FinAI</span>
         </div>
@@ -120,10 +118,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onContinueAsGuest }) => 
           <div className="glass-3 p-8 rounded-3xl border border-[rgba(205,225,245,0.18)] space-y-7 shadow-2xl">
             {/* Mobile brand */}
             <div className="lg:hidden flex flex-col items-center gap-3 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] flex items-center justify-center shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.3)]">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1C0E04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M2 13h2l2-6 3 12 3-8 2 4h2l3-7 3 5h2" />
-                </svg>
+              <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.25)] shrink-0 flex items-center justify-center">
+                <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="font-display font-bold text-2xl text-[#EEF2F6] tracking-tight">FinAI</p>
