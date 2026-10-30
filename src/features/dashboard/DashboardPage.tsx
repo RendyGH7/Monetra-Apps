@@ -370,25 +370,23 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="btn-press px-3.5 py-2 rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:border-[#E39A5E]/40 flex items-center gap-2 cursor-pointer shadow-xs"
+            className="btn-press h-10 px-4 rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:border-[#E39A5E]/40 flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap transition-all"
             title="Catat Transaksi Manual Cepat"
           >
-            <div className="w-5 h-5 rounded-md bg-[#E39A5E]/15 text-[#E39A5E] flex items-center justify-center">
-              <Plus size={13} strokeWidth={2.5} />
-            </div>
+            <Plus size={16} strokeWidth={2.4} className="text-[#E39A5E]" />
             <span>Catat Cepat</span>
           </button>
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25"
+            className="btn-primary h-10 px-4 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/25 whitespace-nowrap transition-all"
             title="Rekam Pengeluaran via Suara"
           >
-            <Mic size={15} strokeWidth={2.4} />
+            <Mic size={16} strokeWidth={2.4} />
             <span>Bicara</span>
           </button>
         </div>

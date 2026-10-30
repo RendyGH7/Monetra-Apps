@@ -50,21 +50,21 @@ export const TransactionsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="btn-ghost px-3 py-2 rounded-xl glass-1 border border-white/[0.08] text-xs font-medium text-[#EEF2F6] flex items-center gap-1.5 cursor-pointer"
+            className="btn-ghost h-10 px-4 rounded-xl glass-1 border border-white/[0.08] text-xs font-semibold text-[#EEF2F6] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap transition-all"
           >
-            <Mic size={15} className="text-[#E39A5E]" />
+            <Mic size={16} className="text-[#E39A5E]" strokeWidth={2.4} />
             <span>Rekam Suara</span>
           </button>
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/30"
+            className="btn-primary h-10 px-4 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/30 whitespace-nowrap transition-all"
           >
-            <Plus size={15} />
+            <Plus size={16} strokeWidth={2.4} />
             <span>Tambah</span>
           </button>
         </div>
