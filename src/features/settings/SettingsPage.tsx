@@ -102,14 +102,9 @@ export const SettingsPage: React.FC = () => {
             </div>
           )}
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-[#EEF2F6]">
-                {profile.id === 'default' ? 'Keamanan Data Akun' : profile.nama}
-              </h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#4FD3A4]/20 text-[#4FD3A4] font-medium">
-                {profile.id === 'default' ? 'Mode Tamu' : 'Terhubung Google'}
-              </span>
-            </div>
+            <h2 className="text-sm font-semibold text-[#EEF2F6]">
+              {profile.id === 'default' ? 'Keamanan Data Akun' : profile.nama}
+            </h2>
             <p className="text-xs text-[#A3AFBC] mt-1 leading-relaxed">
               {profile.id === 'default'
                 ? 'Data tersimpan di penyimpanan lokal browser. Sambungkan akun Google untuk backup awan otomatis.'
