@@ -129,6 +129,53 @@ export function loadUserData(userId?: string | null): Partial<AppState> | null {
 // In-memory debounce timer for Supabase cloud sync
 let cloudSyncTimer: any = null;
 
+export async function syncToCloudImmediate(userId: string | null | undefined, dataToPersist: any): Promise<void> {
+  if (!userId || userId === 'guest' || userId === 'default') return;
+
+  if (cloudSyncTimer) {
+    clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = null;
+  }
+
+  const timestamp = new Date().toISOString();
+  const nowMs = Date.now();
+  const payload = {
+    ...dataToPersist,
+    _synced_at: timestamp,
+    _updated_at_ms: dataToPersist._updated_at_ms || nowMs,
+  };
+
+  try {
+    // 1. Primary: Save to Supabase PostgreSQL table 'monetra_user_data'
+    try {
+      const { error } = await supabase
+        .from('monetra_user_data')
+        .upsert(
+          {
+            user_id: userId,
+            data: payload,
+            updated_at: timestamp,
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (!error) return;
+    } catch {
+      // Table might not exist yet, fallback to auth user_metadata below
+    }
+
+    // 2. Zero-config Fallback: Save directly to Supabase Auth user_metadata
+    await supabase.auth.updateUser({
+      data: {
+        monetra_cloud_data: payload,
+        monetra_cloud_updated_at: timestamp,
+      },
+    });
+  } catch (e) {
+    console.warn('Monetra cloud sync immediate warning:', e);
+  }
+}
+
 export async function syncToCloud(userId: string | null | undefined, dataToPersist: any): Promise<void> {
   if (!userId || userId === 'guest' || userId === 'default') return;
 
@@ -137,44 +184,7 @@ export async function syncToCloud(userId: string | null | undefined, dataToPersi
   }
 
   cloudSyncTimer = setTimeout(async () => {
-    try {
-      const timestamp = new Date().toISOString();
-      const payload = {
-        ...dataToPersist,
-        _synced_at: timestamp,
-      };
-
-      // 1. Primary: Save to Supabase PostgreSQL table 'monetra_user_data'
-      try {
-        const { error } = await supabase
-          .from('monetra_user_data')
-          .upsert(
-            {
-              user_id: userId,
-              data: payload,
-              updated_at: timestamp,
-            },
-            { onConflict: 'user_id' }
-          );
-
-        if (!error) {
-          return;
-        }
-      } catch {
-        // Table might not exist yet, fallback to auth user_metadata below
-      }
-
-      // 2. Zero-config Fallback: Save directly to Supabase Auth user_metadata
-      // This works immediately across all devices even without running SQL migrations
-      await supabase.auth.updateUser({
-        data: {
-          monetra_cloud_data: payload,
-          monetra_cloud_updated_at: timestamp,
-        },
-      });
-    } catch (e) {
-      console.warn('Monetra cloud sync warning:', e);
-    }
+    await syncToCloudImmediate(userId, dataToPersist);
   }, 400);
 }
 
@@ -191,7 +201,11 @@ export async function loadFromCloud(userId: string | null | undefined): Promise<
         .maybeSingle();
 
       if (!error && data?.data) {
-        return data.data;
+        const ms = data.data._updated_at_ms || new Date(data.updated_at || data.data._synced_at || 0).getTime();
+        return {
+          ...data.data,
+          _updated_at_ms: ms,
+        };
       }
     } catch {
       // Table might not exist yet, fallback to user_metadata
@@ -200,7 +214,13 @@ export async function loadFromCloud(userId: string | null | undefined): Promise<
     // 2. Try loading from Supabase Auth user_metadata
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.user_metadata?.monetra_cloud_data) {
-      return user.user_metadata.monetra_cloud_data;
+      const cloudObj = user.user_metadata.monetra_cloud_data;
+      const metaUpdated = user.user_metadata.monetra_cloud_updated_at || cloudObj._synced_at;
+      const ms = cloudObj._updated_at_ms || new Date(metaUpdated || 0).getTime();
+      return {
+        ...cloudObj,
+        _updated_at_ms: ms,
+      };
     }
   } catch (e) {
     console.warn('Monetra cloud load error:', e);
@@ -209,9 +229,10 @@ export async function loadFromCloud(userId: string | null | undefined): Promise<
   return null;
 }
 
-export function saveUserData(userId: string | null | undefined, state: AppState): void {
+export function saveUserData(userId: string | null | undefined, state: AppState, immediate = false): void {
   try {
     const key = getUserStorageKey(userId);
+    const nowMs = Date.now();
     const dataToPersist = {
       profile: state.profile,
       categories: state.categories,
@@ -220,6 +241,8 @@ export function saveUserData(userId: string | null | undefined, state: AppState)
       goals: state.goals,
       memories: state.memories,
       chatMessages: state.chatMessages,
+      _updated_at_ms: nowMs,
+      _synced_at: new Date(nowMs).toISOString(),
     };
 
     // 1. Save locally for instant offline caching
@@ -227,7 +250,11 @@ export function saveUserData(userId: string | null | undefined, state: AppState)
 
     // 2. Sync to Supabase Cloud for cross-device access (laptop <-> mobile)
     if (userId && userId !== 'guest' && userId !== 'default') {
-      syncToCloud(userId, dataToPersist);
+      if (immediate) {
+        syncToCloudImmediate(userId, dataToPersist);
+      } else {
+        syncToCloud(userId, dataToPersist);
+      }
     }
   } catch (e) {
     console.warn('Failed to save user data:', e);
@@ -524,6 +551,7 @@ export const useAppStore = create<AppState>((set, get) => {
         goals: [],
         memories: [],
         wallets: cleanWallets,
+        categories: INITIAL_CATEGORIES,
         chatMessages: [
           {
             id: 'msg-reset-' + Date.now(),
@@ -536,7 +564,8 @@ export const useAppStore = create<AppState>((set, get) => {
         ],
         toast: { message: 'Semua data berhasil dikosongkan' },
       });
-      saveUserData(currentAuth?.id, get());
+      // Save locally & push IMMEDIATELY to cloud (bypassing debounce)
+      saveUserData(currentAuth?.id, get(), true);
     },
 
     syncWithSupabaseUser: async (userId, email, name, avatarUrl) => {
@@ -549,29 +578,39 @@ export const useAppStore = create<AppState>((set, get) => {
       // 2. Fetch cloud data from Supabase (from other devices / sessions)
       const cloudData = await loadFromCloud(userId);
 
-      const localTxCount = localData?.transactions?.length || 0;
-      const cloudTxCount = cloudData?.transactions?.length || 0;
+      const localTxCount = (localData?.transactions as any[])?.length || 0;
+      const cloudTxCount = (cloudData?.transactions as any[])?.length || 0;
+
+      const anyLocal = localData as any;
+      const anyCloud = cloudData as any;
+
+      const localTime = Number(
+        anyLocal?._updated_at_ms || (anyLocal?._synced_at ? new Date(anyLocal._synced_at).getTime() : 0)
+      );
+      const cloudTime = Number(
+        anyCloud?._updated_at_ms || (anyCloud?._synced_at ? new Date(anyCloud._synced_at).getTime() : 0)
+      );
 
       let chosenData: any = null;
 
-      // Logic to resolve best data across devices:
-      if (cloudData && (cloudTxCount > 0 || localTxCount === 0)) {
-        chosenData = cloudData;
-        // If local device also had some transactions that aren't in cloud yet, merge them
-        if (localTxCount > 0 && Array.isArray(localData?.transactions)) {
-          const cloudIds = new Set((cloudData.transactions || []).map((t: any) => t.id));
-          const missingLocals = localData.transactions.filter((t: any) => !cloudIds.has(t.id));
-          if (missingLocals.length > 0) {
-            chosenData.transactions = [...missingLocals, ...(cloudData.transactions || [])];
-          }
+      // Last-Write-Wins (LWW) Conflict Resolution:
+      // If cloud was updated more recently (e.g. user emptied data on another device),
+      // cloud data WINS completely and overwrites local stale records!
+      if (cloudData && localData) {
+        if (cloudTime >= localTime) {
+          chosenData = cloudData;
+          localStorage.setItem(getUserStorageKey(userId), JSON.stringify(cloudData));
+        } else {
+          // Local has newer changes made offline on this device
+          chosenData = localData;
+          syncToCloud(userId, localData);
         }
-      } else if (localData && (localTxCount > 0 || localData.profile)) {
-        // Local device has existing transactions (e.g. user entered them on laptop)
-        chosenData = localData;
-        // Push to cloud immediately so other devices get it!
-        syncToCloud(userId, localData);
       } else if (cloudData) {
         chosenData = cloudData;
+        localStorage.setItem(getUserStorageKey(userId), JSON.stringify(cloudData));
+      } else if (localData) {
+        chosenData = localData;
+        syncToCloud(userId, localData);
       }
 
       if (chosenData && chosenData.profile) {

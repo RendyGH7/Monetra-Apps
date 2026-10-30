@@ -91,13 +91,31 @@ export default function App() {
         setAuthLoading(false);
       });
 
-      return () => {
-        authListener?.subscription.unsubscribe();
-      };
-    } catch {
-      setAuthLoading(false);
-    }
-  }, []);
+        return () => {
+          authListener?.subscription.unsubscribe();
+        };
+      } catch {
+        setAuthLoading(false);
+      }
+    }, []);
+
+  // ── Auto-resync when returning to app / switching tabs (Laptop <-> HP) ────
+  useEffect(() => {
+    if (!authUser || !isSupabaseConfigured || authUser.id === 'guest' || authUser.id === 'default') return;
+
+    const handleRecheck = () => {
+      if (document.visibilityState === 'visible' && authUser?.id) {
+        syncWithSupabaseUser(authUser.id, authUser.email, authUser.name, authUser.avatar_url);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleRecheck);
+    window.addEventListener('focus', handleRecheck);
+    return () => {
+      document.removeEventListener('visibilitychange', handleRecheck);
+      window.removeEventListener('focus', handleRecheck);
+    };
+  }, [authUser?.id]);
 
   const renderActiveView = () => {
     return (
