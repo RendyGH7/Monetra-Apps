@@ -181,72 +181,72 @@ export default function App() {
       {/* Desktop Sidebar */}
       <SidebarNav />
 
-      {/* Mobile Top App Bar (Header HP dengan Safe Area Insets) */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-30 mobile-header-safe pb-2.5 bg-[var(--bg-base)]/90 border-b border-[var(--glass-border)] flex items-center justify-between backdrop-blur-2xl shadow-xs transition-colors duration-200">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md shadow-black/25 border border-[rgba(235,245,255,0.2)] shrink-0 flex items-center justify-center">
-            <img src="/favicon.svg" alt="Logo Monetra" className="w-full h-full object-cover" />
+      {/* Main Content Column */}
+      <div className="flex-1 min-w-0 flex flex-col w-full">
+        {/* Mobile Top Floating App Bar (Mengambang transparan tanpa latar hitam) */}
+        <header className="md:hidden relative z-30 mobile-header-safe pb-2 flex items-center justify-between bg-transparent border-none shadow-none">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-sm border border-[rgba(235,245,255,0.18)] shrink-0 flex items-center justify-center">
+              <img src="/favicon.svg" alt="Logo Monetra" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h1 className="text-xs font-bold font-display text-[var(--text-primary)] leading-tight tracking-tight drop-shadow-sm">Monetra</h1>
+              <p className="text-[10px] text-[var(--text-secondary)] leading-none">
+                {activeTab === 'beranda'
+                  ? 'Beranda'
+                  : activeTab === 'transaksi'
+                  ? 'Transaksi'
+                  : activeTab === 'statistik'
+                  ? 'Statistik & Analisis'
+                  : activeTab === 'asisten'
+                  ? 'Asisten Monetra'
+                  : activeTab === 'budget'
+                  ? 'Budget & Target'
+                  : 'Pengaturan & Akun'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xs font-bold font-display text-[var(--text-primary)] leading-tight tracking-tight">Monetra</h1>
-            <p className="text-[10px] text-[var(--text-secondary)] leading-none">
-              {activeTab === 'beranda'
-                ? 'Beranda'
-                : activeTab === 'transaksi'
-                ? 'Transaksi'
-                : activeTab === 'statistik'
-                ? 'Statistik & Analisis'
-                : activeTab === 'asisten'
-                ? 'Asisten Monetra'
-                : activeTab === 'budget'
-                ? 'Budget & Target'
-                : 'Pengaturan & Akun'}
-            </p>
+
+          <div className="flex items-center gap-2.5">
+            {/* Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+              className="w-9 h-9 rounded-xl glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
+              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
+            {/* User Profile Avatar -> Tap to open Pengaturan / Akun */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('pengaturan')}
+              aria-label="Buka Akun & Pengaturan"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-200 cursor-pointer active:scale-95 ${
+                activeTab === 'pengaturan'
+                  ? 'ring-2 ring-[#E39A5E] ring-offset-2 ring-offset-[var(--bg-base)] shadow-md shadow-[#E39A5E]/25 scale-105'
+                  : 'border border-[var(--glass-border)] hover:border-[#E39A5E]/50'
+              }`}
+              title="Buka Akun & Pengaturan"
+            >
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt={profile.nama} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs">
+                  {(profile.nama || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+            </button>
           </div>
-        </div>
+        </header>
 
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Theme Toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-            className="w-9 h-9 rounded-xl glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center cursor-pointer transition-all active:scale-95"
-            title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-          >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-
-          {/* Visual Separator */}
-          <div className="w-[1px] h-4.5 bg-[var(--glass-border)]" aria-hidden="true" />
-
-          {/* User Profile Avatar -> Tap to open Pengaturan / Akun */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('pengaturan')}
-            aria-label="Buka Akun & Pengaturan"
-            className={`w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-200 cursor-pointer active:scale-95 ${
-              activeTab === 'pengaturan'
-                ? 'ring-2 ring-[#E39A5E] ring-offset-2 ring-offset-[var(--bg-base)] shadow-md shadow-[#E39A5E]/25 scale-105'
-                : 'border border-[var(--glass-border)] hover:border-[#E39A5E]/50'
-            }`}
-            title="Buka Akun & Pengaturan"
-          >
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.nama} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center font-bold text-xs">
-                {(profile.nama || 'U').charAt(0).toUpperCase()}
-              </div>
-            )}
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 min-w-0 z-10 mobile-content-safe md:pt-8 md:pb-12 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
-        {renderActiveView()}
-      </main>
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 z-10 mobile-content-safe pt-2 md:pt-8 md:pb-12 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
+          {renderActiveView()}
+        </main>
+      </div>
 
       {/* Mobile Floating Bottom Nav & Chatbot Mascot */}
       <BottomNav />
