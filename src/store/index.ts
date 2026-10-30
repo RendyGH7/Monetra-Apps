@@ -100,15 +100,23 @@ try {
 
 
 export function getUserStorageKey(userId?: string | null): string {
-  if (!userId || userId === 'guest' || userId === 'default') return 'finai_user_guest';
+  if (!userId || userId === 'guest' || userId === 'default') return 'monetra_user_guest';
   const cleanId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `finai_user_${cleanId}`;
+  return `monetra_user_${cleanId}`;
 }
 
 export function loadUserData(userId?: string | null): Partial<AppState> | null {
   try {
     const key = getUserStorageKey(userId);
-    const raw = localStorage.getItem(key);
+    let raw = localStorage.getItem(key);
+    // Backward compatibility with previous keys
+    if (!raw && userId) {
+      const cleanId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      raw =
+        localStorage.getItem(`finai_user_${cleanId}`) ||
+        localStorage.getItem(`monetra_user_${cleanId}`) ||
+        localStorage.getItem('finai_user_guest');
+    }
     if (raw) {
       return JSON.parse(raw);
     }
@@ -116,6 +124,89 @@ export function loadUserData(userId?: string | null): Partial<AppState> | null {
   } catch {
     return null;
   }
+}
+
+// In-memory debounce timer for Supabase cloud sync
+let cloudSyncTimer: any = null;
+
+export async function syncToCloud(userId: string | null | undefined, dataToPersist: any): Promise<void> {
+  if (!userId || userId === 'guest' || userId === 'default') return;
+
+  if (cloudSyncTimer) {
+    clearTimeout(cloudSyncTimer);
+  }
+
+  cloudSyncTimer = setTimeout(async () => {
+    try {
+      const timestamp = new Date().toISOString();
+      const payload = {
+        ...dataToPersist,
+        _synced_at: timestamp,
+      };
+
+      // 1. Primary: Save to Supabase PostgreSQL table 'monetra_user_data'
+      try {
+        const { error } = await supabase
+          .from('monetra_user_data')
+          .upsert(
+            {
+              user_id: userId,
+              data: payload,
+              updated_at: timestamp,
+            },
+            { onConflict: 'user_id' }
+          );
+
+        if (!error) {
+          return;
+        }
+      } catch {
+        // Table might not exist yet, fallback to auth user_metadata below
+      }
+
+      // 2. Zero-config Fallback: Save directly to Supabase Auth user_metadata
+      // This works immediately across all devices even without running SQL migrations
+      await supabase.auth.updateUser({
+        data: {
+          monetra_cloud_data: payload,
+          monetra_cloud_updated_at: timestamp,
+        },
+      });
+    } catch (e) {
+      console.warn('Monetra cloud sync warning:', e);
+    }
+  }, 400);
+}
+
+export async function loadFromCloud(userId: string | null | undefined): Promise<any | null> {
+  if (!userId || userId === 'guest' || userId === 'default') return null;
+
+  try {
+    // 1. Try loading from Supabase table 'monetra_user_data'
+    try {
+      const { data, error } = await supabase
+        .from('monetra_user_data')
+        .select('data, updated_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!error && data?.data) {
+        return data.data;
+      }
+    } catch {
+      // Table might not exist yet, fallback to user_metadata
+    }
+
+    // 2. Try loading from Supabase Auth user_metadata
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.user_metadata?.monetra_cloud_data) {
+      return user.user_metadata.monetra_cloud_data;
+    }
+  } catch (e) {
+    console.warn('Monetra cloud load error:', e);
+  }
+
+  return null;
 }
 
 export function saveUserData(userId: string | null | undefined, state: AppState): void {
@@ -130,7 +221,14 @@ export function saveUserData(userId: string | null | undefined, state: AppState)
       memories: state.memories,
       chatMessages: state.chatMessages,
     };
+
+    // 1. Save locally for instant offline caching
     localStorage.setItem(key, JSON.stringify(dataToPersist));
+
+    // 2. Sync to Supabase Cloud for cross-device access (laptop <-> mobile)
+    if (userId && userId !== 'guest' && userId !== 'default') {
+      syncToCloud(userId, dataToPersist);
+    }
   } catch (e) {
     console.warn('Failed to save user data:', e);
   }
@@ -159,7 +257,7 @@ export const useAppStore = create<AppState>((set, get) => {
         user_id: 'default',
         role: 'assistant',
         content:
-          'Halo! Saya FinAI, asisten keuangan pribadimu. Belum ada transaksi yang dicatat. Tekan tombol mikrofon atau ketik pesan untuk mulai mencatat pengeluaran atau pemasukan.',
+          'Halo! Saya Monetra, asisten keuangan pribadimu. Belum ada transaksi yang dicatat. Tekan tombol mikrofon atau ketik pesan untuk mulai mencatat pengeluaran atau pemasukan.',
         created_at: new Date().toISOString(),
       },
     ],
@@ -442,28 +540,58 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     syncWithSupabaseUser: async (userId, email, name, avatarUrl) => {
-      // 1. Check if this Google user has their own isolated data saved
-      const savedUser = loadUserData(userId);
       const authUserObj: AuthUser = { id: userId, email, name, avatar_url: avatarUrl };
+      set({ authUser: authUserObj });
 
-      if (savedUser && savedUser.profile) {
-        // Restore full isolated state for this Google account
+      // 1. Check local storage on this device
+      const localData = loadUserData(userId);
+
+      // 2. Fetch cloud data from Supabase (from other devices / sessions)
+      const cloudData = await loadFromCloud(userId);
+
+      const localTxCount = localData?.transactions?.length || 0;
+      const cloudTxCount = cloudData?.transactions?.length || 0;
+
+      let chosenData: any = null;
+
+      // Logic to resolve best data across devices:
+      if (cloudData && (cloudTxCount > 0 || localTxCount === 0)) {
+        chosenData = cloudData;
+        // If local device also had some transactions that aren't in cloud yet, merge them
+        if (localTxCount > 0 && Array.isArray(localData?.transactions)) {
+          const cloudIds = new Set((cloudData.transactions || []).map((t: any) => t.id));
+          const missingLocals = localData.transactions.filter((t: any) => !cloudIds.has(t.id));
+          if (missingLocals.length > 0) {
+            chosenData.transactions = [...missingLocals, ...(cloudData.transactions || [])];
+          }
+        }
+      } else if (localData && (localTxCount > 0 || localData.profile)) {
+        // Local device has existing transactions (e.g. user entered them on laptop)
+        chosenData = localData;
+        // Push to cloud immediately so other devices get it!
+        syncToCloud(userId, localData);
+      } else if (cloudData) {
+        chosenData = cloudData;
+      }
+
+      if (chosenData && chosenData.profile) {
+        // Restore full state for this Google account
         const restoredProfile: UserProfile = {
-          ...savedUser.profile,
+          ...chosenData.profile,
           id: userId,
-          email: email || savedUser.profile.email,
-          nama: name || savedUser.profile.nama || 'Pengguna',
-          avatar_url: avatarUrl || savedUser.profile.avatar_url,
+          email: email || chosenData.profile.email,
+          nama: name || chosenData.profile.nama || 'Pengguna',
+          avatar_url: avatarUrl || chosenData.profile.avatar_url,
         };
 
         const nextState = {
           authUser: authUserObj,
           profile: restoredProfile,
-          categories: savedUser.categories || INITIAL_CATEGORIES,
-          wallets: savedUser.wallets || INITIAL_WALLETS,
-          transactions: savedUser.transactions || [],
-          goals: savedUser.goals || [],
-          memories: savedUser.memories || [
+          categories: chosenData.categories || INITIAL_CATEGORIES,
+          wallets: chosenData.wallets || INITIAL_WALLETS,
+          transactions: chosenData.transactions || [],
+          goals: chosenData.goals || [],
+          memories: chosenData.memories || [
             {
               id: 'mem-google-' + userId,
               user_id: userId,
@@ -473,12 +601,12 @@ export const useAppStore = create<AppState>((set, get) => {
               updated_at: new Date().toISOString(),
             },
           ],
-          chatMessages: savedUser.chatMessages || [
+          chatMessages: chosenData.chatMessages || [
             {
               id: 'msg-welcome-' + Date.now(),
               user_id: userId,
               role: 'assistant' as const,
-              content: `Halo ${name ? name.split(' ')[0] : 'kamu'}! Seluruh data keuangan, dompet, target tabungan, dan memori akun Google kamu telah tersambung aman. Ada yang ingin kamu tanyakan atau catat hari ini?`,
+              content: `Halo ${name ? name.split(' ')[0] : 'kamu'}! Seluruh data keuangan, dompet, dan transaksimu telah tersinkronisasi di cloud akun Google. Ada yang ingin kamu catat hari ini?`,
               created_at: new Date().toISOString(),
             },
           ],
@@ -486,9 +614,12 @@ export const useAppStore = create<AppState>((set, get) => {
 
         set(nextState);
         saveUserData(userId, get());
+        if (cloudTxCount > 0 && localTxCount === 0) {
+          get().showToast(`Sinkronisasi cloud: ${cloudTxCount} transaksi berhasil dimuat dari akun Google.`);
+        }
       } else {
-        // First time login with this Google account: initialize fresh, dedicated sandbox
-        const cleanName = name || 'Pengguna FinAI';
+        // First time login on any device: initialize fresh dedicated sandbox
+        const cleanName = name || 'Pengguna Monetra';
         const newProfile: UserProfile = {
           ...INITIAL_PROFILE,
           id: userId,
@@ -498,13 +629,12 @@ export const useAppStore = create<AppState>((set, get) => {
         };
 
         const newMemories: AIMemory[] = [];
-
         const newChat: ChatMessage[] = [
           {
             id: 'msg-welcome-new-' + Date.now(),
             user_id: userId,
             role: 'assistant',
-            content: `Halo ${cleanName.split(' ')[0]}! Saya FinAI, asisten keuanganmu yang terhubung dengan akun Google kamu. Data keuanganmu masih bersih dan siap kamu gunakan. Tekan mikrofon atau ketik pesan untuk mencatat transaksi pertamamu!`,
+            content: `Halo ${cleanName.split(' ')[0]}! Saya Monetra, asisten keuanganmu yang tersinkronisasi dengan akun Google kamu. Data transaksi akan otomatis tersimpan di cloud untuk semua perangkatmu!`,
             created_at: new Date().toISOString(),
           },
         ];

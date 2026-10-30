@@ -92,9 +92,9 @@ export const SidebarNav: React.FC = () => {
               className={`w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.25)] shrink-0 flex items-center justify-center transition-all ${
                 sidebarCollapsed ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
               }`}
-              title={sidebarCollapsed ? 'Buka Sidebar' : 'FinAI'}
+              title={sidebarCollapsed ? 'Buka Sidebar' : 'Monetra'}
             >
-              <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
+              <img src="/favicon.svg" alt="Logo Monetra" className="w-full h-full object-cover" />
             </button>
             <div
               className={`overflow-hidden transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -104,7 +104,7 @@ export const SidebarNav: React.FC = () => {
               }`}
             >
               <span className="font-display font-bold text-lg tracking-tight text-[var(--text-primary)] whitespace-nowrap block">
-                FinAI
+                Monetra
               </span>
               <p className="text-[11px] text-[var(--text-secondary)] whitespace-nowrap">Asisten Keuangan</p>
             </div>

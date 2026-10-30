@@ -151,10 +151,10 @@ export default function App() {
       <header className="md:hidden fixed top-0 inset-x-0 z-30 px-4 py-2.5 bg-[var(--bg-base)]/85 border-b border-[var(--glass-border)] flex items-center justify-between backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md shadow-black/25 border border-[rgba(235,245,255,0.2)] shrink-0 flex items-center justify-center">
-            <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
+            <img src="/favicon.svg" alt="Logo Monetra" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-xs font-bold font-display text-[var(--text-primary)] leading-tight tracking-tight">FinAI</h1>
+            <h1 className="text-xs font-bold font-display text-[var(--text-primary)] leading-tight tracking-tight">Monetra</h1>
             <p className="text-[10px] text-[var(--text-secondary)] leading-none">
               {activeTab === 'beranda'
                 ? 'Beranda'
@@ -163,7 +163,7 @@ export default function App() {
                 : activeTab === 'statistik'
                 ? 'Statistik & Analisis'
                 : activeTab === 'asisten'
-                ? 'Asisten FinAI'
+                ? 'Asisten Monetra'
                 : activeTab === 'budget'
                 ? 'Budget & Target'
                 : 'Pengaturan & Akun'}

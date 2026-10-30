@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Mic, ShieldCheck, TrendingUp } from 'lucide-react';
+import { ArrowRight, UserCheck, Shield } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-// Google "G" SVG — inline untuk menghindari dependensi tambahan
+// Google "G" SVG resmi — tajam dan presisi
 const GoogleIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path
@@ -43,160 +43,110 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onContinueAsGuest }) => 
         },
       });
       if (authError) {
-        setError('Gagal menghubungkan ke Google. Periksa koneksi dan coba lagi.');
+        setError('Gagal menghubungkan ke Google. Silakan coba lagi.');
         setLoading(false);
       }
-      // On success: browser redirects, nothing else needed
     } catch {
-      setError('Terjadi kesalahan. Silakan coba lagi.');
+      setError('Terjadi kendala saat membuka otentikasi. Silakan coba lagi.');
       setLoading(false);
     }
   };
 
-  const features = [
-    { icon: TrendingUp, text: 'Pantau pengeluaran harian secara real-time' },
-    { icon: Mic, text: 'Catat transaksi cukup dengan bicara' },
-    { icon: ShieldCheck, text: 'Data terenkripsi dan terlindungi RLS Supabase' },
-  ];
-
   return (
-    <div className="fixed inset-0 z-50 flex min-h-dvh bg-[#070A0F] overflow-hidden">
-      {/* Aurora ambient background */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#070A0F] overflow-hidden select-none">
+      {/* ── Background: Subtle Ambient Aurora Glow (Minimal & Non-distracting) ── */}
       <div className="aurora-mesh" aria-hidden="true">
-        <div className="aurora-orb-1" />
-        <div className="aurora-orb-2" />
-        <div className="aurora-orb-3" />
+        <div className="aurora-orb-1 opacity-60" />
+        <div className="aurora-orb-2 opacity-40" />
       </div>
 
-      {/* Left panel — desktop only branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative z-10">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.25)] shrink-0 flex items-center justify-center">
-            <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight text-[#EEF2F6]">FinAI</span>
-        </div>
+      {/* Subtle Dot Grid */}
+      <div
+        className="absolute inset-0 bg-[radial-gradient(#ffffff06_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"
+        aria-hidden="true"
+      />
 
-        {/* Headline copy */}
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <h1 className="font-display font-bold text-4xl xl:text-5xl leading-tight tracking-tight text-[#EEF2F6]">
-              Keuangan magang<br />
-              <span className="text-[#E39A5E]">tetap aman</span>,<br />
-              kencan tetap jalan.
-            </h1>
-            <p className="text-[#A3AFBC] text-base leading-relaxed max-w-sm">
-              Asisten keuangan pribadi yang memahami ritme hidup sebagai mahasiswa magang dengan gaji terbatas.
-            </p>
-          </div>
+      {/* Ambient Center Glow */}
+      <div
+        className="absolute w-[480px] h-[480px] rounded-full bg-[#E39A5E]/10 blur-[120px] pointer-events-none"
+        aria-hidden="true"
+      />
 
-          {/* Feature list */}
-          <ul className="space-y-3">
-            {features.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-3 text-sm text-[#A3AFBC]">
-                <div className="w-7 h-7 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 flex items-center justify-center shrink-0">
-                  <Icon size={14} className="text-[#E39A5E]" />
-                </div>
-                {text}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Bottom badge */}
-        <div className="flex items-center gap-2 text-[11px] text-[#74808E]">
-          <ShieldCheck size={13} className="text-[#4FD3A4]" />
-          <span>Data disimpan aman dengan Supabase Row Level Security</span>
-        </div>
-      </div>
-
-      {/* Right panel — login card */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative z-10">
-        <div className="animate-scale-in w-full max-w-sm">
-          {/* Card */}
-          <div className="glass-3 p-8 rounded-3xl border border-[rgba(205,225,245,0.18)] space-y-7 shadow-2xl">
-            {/* Mobile brand */}
-            <div className="lg:hidden flex flex-col items-center gap-3 text-center">
-              <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-black/40 border border-[rgba(235,245,255,0.25)] shrink-0 flex items-center justify-center">
-                <img src="/favicon.svg" alt="Logo FinAI" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-display font-bold text-2xl text-[#EEF2F6] tracking-tight">FinAI</p>
-                <p className="text-xs text-[#A3AFBC]">Asisten Keuangan Mahasiswa Magang</p>
-              </div>
+      {/* ── Main Auth Card: Clean, Minimalist & Focused ── */}
+      <div className="relative z-10 w-full max-w-sm sm:max-w-md">
+        <div className="glass-3 p-7 sm:p-9 rounded-3xl border border-[rgba(227,154,94,0.22)] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.6)] backdrop-blur-2xl space-y-6">
+          {/* Brand Logo & Clean Header */}
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-xl shadow-black/50 border border-[rgba(235,245,255,0.2)] bg-[#0E131A] p-1 flex items-center justify-center transition-transform hover:scale-105 duration-200">
+              <img src="/favicon.svg" alt="Logo Monetra" className="w-full h-full object-cover" />
             </div>
 
-            {/* Login header */}
             <div className="space-y-1">
-              <h2 className="font-display font-bold text-xl text-[#EEF2F6] tracking-tight">
-                Masuk ke akunmu
-              </h2>
-              <p className="text-xs text-[#A3AFBC] leading-relaxed">
-                Data transaksimu tersinkron di semua perangkat dan tidak hilang saat logout.
-              </p>
-            </div>
-
-            {/* Google login button */}
-            <div className="space-y-3">
-              <button
-                id="btn-google-login"
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="btn-press relative w-full h-12 rounded-xl bg-white text-[#1C0E04] font-semibold text-sm flex items-center justify-center gap-3 cursor-pointer shadow-md shadow-black/30 disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ transition: 'filter 0.15s ease, transform 0.1s ease' }}
-                onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLElement).style.filter = 'brightness(0.96)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1)'; }}
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 rounded-full border-2 border-[#1C0E04]/30 border-t-[#1C0E04] animate-spin" />
-                    <span>Menghubungkan...</span>
-                  </>
-                ) : (
-                  <>
-                    <GoogleIcon size={20} />
-                    <span>Lanjutkan dengan Google</span>
-                  </>
-                )}
-              </button>
-
-              {/* Error message */}
-              {error && (
-                <div className="animate-slide-up p-3 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-xs text-[#EE5D6C] text-center">
-                  {error}
-                </div>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-[rgba(205,225,245,0.1)]" />
-              <span className="text-[11px] text-[#74808E]">atau</span>
-              <div className="flex-1 h-px bg-[rgba(205,225,245,0.1)]" />
-            </div>
-
-            {/* Guest mode */}
-            <div className="space-y-2">
-              <button
-                id="btn-guest-continue"
-                type="button"
-                onClick={onContinueAsGuest}
-                className="btn-ghost w-full h-11 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] cursor-pointer flex items-center justify-center gap-2"
-              >
-                Lanjutkan Tanpa Login
-              </button>
-              <p className="text-[10px] text-[#74808E] text-center leading-relaxed">
-                Data mode tamu hanya tersimpan di perangkat ini dan tidak tersinkron.
+              <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
+                Masuk ke Monetra
+              </h1>
+              <p className="text-xs sm:text-sm text-[#A3AFBC] leading-relaxed">
+                Kelola keuangan pribadi cerdas berbasis suara dan AI.
               </p>
             </div>
           </div>
 
-          {/* Footer note */}
-          <p className="text-[10px] text-[#74808E] text-center mt-5 leading-relaxed px-4">
-            Dengan masuk, kamu menyetujui penggunaan data untuk tujuan pribadi dalam aplikasi ini.
-          </p>
+          {/* Primary Action: Google Login */}
+          <div className="space-y-3">
+            <button
+              id="btn-google-login"
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="btn-press group relative w-full h-12 rounded-xl bg-white text-[#1C0E04] font-semibold text-sm flex items-center justify-center gap-2.5 cursor-pointer shadow-md shadow-black/30 hover:shadow-[0_4px_20px_rgba(227,154,94,0.35)] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-[#1C0E04]/30 border-t-[#1C0E04] animate-spin" />
+                  <span className="text-xs">Menghubungkan ke Google...</span>
+                </>
+              ) : (
+                <>
+                  <GoogleIcon size={20} />
+                  <span>Lanjutkan dengan Google</span>
+                  <ArrowRight size={15} className="text-[#1C0E04]/60 group-hover:translate-x-0.5 transition-transform ml-0.5" />
+                </>
+              )}
+            </button>
+
+            {/* Error Banner */}
+            {error && (
+              <div className="p-3 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-xs text-[#EE5D6C] text-center">
+                {error}
+              </div>
+            )}
+          </div>
+
+          {/* Clean Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <span className="text-[11px] text-[#74808E]">atau</span>
+            <div className="flex-1 h-px bg-white/[0.08]" />
+          </div>
+
+          {/* Secondary Action: Guest Mode */}
+          <div>
+            <button
+              id="btn-guest-continue"
+              type="button"
+              onClick={onContinueAsGuest}
+              className="btn-ghost w-full h-11 rounded-xl glass-2 border border-white/[0.1] hover:border-[#E39A5E]/40 hover:bg-[#E39A5E]/10 text-xs font-semibold text-[#EEF2F6] cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+            >
+              <UserCheck size={14} className="text-[#E39A5E]" />
+              <span>Lanjutkan sebagai Tamu</span>
+            </button>
+          </div>
+
+          {/* Minimalist Trust & Privacy Caption */}
+          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-center gap-1.5 text-[11px] text-[#74808E]">
+            <Shield size={12} className="text-[#4FD3A4]" />
+            <span>Data tersinkronisasi aman di cloud akun Google kamu</span>
+          </div>
         </div>
       </div>
     </div>

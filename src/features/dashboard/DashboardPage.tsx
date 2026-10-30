@@ -671,10 +671,10 @@ export const DashboardPage: React.FC = () => {
             setActiveTab('asisten');
           }}
           className="btn-primary group self-end sm:self-center shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25 hover:brightness-105 active:scale-95 transition-all"
-          title={`Tanyakan ini ke FinAI: "${dailyInsight.suggestedPrompt}"`}
+          title={`Tanyakan ini ke Monetra: "${dailyInsight.suggestedPrompt}"`}
         >
           <Sparkles size={14} className="transition-transform duration-300 group-hover:rotate-12" />
-          <span>Tanya FinAI</span>
+          <span>Tanya Monetra</span>
           <ArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-1" />
         </button>
       </div>

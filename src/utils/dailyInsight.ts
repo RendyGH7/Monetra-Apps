@@ -7,7 +7,7 @@ export interface DailyInsight {
   badge: string;             // Badge title for the card
   badgeType: 'default' | 'warning' | 'celebration' | 'tip';
   message: string;           // Insight message text
-  suggestedPrompt: string;   // Contextual prompt when clicking "Tanya FinAI"
+  suggestedPrompt: string;   // Contextual prompt when clicking "Tanya Monetra"
 }
 
 interface GenerateInsightParams {
@@ -121,7 +121,7 @@ export function getDailyInsight({
         badge: 'Hari Gajian Tiba! 🎉',
         badgeType: 'celebration',
         message: `Selamat hari gajian, ${profile.nama}! Sebelum mulai berbelanja, jalankan prinsip "Pay Yourself First": langsung alokasikan minimal 20% (${formatCurrency(Math.round((profile.monthly_income || totalIncome || 1500000) * 0.2))}) ke pos tabungan atau dana darurat.`,
-        suggestedPrompt: 'FinAI, bantu saya membuat rencana alokasi gaji hari ini dengan metode 50/30/20.',
+        suggestedPrompt: 'Monetra, bantu saya membuat rencana alokasi gaji hari ini dengan metode 50/30/20.',
       };
     }
 
@@ -133,7 +133,7 @@ export function getDailyInsight({
         badge: 'Mode Siaga Akhir Bulan ⏳',
         badgeType: 'warning',
         message: `Tinggal ${daysLeft} hari lagi menuju gajian tanggal ${payDay}. Sisa anggaran belanja amanmu adalah ${formatCurrency(safeDailySpend)}/hari. Jaga pos pengeluaran harian tetap hemat agar cashflow bulan ini ditutup dengan surplus!`,
-        suggestedPrompt: `FinAI, berikan strategi bertahan hemat selama ${daysLeft} hari menuju gajian.`,
+        suggestedPrompt: `Monetra, berikan strategi bertahan hemat selama ${daysLeft} hari menuju gajian.`,
       };
     }
 
@@ -145,7 +145,7 @@ export function getDailyInsight({
         badge: 'Pos Kencan Melebihi Batas ⚠️',
         badgeType: 'warning',
         message: `Pengeluaran kencan bulan ini mencapai ${formatCurrency(datingSpend)}, melampaui target anggaran ${formatCurrency(datingBudget)}. Coba alternatif rekreasi santai yang ramah kantong seperti memasak bersama atau piknik santai.`,
-        suggestedPrompt: 'FinAI, berikan ide kencan hemat dan seru di bawah Rp 50.000.',
+        suggestedPrompt: 'Monetra, berikan ide kencan hemat dan seru di bawah Rp 50.000.',
       };
     }
 
@@ -157,7 +157,7 @@ export function getDailyInsight({
         badge: 'Evaluasi Belanja Hari Ini ⚠️',
         badgeType: 'warning',
         message: `Pengeluaran hari ini telah tercatat ${formatCurrency(todayExpenses)}, melampaui batas aman belanja harianmu (${formatCurrency(safeDailySpend)}). Seimbangkan kembali dengan mengerem pengeluaran non-esensial esok hari.`,
-        suggestedPrompt: 'FinAI, bagaimana cara menyeimbangkan kembali anggaran setelah pengeluaran besar hari ini?',
+        suggestedPrompt: 'Monetra, bagaimana cara menyeimbangkan kembali anggaran setelah pengeluaran besar hari ini?',
       };
     }
 
@@ -170,7 +170,7 @@ export function getDailyInsight({
           badge: 'Kickoff Pekan Baru 🚀',
           badgeType: 'default',
           message: `Awal pekan baru, ${profile.nama}! Berdasarkan sisa saldo amanmu (${formatCurrency(safeDailySpend)}/hari), alokasi belanja aman selama 7 hari ke depan adalah sekitar ${formatCurrency(safeDailySpend * 7)}. Catat setiap transaksi harianmu agar cashflow tetap stabil.`,
-          suggestedPrompt: `FinAI, bantu saya menyusun rencana batas pengeluaran mingguan dengan anggaran ${formatCurrency(safeDailySpend * 7)}.`,
+          suggestedPrompt: `Monetra, bantu saya menyusun rencana batas pengeluaran mingguan dengan anggaran ${formatCurrency(safeDailySpend * 7)}.`,
         };
 
       case 1: // Selasa: Analisis Kategori Terbesar
@@ -183,8 +183,8 @@ export function getDailyInsight({
             ? `Hingga hari ini, pengeluaran terbesar terserap pada pos ${topCat.name} sebesar ${formatCurrency(topCat.amount)} (${topCatPct}% dari total). Menekan pos ini sebesar 10% saja bisa mengamankan tambahan tabunganmu bulan ini.`
             : 'Pengeluaran mikro harian seperti kopi atau biaya transfer sering kali tak disadari. Periksa riwayat transaksimu dan eliminasi yang kurang esensial.',
           suggestedPrompt: topCat
-            ? `FinAI, bagaimana tips praktis menekan pengeluaran untuk kategori ${topCat.name}?`
-            : 'FinAI, bagaimana cara mengidentifikasi pengeluaran mikro yang bocor halus?',
+            ? `Monetra, bagaimana tips praktis menekan pengeluaran untuk kategori ${topCat.name}?`
+            : 'Monetra, bagaimana cara mengidentifikasi pengeluaran mikro yang bocor halus?',
         };
 
       case 2: // Rabu: Rasio Needs vs Wants
@@ -196,7 +196,7 @@ export function getDailyInsight({
           message: wantsPct > 45
             ? `Porsi pengeluaran untuk pos keinginan (gaya hidup/hiburan) saat ini mencapai ${wantsPct}% (${formatCurrency(wantsTotal)}). Usahakan menyeimbangkan kembali dengan mengutamakan kebutuhan pokok dan tabungan.`
             : `Rasio kebutuhan pokok vs keinginanmu saat ini terjaga sehat (pos keinginan ${wantsPct}%). Pertahankan disiplin ini hingga akhir bulan!`,
-          suggestedPrompt: 'FinAI, evaluasi transaksi saya dan tunjukkan mana pos yang bisa dihemat antara kebutuhan vs keinginan.',
+          suggestedPrompt: 'Monetra, evaluasi transaksi saya dan tunjukkan mana pos yang bisa dihemat antara kebutuhan vs keinginan.',
         };
 
       case 3: // Kamis: Evaluasi Tabungan & Dompet
@@ -209,8 +209,8 @@ export function getDailyInsight({
             ? `Kamu memiliki ${goals.length} target tabungan aktif. Sisihkan ${formatCurrency(Math.max(10000, Math.round(safeDailySpend * 0.2)))} hari ini untuk mempercepat pencapaian target impianmu!`
             : `Total likuiditas dompetmu tercatat ${formatCurrency(totalWalletBalance)}. Pastikan saldo belanja di e-wallet terpisah dari rekening tabungan agar tidak mudah terpakai.`,
           suggestedPrompt: goals.length > 0
-            ? 'FinAI, hitung perkiraan waktu penyelesaian target tabungan saya dengan sisa arus kas saat ini.'
-            : 'FinAI, berikan saran alokasi saldo antara rekening bank dan e-wallet yang ideal.',
+            ? 'Monetra, hitung perkiraan waktu penyelesaian target tabungan saya dengan sisa arus kas saat ini.'
+            : 'Monetra, berikan saran alokasi saldo antara rekening bank dan e-wallet yang ideal.',
         };
 
       case 4: // Jumat: Strategi Weekend Anti-Boncos
@@ -220,7 +220,7 @@ export function getDailyInsight({
           badge: 'Strategi Akhir Pekan 🛡️',
           badgeType: 'default',
           message: `Menjelang akhir pekan, tetapkan batas maksimal belanja rekreasi dan kuliner sebelum hari Sabtu tiba. Rata-rata pengeluaran harianmu bulan ini adalah ${formatCurrency(Math.round(totalExpense / Math.max(1, todayWIB.date)))}/hari, jaga agar Sabtu-Minggu tidak boncos!`,
-          suggestedPrompt: 'FinAI, berikan tips menjaga pengeluaran akhir pekan agar tetap seru tapi hemat.',
+          suggestedPrompt: 'Monetra, berikan tips menjaga pengeluaran akhir pekan agar tetap seru tapi hemat.',
         };
 
       case 5: // Sabtu: Gaya Hidup & Hiburan Bijak
@@ -230,7 +230,7 @@ export function getDailyInsight({
           badge: 'Nongkrong & Hiburan Cerdas ✨',
           badgeType: 'default',
           message: `Nikmati akhir pekanmu dengan cerdas! Manfaatkan promo non-tunai, bandingkan menu sebelum memesan, dan utamakan pengalaman berkualitas dibanding pengeluaran impulsif.`,
-          suggestedPrompt: 'FinAI, bagaimana cara bersenang-senang di akhir pekan tanpa mengorbankan target tabungan?',
+          suggestedPrompt: 'Monetra, bagaimana cara bersenang-senang di akhir pekan tanpa mengorbankan target tabungan?',
         };
 
       case 6: // Minggu: Refleksi Arus Kas Mingguan
@@ -238,10 +238,10 @@ export function getDailyInsight({
         return {
           dateKey,
           dayName,
-          badge: 'Refleksi Mingguan FinAI 📈',
+          badge: 'Refleksi Mingguan Monetra 📈',
           badgeType: 'default',
           message: `Minggu ini total pengeluaranmu tercatat ${formatCurrency(totalExpense)}. Luangkan waktu sejenak malam ini untuk meninjau riwayat transaksi, evaluasi pos yang boros, dan siapkan rencana baru untuk pekan depan.`,
-          suggestedPrompt: 'FinAI, bantu saya merefleksikan performa keuangan minggu ini dan evaluasi pos mana yang paling boros.',
+          suggestedPrompt: 'Monetra, bantu saya merefleksikan performa keuangan minggu ini dan evaluasi pos mana yang paling boros.',
         };
     }
   }
@@ -259,7 +259,7 @@ export function getDailyInsight({
         badge: 'Tips Finansial Senin: Rumus 50/30/20 📘',
         badgeType: 'tip',
         message: `Awali pekan baru dengan fondasi keuangan yang kuat! Terapkan aturan 50/30/20: 50% untuk kebutuhan pokok, 30% untuk keinginan, dan 20% langsung ke tabungan. Tekan tombol mikrofon atau catat transaksi pertamamu hari ini.`,
-        suggestedPrompt: 'FinAI, jelaskan cara menerapkan aturan 50/30/20 untuk kondisi keuangan saya.',
+        suggestedPrompt: 'Monetra, jelaskan cara menerapkan aturan 50/30/20 untuk kondisi keuangan saya.',
       };
 
     case 1: // SELASA
@@ -269,7 +269,7 @@ export function getDailyInsight({
         badge: 'Tips Finansial Selasa: Waspada Latte Factor ☕',
         badgeType: 'tip',
         message: `Pengeluaran kecil seperti kopi kekinian atau jajan Rp 15.000/hari bisa menumpuk jadi Rp 450.000 per bulan! Biasakan merekam transaksi mikro pertamamu agar uangmu tidak lenyap tanpa jejak.`,
-        suggestedPrompt: 'FinAI, apa itu Latte Factor dan bagaimana cara menghentikan kebocoran uang kecil?',
+        suggestedPrompt: 'Monetra, apa itu Latte Factor dan bagaimana cara menghentikan kebocoran uang kecil?',
       };
 
     case 2: // RABU
@@ -279,7 +279,7 @@ export function getDailyInsight({
         badge: 'Tips Finansial Rabu: Pondasi Dana Darurat 🛡️',
         badgeType: 'tip',
         message: `Sebelum memikirkan investasi, bangunlah fondasi dana darurat minimal 3 bulan pengeluaran. Dana darurat adalah perisai utamamu saat terjadi musibah atau kondisi mendesak.`,
-        suggestedPrompt: 'FinAI, berapa jumlah dana darurat ideal untuk saya dan bagaimana cara memulainya?',
+        suggestedPrompt: 'Monetra, berapa jumlah dana darurat ideal untuk saya dan bagaimana cara memulainya?',
       };
 
     case 3: // KAMIS
@@ -289,7 +289,7 @@ export function getDailyInsight({
         badge: 'Tips Finansial Kamis: Metode Pemisahan Rekening 🏦',
         badgeType: 'tip',
         message: `Gunakan minimal dua rekening: satu untuk operasional belanja sehari-hari dan satu khusus tabungan tanpa kartu ATM aktif agar uang tabunganmu tidak mudah terpakai belanja.`,
-        suggestedPrompt: 'FinAI, bagaimana cara terbaik membagi pos dompet dan rekening untuk pemula?',
+        suggestedPrompt: 'Monetra, bagaimana cara terbaik membagi pos dompet dan rekening untuk pemula?',
       };
 
     case 4: // JUMAT
@@ -299,7 +299,7 @@ export function getDailyInsight({
         badge: 'Tips Finansial Jumat: Aturan Tunggu 24 Jam ⏳',
         badgeType: 'tip',
         message: `Sering tergoda checkout belanja online menjelang akhir pekan? Terapkan aturan 24 jam: jika melihat barang non-esensial yang diinginkan, tunggu 24 jam. Biasanya keinginan membeli akan hilang dengan sendirinya.`,
-        suggestedPrompt: 'FinAI, berikan tips psikologis untuk menghentikan kebiasaan belanja impulsif.',
+        suggestedPrompt: 'Monetra, berikan tips psikologis untuk menghentikan kebiasaan belanja impulsif.',
       };
 
     case 5: // SABTU
@@ -309,7 +309,7 @@ export function getDailyInsight({
         badge: 'Tips Finansial Sabtu: Rekreasi Hemat Akhir Pekan 🏕️',
         badgeType: 'tip',
         message: `Menikmati akhir pekan tidak harus menguras dompet! Berolahraga di ruang terbuka, memasak bersama orang terdekat, atau membaca buku memberikan ketenangan tanpa biaya besar.`,
-        suggestedPrompt: 'FinAI, berikan ide kegiatan akhir pekan yang menyenangkan tanpa harus boros.',
+        suggestedPrompt: 'Monetra, berikan ide kegiatan akhir pekan yang menyenangkan tanpa harus boros.',
       };
 
     case 6: // MINGGU
@@ -319,8 +319,8 @@ export function getDailyInsight({
         dayName,
         badge: 'Tips Finansial Minggu: Evaluasi & Rencana Pekan Depan 📝',
         badgeType: 'tip',
-        message: `Kunci kemandirian finansial adalah konsistensi dan kesadaran (mindfulness). Luangkan 3 menit sebelum tidur malam ini untuk menyiapkan catatan keuanganmu bersama FinAI menjelang pekan baru.`,
-        suggestedPrompt: 'FinAI, bagaimana cara menyusun anggaran mingguan yang mudah dipatuhi?',
+        message: `Kunci kemandirian finansial adalah konsistensi dan kesadaran (mindfulness). Luangkan 3 menit sebelum tidur malam ini untuk menyiapkan catatan keuanganmu bersama Monetra menjelang pekan baru.`,
+        suggestedPrompt: 'Monetra, bagaimana cara menyusun anggaran mingguan yang mudah dipatuhi?',
       };
   }
 }

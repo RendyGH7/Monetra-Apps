@@ -15,7 +15,7 @@
       <stop offset="100%" stop-color="#BA6520" />
     </linearGradient>
 
-    <!-- Cyan AI Glow Gradient -->
+    <!-- Emerald Mint Financial Accent -->
     <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#A7F3D0" />
       <stop offset="50%" stop-color="#4FD3A4" />
@@ -39,26 +39,25 @@
   <rect x="5" y="5" width="118" height="118" rx="32" fill="url(#bgGrad)" stroke="url(#rimGrad)" stroke-width="2.5" />
 
   <!-- Ambient Glow Behind Icon -->
-  <circle cx="64" cy="64" r="36" fill="#E39A5E" opacity="0.12" />
+  <circle cx="64" cy="64" r="38" fill="#E39A5E" opacity="0.14" />
 
-  <!-- FinAI Dynamic Monogram & Growth Vector -->
+  <!-- Monetra Iconic M Monogram with Financial Depth -->
   <g filter="url(#softGlow)">
-    <!-- Vertical Stem of F -->
-    <rect x="36" y="30" width="16" height="68" rx="8" fill="url(#goldGrad)" />
-    
-    <!-- Top Horizontal Wing of F with forward arrow cut -->
-    <path d="M 44 30 L 88 30 C 92 30 95 33 93.5 36.8 L 90 45 C 89 47.5 86.5 49 84 49 L 44 49 Z" fill="url(#goldGrad)" />
+    <!-- Left Pillar of M -->
+    <rect x="26" y="34" width="15" height="60" rx="7.5" fill="url(#goldGrad)" />
 
-    <!-- Middle Horizontal Branch of F -->
-    <path d="M 44 57 L 76 57 C 79 57 81 59 80 62 L 77.5 69 C 76.8 71 74.8 72.5 72.5 72.5 L 44 72.5 Z" fill="url(#goldGrad)" />
+    <!-- Right Pillar of M -->
+    <rect x="87" y="34" width="15" height="60" rx="7.5" fill="url(#goldGrad)" />
 
-    <!-- Upward Financial Growth Pulse (Arrow/Wave) -->
-    <path d="M 68 94 L 78 83 L 87 88 L 97 73" fill="none" stroke="url(#cyanGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-    <!-- Arrowhead Tip -->
-    <path d="M 91 73 L 97 73 L 97 79" fill="none" stroke="url(#cyanGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Center Chevron of M with Rounded Joints -->
+    <path d="M 33.5 41.5 L 64 73 L 94.5 41.5" fill="none" stroke="url(#goldGrad)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Upward Financial Growth Pulse (Arrow/Wave) at bottom right -->
+    <path d="M 66 94 L 77 82 L 86 87 L 98 71" fill="none" stroke="url(#cyanGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 91 71 L 98 71 L 98 78" fill="none" stroke="url(#cyanGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
   </g>
 
-  <!-- Glowing AI Diamond / Sparkle at Upper Right -->
-  <circle cx="94" cy="30" r="5" fill="#4FD3A4" />
-  <circle cx="94" cy="30" r="2.5" fill="#FFFFFF" />
+  <!-- Glowing AI Diamond / Sparkle at Upper Right of M -->
+  <circle cx="100" cy="28" r="5" fill="#4FD3A4" />
+  <circle cx="100" cy="28" r="2.5" fill="#FFFFFF" />
 </svg>

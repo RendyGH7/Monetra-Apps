@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Mic, MicOff, Sparkles, Trash2, User, Copy, Check, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { stripEmoji, formatTimeShort } from '../../utils/format';
-import { askFinAI } from '../../services/aiService';
+import { askMonetra } from '../../services/aiService';
 import { MarkdownMessage } from '../../components/common/MarkdownMessage';
 
 const getSpeechRecognition = () => {
@@ -166,7 +166,7 @@ export const AssistantPage: React.FC = () => {
 
     try {
       // Query upgraded AI Engine (Google Gemini 3.5 Flash or Deep Local Reasoning)
-      const result = await askFinAI(cleanText, {
+      const result = await askMonetra(cleanText, {
         profile,
         transactions,
         wallets,
@@ -185,7 +185,7 @@ export const AssistantPage: React.FC = () => {
       });
 
       if (result.recordedTransactionCount) {
-        showToast(`${result.recordedTransactionCount} transaksi otomatis dicatat oleh FinAI.`);
+        showToast(`${result.recordedTransactionCount} transaksi otomatis dicatat oleh Monetra.`);
       }
     } catch {
       addChatMessage({
@@ -207,14 +207,14 @@ export const AssistantPage: React.FC = () => {
           <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[#E39A5E]/40 shadow-md shadow-[#E39A5E]/20 shrink-0 glass-2 p-1">
             <img
               src="/finai-mascot.png"
-              alt="Maskot FinAI"
+              alt="Maskot Monetra"
               className="w-full h-full object-contain drop-shadow-sm"
             />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-sm sm:text-base font-semibold text-[var(--text-primary)] truncate">
-                Asisten FinAI
+                Asisten Monetra
               </h1>
               <span className="px-2 py-0.5 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/35 text-[#4FD3A4] text-[10px] font-semibold flex items-center gap-1.5 shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4] animate-pulse" />
@@ -248,7 +248,7 @@ export const AssistantPage: React.FC = () => {
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center border-2 border-[#E39A5E]/35 shadow-xl shadow-[#E39A5E]/20 glass-2 mx-auto transition-transform duration-300 group-hover:scale-105 p-2">
                 <img
                   src="/finai-mascot.png"
-                  alt="Maskot FinAI"
+                  alt="Maskot Monetra"
                   className="w-full h-full object-contain drop-shadow-md"
                 />
               </div>
@@ -257,7 +257,7 @@ export const AssistantPage: React.FC = () => {
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-              Halo! Saya FinAI
+              Halo! Saya Monetra
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-md mt-1.5 leading-relaxed">
               Asisten keuangan cerdas pribadimu. Tanyakan analisis pengeluaran, simulasi tabungan, evaluasi budget bulanan, atau curhat finansialmu secara santai.
@@ -285,7 +285,7 @@ export const AssistantPage: React.FC = () => {
                   ) : (
                     <img
                       src="/finai-mascot.png"
-                      alt="FinAI"
+                      alt="Monetra"
                       className="w-full h-full object-contain drop-shadow-sm"
                     />
                   )}
@@ -317,7 +317,7 @@ export const AssistantPage: React.FC = () => {
                       type="button"
                       onClick={() => handleCopy(msg.id, msg.content)}
                       className="btn-ghost inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer"
-                      title="Salin jawaban FinAI"
+                      title="Salin jawaban Monetra"
                     >
                       {copiedId === msg.id ? (
                         <>
@@ -341,7 +341,7 @@ export const AssistantPage: React.FC = () => {
         {isTyping && (
           <div className="flex items-center gap-2.5 text-xs text-[var(--accent)] py-2 pl-11 animate-pulse">
             <Sparkles size={14} className="animate-spin text-[#E39A5E]" />
-            <span className="font-medium">FinAI sedang menganalisis data keuanganmu...</span>
+            <span className="font-medium">Monetra sedang menganalisis data keuanganmu...</span>
           </div>
         )}
 
@@ -395,7 +395,7 @@ export const AssistantPage: React.FC = () => {
               ? 'bg-[#EE5D6C]/25 border-[#EE5D6C] text-[#EE5D6C] shadow-lg shadow-[#EE5D6C]/30 animate-pulse'
               : 'glass-2 border-[#E39A5E]/40 text-[#E39A5E] hover:bg-[#E39A5E]/15 hover:border-[#E39A5E]/60'
           }`}
-          title={isListening ? 'Klik untuk berhenti merekam suara' : 'Voice Prompt: Bicara ke FinAI tanpa harus mengetik'}
+          title={isListening ? 'Klik untuk berhenti merekam suara' : 'Voice Prompt: Bicara ke Monetra tanpa harus mengetik'}
         >
           {isListening ? (
             <MicOff size={18} strokeWidth={2.3} />

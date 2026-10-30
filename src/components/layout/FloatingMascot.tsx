@@ -12,7 +12,7 @@ export const FloatingMascot: React.FC = () => {
 
   return (
     <aside
-      aria-label="Akses Cepat Asisten FinAI"
+      aria-label="Akses Cepat Asisten Monetra"
       className="md:hidden fixed bottom-[104px] right-3.5 z-40 flex flex-col items-end select-none pointer-events-none"
     >
       <div className="relative pointer-events-auto group">
@@ -20,7 +20,7 @@ export const FloatingMascot: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('asisten')}
-          aria-label="Buka Chatbot FinAI"
+          aria-label="Buka Chatbot Monetra"
           className="relative flex flex-col items-center justify-center cursor-pointer transition-transform duration-200 active:scale-90 hover:scale-110"
         >
           {/* Karakter Maskot dengan Animasi Melayang Organik (Float & Tilt) */}
@@ -28,10 +28,10 @@ export const FloatingMascot: React.FC = () => {
             {/* Ambient aura glow lembut di belakang maskot */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#E39A5E]/25 to-[#4FD3A4]/15 blur-lg -z-10 animate-pulse" />
 
-            {/* Gambar Maskot FinAI */}
+            {/* Gambar Maskot Monetra */}
             <img
               src="/finai-mascot.png"
-              alt="Maskot FinAI Chatbot"
+              alt="Maskot Monetra Chatbot"
               className="w-full h-full object-contain pointer-events-none"
             />
 

@@ -228,7 +228,7 @@ export const VoiceModal: React.FC = () => {
           <div className="flex items-center gap-2">
             <Volume2 size={18} className="text-[#E39A5E]" />
             <h2 id="voice-modal-title" className="text-base font-semibold text-[#EEF2F6]">
-              {recordState === 'confirm' ? 'Konfirmasi Transaksi Suara' : 'Bicara ke FinAI'}
+              {recordState === 'confirm' ? 'Konfirmasi Transaksi Suara' : 'Bicara ke Monetra'}
             </h2>
           </div>
           <button
@@ -261,7 +261,7 @@ export const VoiceModal: React.FC = () => {
                   Ceritakan pengeluaran atau pemasukanmu
                 </p>
                 <p className="text-xs text-[#A3AFBC] max-w-sm mx-auto leading-relaxed">
-                  Bicara santai menggunakan Bahasa Indonesia. AI FinAI akan memecah ucapanmu menjadi nominal dan kategori otomatis.
+                  Bicara santai menggunakan Bahasa Indonesia. AI Monetra akan memecah ucapanmu menjadi nominal dan kategori otomatis.
                 </p>
               </div>
 
@@ -354,7 +354,7 @@ export const VoiceModal: React.FC = () => {
             <div className="text-center space-y-4 py-12">
               <div className="w-12 h-12 rounded-full border-2 border-[#E39A5E] border-t-transparent animate-spin mx-auto" />
               <p className="text-sm font-semibold text-[#EEF2F6]">
-                Memproses rekaman suara dengan FinAI...
+                Memproses rekaman suara dengan Monetra...
               </p>
               <p className="text-xs text-[#A3AFBC]">Memisahkan rincian belanja, kategori finansial, dan nominal uang</p>
             </div>
@@ -450,7 +450,7 @@ export const VoiceModal: React.FC = () => {
                 <div className="p-3 rounded-xl bg-[rgba(181,96,58,0.12)] border border-[#B5603A]/30 text-xs text-[#EEF2F6] flex items-start gap-2">
                   <AlertCircle size={16} className="text-[#E39A5E] shrink-0 mt-0.5" />
                   <p className="leading-relaxed">
-                    Pengeluaran kencan terdeteksi. AI FinAI mencatat ini pada pos kencan tersendiri agar kamu dapat memantau budget pacaran bulan ini.
+                    Pengeluaran kencan terdeteksi. AI Monetra mencatat ini pada pos kencan tersendiri agar kamu dapat memantau budget pacaran bulan ini.
                   </p>
                 </div>
               )}

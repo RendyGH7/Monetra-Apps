@@ -47,7 +47,7 @@ export interface AIResponseResult {
  * 2. If Google Gemini API key is configured -> sends to Gemini 3.5 Flash with deep financial context and auto-learning tags.
  * 3. Fallback -> runs deep Contextual Financial Reasoning Engine.
  */
-export async function askFinAI(
+export async function askMonetra(
   userPrompt: string,
   context: AIContext
 ): Promise<AIResponseResult> {
@@ -176,7 +176,7 @@ async function queryGeminiAPI(
     .join(', ');
 
   const systemInstructionText = `
-Kamu adalah FinAI, pusat kecerdasan finansial (Core Financial Brain) yang tersambung ke seluruh bagian proyek ini untuk akun pengguna saat ini.
+Kamu adalah Monetra, pusat kecerdasan finansial (Core Financial Brain) yang tersambung ke seluruh bagian proyek ini untuk akun pengguna saat ini.
 Kamu memiliki akses ke data profil, akun Google, rincian dompet dan saldo, target tabungan, histori transaksi, serta memori otomatis.
 
 WAKTU & ZONA SAAT INI (INDONESIA WIB / UTC+7):
@@ -412,12 +412,12 @@ function smartLocalFinancialReasoning(
       ? memories.map((m) => `- ${m.content}`).join('\n')
       : '- Memori otomatis akan bertambah saat kita sering berinteraksi.';
 
-    return `Tentu saja saya mengenalmu sangat baik, ${profile.nama}! Saya FinAI, pusat kecerdasan finansialmu yang terhubung langsung ke akun Google kamu (${profile.email || 'Akun Terverifikasi'}).\n\nIdentitas & Profil:\n- Nama: ${profile.nama}\n- Akun Google: ${profile.email || 'Terisolasi Aman'}\n- Status: ${profile.internship_status || 'Anak Magang'} (Gaji ${formatCurrency(profile.monthly_income || 1500000)}/bulan)\n- Tanggal Gajian: Tiap tanggal ${payDay} (${daysLeft} hari lagi)\n\nRincian Dompet & Sumber Dana:\n${walletList}\n\nTarget Tabungan Aktif:\n${goalList}\n\nMemori Pribadi yang Saya Ingat:\n${memoryList}\n\nKondisi Keuangan Saat Ini:\n- Sisa aman belanja harian: ${formatCurrency(safeDaily)}/hari\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)} dari batas ${formatCurrency(profile.dating_budget_est || 600000)}\n\nSemua data ini tersimpan eksklusif untuk akun Google kamu. Ada yang ingin kita evaluasi hari ini?`;
+    return `Tentu saja saya mengenalmu sangat baik, ${profile.nama}! Saya Monetra, pusat kecerdasan finansialmu yang terhubung langsung ke akun Google kamu (${profile.email || 'Akun Terverifikasi'}).\n\nIdentitas & Profil:\n- Nama: ${profile.nama}\n- Akun Google: ${profile.email || 'Terisolasi Aman'}\n- Status: ${profile.internship_status || 'Anak Magang'} (Gaji ${formatCurrency(profile.monthly_income || 1500000)}/bulan)\n- Tanggal Gajian: Tiap tanggal ${payDay} (${daysLeft} hari lagi)\n\nRincian Dompet & Sumber Dana:\n${walletList}\n\nTarget Tabungan Aktif:\n${goalList}\n\nMemori Pribadi yang Saya Ingat:\n${memoryList}\n\nKondisi Keuangan Saat Ini:\n- Sisa aman belanja harian: ${formatCurrency(safeDaily)}/hari\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)} dari batas ${formatCurrency(profile.dating_budget_est || 600000)}\n\nSemua data ini tersimpan eksklusif untuk akun Google kamu. Ada yang ingin kita evaluasi hari ini?`;
   }
 
   // 2. Sapaan Kasual & Formal (hi, hai, hello, halo, pagi, dsb)
   const isGreeting =
-    /^(hi|hai|hello|helo|hey|halo|hy|hola|assalamualaikum|pagi|siang|sore|malam|oy|bro|sis|min|finai|tes|test)\b/i.test(lower) ||
+    /^(hi|hai|hello|helo|hey|halo|hy|hola|assalamualaikum|pagi|siang|sore|malam|oy|bro|sis|min|monetra|finai|tes|test)\b/i.test(lower) ||
     lower === 'hi' ||
     lower === 'hai' ||
     lower === 'halo' ||
@@ -425,7 +425,7 @@ function smartLocalFinancialReasoning(
     lower === 'hello';
 
   if (isGreeting) {
-    return `Halo ${firstName}! Senang bisa menyapamu. Saya FinAI yang terhubung ke seluruh dompet, target, dan transaksi akunmu. Ada yang ingin kamu cek atau catat hari ini?`;
+    return `Halo ${firstName}! Senang bisa menyapamu. Saya Monetra yang terhubung ke seluruh dompet, target, dan transaksi akunmu. Ada yang ingin kamu cek atau catat hari ini?`;
   }
 
   // 3. Tanya Dompet / Rincian Saldo
@@ -443,7 +443,7 @@ function smartLocalFinancialReasoning(
       const gList = goals
         .map((g) => `- ${g.name}: ${formatCurrency(g.current_amount)} dari target ${formatCurrency(g.target_amount)} (${Math.round((g.current_amount / Math.max(1, g.target_amount)) * 100)}%)`)
         .join('\n');
-      return `Berikut progres target tabungan aktifmu:\n${gList}\n\nSaran FinAI: Sisihkan setidaknya 20% dari gaji magang tiap tanggal gajian (${payDay}) untuk mempercepat pencapaian targetmu!`;
+      return `Berikut progres target tabungan aktifmu:\n${gList}\n\nSaran Monetra: Sisihkan setidaknya 20% dari gaji magang tiap tanggal gajian (${payDay}) untuk mempercepat pencapaian targetmu!`;
     }
   }
 
@@ -464,7 +464,7 @@ function smartLocalFinancialReasoning(
 
   // 8. Bokek / Boros / Khawatir Uang Menipis
   if (lower.includes('bokek') || lower.includes('boros') || lower.includes('uang abis') || lower.includes('duit abis') || lower.includes('habis uang') || lower.includes('pusing')) {
-    return `Tenang ${firstName}, jangan panik. Mari kita evaluasi bersama:\n- Sisa saldo aktifmu saat ini: ${formatCurrency(netBalance)}\n- Jarak gajian tanggal ${payDay}: ${daysLeft} hari lagi\n- Batas aman bertahan per hari: ${formatCurrency(safeDaily)}\n\nLangkah penyelamatan ala FinAI:\n1. Tahan dulu pengeluaran hiburan dan jajan kafe di luar rencana.\n2. Maksimalkan makan warteg atau menu hemat (budget Rp 15.000 - Rp 20.000 per hari).\n3. Untuk agenda kencan, pilih aktivitas hemat seperti jalan sore di taman atau nonton film di kos.\nKamu pasti bisa melewatinya sampai tanggal gajian tiba!`;
+    return `Tenang ${firstName}, jangan panik. Mari kita evaluasi bersama:\n- Sisa saldo aktifmu saat ini: ${formatCurrency(netBalance)}\n- Jarak gajian tanggal ${payDay}: ${daysLeft} hari lagi\n- Batas aman bertahan per hari: ${formatCurrency(safeDaily)}\n\nLangkah penyelamatan ala Monetra:\n1. Tahan dulu pengeluaran hiburan dan jajan kafe di luar rencana.\n2. Maksimalkan makan warteg atau menu hemat (budget Rp 15.000 - Rp 20.000 per hari).\n3. Untuk agenda kencan, pilih aktivitas hemat seperti jalan sore di taman atau nonton film di kos.\nKamu pasti bisa melewatinya sampai tanggal gajian tiba!`;
   }
 
   // 9. Dana Darurat
@@ -481,7 +481,7 @@ function smartLocalFinancialReasoning(
   if (lower.includes('kencan') || lower.includes('pacar') || lower.includes('date') || lower.includes('doi') || lower.includes('ngedate') || lower.includes('nonton')) {
     const dateBudget = profile.dating_budget_est || 600000;
     const isOver = datingExpense > dateBudget;
-    return `Evaluasi pos kencan untuk ${firstName}:\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)}\n- Target batas bulanan: ${formatCurrency(dateBudget)}\n- Status: ${isOver ? 'Melebihi target awal' : 'Masih dalam batas aman'}\n\nSaran FinAI:\nKarena kamu rutin bertemu 3-4 kali seminggu, variasikan jadwal kencan dengan aktivitas hemat seperti jalan santai di taman kota, memasak menu favorit berdua di kos, atau movie marathon via streaming. Cara ini menjaga hubungan tetap hangat tanpa membuat dompet magang kempis.`;
+    return `Evaluasi pos kencan untuk ${firstName}:\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)}\n- Target batas bulanan: ${formatCurrency(dateBudget)}\n- Status: ${isOver ? 'Melebihi target awal' : 'Masih dalam batas aman'}\n\nSaran Monetra:\nKarena kamu rutin bertemu 3-4 kali seminggu, variasikan jadwal kencan dengan aktivitas hemat seperti jalan santai di taman kota, memasak menu favorit berdua di kos, atau movie marathon via streaming. Cara ini menjaga hubungan tetap hangat tanpa membuat dompet magang kempis.`;
   }
 
   // 12. Investasi, Reksadana, Saham, Emas, Kripto
@@ -491,7 +491,7 @@ function smartLocalFinancialReasoning(
 
   // 13. Pinjol, Paylater, Utang
   if (lower.includes('pinjol') || lower.includes('paylater') || lower.includes('utang') || lower.includes('kredit') || lower.includes('cicilan')) {
-    return `Peringatan penting seputar Paylater & Pinjol untuk ${firstName}:\n- Bunga paylater berkisar 2% - 4% per bulan (bisa mencapai 30% - 50% per tahun). Dengan gaji magang Rp 1.500.000, cicilan sekecil apapun akan langsung membebani cashflow bulanan.\n- Risiko BI Checking / SLIK OJK: Keterlambatan bayar walau hanya Rp 50.000 dapat merusak reputasi kreditmu saat nanti ingin mengajukan KPR atau bekerja di sektor perbankan.\n- Prinsip FinAI: Hindari paylater untuk konsumsi harian atau nongkrong. Jika uang tunai belum cukup, tunda pembelian sampai tabungan terkumpul.`;
+    return `Peringatan penting seputar Paylater & Pinjol untuk ${firstName}:\n- Bunga paylater berkisar 2% - 4% per bulan (bisa mencapai 30% - 50% per tahun). Dengan gaji magang Rp 1.500.000, cicilan sekecil apapun akan langsung membebani cashflow bulanan.\n- Risiko BI Checking / SLIK OJK: Keterlambatan bayar walau hanya Rp 50.000 dapat merusak reputasi kreditmu saat nanti ingin mengajukan KPR atau bekerja di sektor perbankan.\n- Prinsip Monetra: Hindari paylater untuk konsumsi harian atau nongkrong. Jika uang tunai belum cukup, tunda pembelian sampai tabungan terkumpul.`;
   }
 
   // 14. Pertanyaan Umum / Fallback Cerdas
@@ -595,4 +595,7 @@ Kalimat yang diucapkan: "${spokenText}"`;
   // Fallback to high-accuracy smart local parser
   return parseVoiceInput(spokenText);
 }
+
+// Backwards-compatibility alias
+export const askFinAI = askMonetra;
 
