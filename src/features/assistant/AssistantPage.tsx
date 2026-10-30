@@ -221,9 +221,6 @@ export const AssistantPage: React.FC = () => {
                 <span>Online</span>
               </span>
             </div>
-            <p className="text-[11px] text-[var(--text-secondary)] truncate">
-              Terhubung ke seluruh dompet, target tabungan, dan akun Google
-            </p>
           </div>
         </div>
 

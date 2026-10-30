@@ -4,6 +4,7 @@ import {
   ShieldCheck,
   Download,
   AlertCircle,
+  AlertTriangle,
   LogIn,
   LogOut,
   User,
@@ -14,6 +15,8 @@ import {
   ChevronDown,
   Briefcase,
   TrendingUp,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
@@ -23,10 +26,21 @@ export const SettingsPage: React.FC = () => {
   const { profile, updateProfile, showToast, signOut, transactions, resetAllData } = useAppStore();
 
   const [editingProfile, setEditingProfile] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [status, setStatus] = useState(profile.internship_status || '-');
   const [salary, setSalary] = useState(String(profile.monthly_income));
   const [payDay, setPayDay] = useState(String(profile.pay_day));
   const [sideHustle, setSideHustle] = useState(profile.side_hustle_status || '-');
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!showResetConfirm) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowResetConfirm(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showResetConfirm]);
 
   useEffect(() => {
     setStatus(profile.internship_status || '-');
@@ -334,17 +348,81 @@ export const SettingsPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => {
-            if (window.confirm('Apakah kamu yakin ingin mengosongkan seluruh data transaksi dan saldo? Tindakan ini tidak dapat dibatalkan.')) {
-              resetAllData();
-            }
-          }}
+          onClick={() => setShowResetConfirm(true)}
           className="px-4 py-2 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/40 text-[#EE5D6C] text-xs font-semibold hover:bg-[#EE5D6C]/25 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 self-start sm:self-center"
         >
           <RotateCcw size={14} />
           <span>Kosongkan Data</span>
         </button>
       </div>
+
+      {/* Modal Konfirmasi Kosongkan Data: Elegan, Bersih, dan Reassuring */}
+      {showResetConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowResetConfirm(false);
+          }}
+        >
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[#EE5D6C]/30 rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-7 space-y-5 animate-scale-in relative">
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] transition-colors cursor-pointer"
+              aria-label="Tutup"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-3 pt-1">
+              <div className="w-14 h-14 rounded-2xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-[#EE5D6C] flex items-center justify-center shadow-lg shadow-[#EE5D6C]/15">
+                <AlertTriangle size={26} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">
+                  Kosongkan Seluruh Data?
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-xs mx-auto">
+                  Semua catatan transaksi, alokasi dompet, target tabungan, dan memori AI akan dikembalikan ke kondisi awal (Rp 0).
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#EE5D6C]/10 border border-[#EE5D6C]/25 text-left space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#EE5D6C]">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>Tindakan ini permanen</span>
+              </div>
+              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                Data yang sudah dikosongkan tidak dapat dipulihkan. Jika perlu, gunakan tombol <strong>Ekspor JSON</strong> terlebih dahulu untuk menyimpan cadangan.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="w-full py-2.5 px-4 rounded-xl border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetAllData();
+                  setShowResetConfirm(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-[#EE5D6C] hover:bg-[#d94857] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-[#EE5D6C]/25 transition-all cursor-pointer"
+              >
+                <Trash2 size={14} />
+                <span>Ya, Kosongkan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
