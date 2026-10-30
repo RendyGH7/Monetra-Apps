@@ -200,7 +200,7 @@ export const AssistantPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100dvh-5.5rem)] md:h-[calc(100dvh-4rem)] flex flex-col glass-2 rounded-2xl border border-[var(--glass-border)] shadow-xl p-3 sm:p-5 relative overflow-hidden">
+    <div className="max-w-4xl mx-auto assistant-container-safe flex flex-col glass-2 rounded-2xl border border-[var(--glass-border)] shadow-xl p-3 sm:p-5 relative overflow-hidden">
       {/* Top Header */}
       <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(205,225,245,0.1)] gap-2 shrink-0">
         <div className="flex items-center gap-3 min-w-0">

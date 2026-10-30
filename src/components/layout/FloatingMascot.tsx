@@ -13,7 +13,7 @@ export const FloatingMascot: React.FC = () => {
   return (
     <aside
       aria-label="Akses Cepat Asisten Monetra"
-      className="md:hidden fixed bottom-[104px] right-3.5 z-40 flex flex-col items-end select-none pointer-events-none"
+      className="md:hidden fixed z-40 mobile-mascot-safe flex flex-col items-end select-none pointer-events-none"
     >
       <div className="relative pointer-events-auto group">
         {/* Tombol Maskot Mengambang dengan Gerakan Hidup */}

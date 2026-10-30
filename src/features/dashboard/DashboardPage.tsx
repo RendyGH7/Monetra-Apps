@@ -370,7 +370,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24 md:pb-12">
+    <div className="space-y-6 max-w-5xl mx-auto pb-4 md:pb-8">
       {/* Top Greeting and Status with Live Indonesia WIB Clock */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -387,11 +387,11 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="btn-press h-10 px-4 !rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:border-[#E39A5E]/40 flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap transition-all"
+            className="btn-press flex-1 sm:flex-initial h-10 px-4 !rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:border-[#E39A5E]/40 flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap transition-all"
             title="Catat Transaksi Manual Cepat"
           >
             <Plus size={16} strokeWidth={2.4} className="text-[#E39A5E]" />
@@ -400,7 +400,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="btn-primary h-10 px-4 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/25 whitespace-nowrap transition-all"
+            className="btn-primary flex-1 sm:flex-initial h-10 px-4 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/25 whitespace-nowrap transition-all"
             title="Rekam Pengeluaran via Suara"
           >
             <Mic size={16} strokeWidth={2.4} />

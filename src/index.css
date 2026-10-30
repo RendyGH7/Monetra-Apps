@@ -27,8 +27,13 @@
   --nav-hover-bg: rgba(255, 255, 255, 0.06);
   --nav-hover-text: #EEF2F6;
   --nav-active-bg: rgba(227, 154, 94, 0.14);
-  --nav-active-border: rgba(227, 154, 94, 0.35);
   --nav-active-text: #EEF2F6;
+
+  /* Safe Area Insets for iOS Notch, Dynamic Island, and Home Indicator */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
 [data-theme="light"] {
@@ -775,4 +780,36 @@ input[type="number"] {
   animation: soundwave-bar 1.2s ease-in-out infinite;
 }
 
+/* ─── Mobile Safe Area & Fluid Ergonomic Utilities ────────────────── */
+.mobile-header-safe {
+  padding-top: max(var(--safe-top), 12px);
+  padding-left: max(var(--safe-left), 1rem);
+  padding-right: max(var(--safe-right), 1rem);
+}
 
+.mobile-content-safe {
+  padding-top: calc(4.75rem + var(--safe-top));
+  padding-bottom: calc(7.5rem + var(--safe-bottom));
+  padding-left: max(var(--safe-left), 1rem);
+  padding-right: max(var(--safe-right), 1rem);
+}
+
+.mobile-nav-safe {
+  bottom: calc(var(--safe-bottom) + 16px);
+  left: max(var(--safe-left), 0.75rem);
+  right: max(var(--safe-right), 0.75rem);
+}
+
+.mobile-mascot-safe {
+  bottom: calc(var(--safe-bottom) + 94px);
+  right: max(var(--safe-right), 1rem);
+}
+
+.assistant-container-safe {
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 8.5rem);
+}
+@media (min-width: 768px) {
+  .assistant-container-safe {
+    height: calc(100dvh - 4.5rem);
+  }
+}

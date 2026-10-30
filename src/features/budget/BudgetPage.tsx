@@ -53,7 +53,7 @@ export const BudgetPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-24 md:pb-12">
+    <div className="space-y-6 max-w-4xl mx-auto pb-4 md:pb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -68,7 +68,7 @@ export const BudgetPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setAddGoalModal(true)}
-          className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 self-start cursor-pointer shadow-md"
+          className="btn-primary w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
         >
           <Plus size={15} />
           <span>Tambah Target Tabungan</span>

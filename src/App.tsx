@@ -163,8 +163,8 @@ export default function App() {
       {/* Desktop Sidebar */}
       <SidebarNav />
 
-      {/* Mobile Top App Bar (Header HP) */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-30 px-4 py-2.5 bg-[var(--bg-base)]/85 border-b border-[var(--glass-border)] flex items-center justify-between backdrop-blur-xl">
+      {/* Mobile Top App Bar (Header HP dengan Safe Area Insets) */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-30 mobile-header-safe pb-2.5 bg-[var(--bg-base)]/90 border-b border-[var(--glass-border)] flex items-center justify-between backdrop-blur-2xl shadow-xs transition-colors duration-200">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md shadow-black/25 border border-[rgba(235,245,255,0.2)] shrink-0 flex items-center justify-center">
             <img src="/favicon.svg" alt="Logo Monetra" className="w-full h-full object-cover" />
@@ -226,7 +226,7 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 z-10 px-4 sm:px-6 md:px-8 pt-16 md:pt-6 pb-28 sm:pb-32 md:pb-8">
+      <main className="flex-1 min-w-0 z-10 mobile-content-safe md:pt-8 md:pb-12 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
         {renderActiveView()}
       </main>
 

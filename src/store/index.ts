@@ -242,7 +242,7 @@ export const useAppStore = create<AppState>((set, get) => {
   const initialState: AppState = {
     activeTab: 'beranda',
     theme: savedTheme,
-    sidebarCollapsed: saved.sidebarCollapsed ?? false,
+    sidebarCollapsed: saved.sidebarCollapsed ?? (typeof window !== 'undefined' ? window.innerWidth < 1024 : false),
     authLoading: true,
     authUser: null,
     profile: saved.profile || INITIAL_PROFILE,
