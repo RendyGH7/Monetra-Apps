@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ListOrdered, BarChart3, Bot, Mic, Target, Settings } from 'lucide-react';
+import { Home, ListOrdered, BarChart3, Bot, Mic, Target } from 'lucide-react';
 import { useAppStore } from '../../store';
 
 export const BottomNav: React.FC = () => {
@@ -19,7 +19,6 @@ export const BottomNav: React.FC = () => {
     { key: 'mic', label: 'Bicara', icon: Mic, isMic: true },
     { key: 'statistik', label: 'Statistik', icon: BarChart3 },
     { key: 'asisten', label: 'Asisten', icon: Bot },
-    { key: 'pengaturan', label: 'Akun', icon: Settings },
   ];
 
   return (

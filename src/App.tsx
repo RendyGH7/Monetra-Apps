@@ -159,27 +159,32 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 sm:gap-4">
           {/* Theme Toggle */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-8 h-8 rounded-xl glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center cursor-pointer transition-colors"
+            aria-label={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+            className="w-9 h-9 rounded-xl glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center cursor-pointer transition-all active:scale-95"
             title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
           >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
 
-          {/* User Profile Avatar -> Tap to open Pengaturan */}
+          {/* Visual Separator */}
+          <div className="w-[1px] h-4.5 bg-[var(--glass-border)]" aria-hidden="true" />
+
+          {/* User Profile Avatar -> Tap to open Pengaturan / Akun */}
           <button
             type="button"
             onClick={() => setActiveTab('pengaturan')}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer ${
+            aria-label="Buka Akun & Pengaturan"
+            className={`w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-200 cursor-pointer active:scale-95 ${
               activeTab === 'pengaturan'
-                ? 'ring-2 ring-[#E39A5E] shadow-sm'
-                : 'border border-[var(--glass-border)]'
+                ? 'ring-2 ring-[#E39A5E] ring-offset-2 ring-offset-[var(--bg-base)] shadow-md shadow-[#E39A5E]/25 scale-105'
+                : 'border border-[var(--glass-border)] hover:border-[#E39A5E]/50'
             }`}
-            title="Buka Pengaturan & Akun"
+            title="Buka Akun & Pengaturan"
           >
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt={profile.nama} className="w-full h-full object-cover" />
