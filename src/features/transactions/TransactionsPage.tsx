@@ -54,7 +54,7 @@ export const TransactionsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setVoiceModalOpen(true)}
-            className="btn-ghost h-10 px-4 rounded-xl glass-1 border border-white/[0.08] text-xs font-semibold text-[#EEF2F6] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap transition-all"
+            className="btn-ghost h-10 px-4 !rounded-xl glass-1 border border-white/[0.08] text-xs font-semibold text-[#EEF2F6] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap transition-all"
           >
             <Mic size={16} className="text-[#E39A5E]" strokeWidth={2.4} />
             <span>Rekam Suara</span>
@@ -62,7 +62,7 @@ export const TransactionsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="btn-primary h-10 px-4 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/30 whitespace-nowrap transition-all"
+            className="btn-primary h-10 px-4 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/30 whitespace-nowrap transition-all"
           >
             <Plus size={16} strokeWidth={2.4} />
             <span>Tambah</span>
