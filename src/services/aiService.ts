@@ -243,7 +243,12 @@ PANDUAN MENJAWAB:
     parts: [{ text: userPrompt }],
   });
 
-  const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+  const modelsToTry = [
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
+    'gemini-3.1-flash-lite',
+  ];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -262,7 +267,7 @@ PANDUAN MENJAWAB:
           contents: contentsPayload,
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 1000,
+            maxOutputTokens: 4096,
           },
         }),
       });
@@ -525,7 +530,12 @@ Format JSON array:
 ]
 Kalimat yang diucapkan: "${spokenText}"`;
 
-      const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      const modelsToTry = [
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-flash-latest',
+        'gemini-3.1-flash-lite',
+      ];
       let parsed: any = null;
 
       for (const model of modelsToTry) {
