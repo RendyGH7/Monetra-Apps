@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAppStore } from '../../store';
-import { Sparkles } from 'lucide-react';
 
 export const FloatingMascot: React.FC = () => {
   const { activeTab, setActiveTab } = useAppStore();
@@ -17,12 +16,6 @@ export const FloatingMascot: React.FC = () => {
       className="md:hidden fixed bottom-[104px] right-3.5 z-40 flex flex-col items-end select-none pointer-events-none"
     >
       <div className="relative pointer-events-auto group">
-        {/* Balon ajakan interaksi dengan animasi mengambang halus */}
-        <div className="absolute -top-7 right-0 animate-badge-float bg-[var(--bg-card)]/95 border border-[#E39A5E]/40 text-[#E39A5E] text-[10px] font-semibold px-2.5 py-0.5 rounded-full shadow-lg backdrop-blur-md whitespace-nowrap flex items-center gap-1">
-          <Sparkles size={10} className="text-[#E39A5E] animate-pulse" />
-          <span>Tanya FinAI</span>
-        </div>
-
         {/* Tombol Maskot Mengambang dengan Gerakan Hidup */}
         <button
           type="button"
