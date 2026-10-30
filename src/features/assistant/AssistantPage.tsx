@@ -204,8 +204,12 @@ export const AssistantPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(205,225,245,0.1)] gap-2 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center font-bold text-sm shrink-0 shadow-md shadow-[#E39A5E]/20">
-            <Bot size={20} strokeWidth={2.3} />
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-[#E39A5E]/40 shadow-md shadow-[#E39A5E]/20 shrink-0 bg-black/40">
+            <img
+              src="/finai-mascot.jpg"
+              alt="Maskot FinAI"
+              className="w-full h-full object-cover scale-110"
+            />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -238,24 +242,54 @@ export const AssistantPage: React.FC = () => {
 
       {/* Messages Scroll Area with Global Themed Scrollbar */}
       <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1.5 sm:pr-2">
-        {chatMessages.map((msg) => {
-          const isUser = msg.role === 'user';
-
-          return (
-            <div
-              key={msg.id}
-              className={`flex items-start gap-2.5 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
-            >
-              {/* User / Bot Avatar */}
-              <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shrink-0 shadow-xs ${
-                  isUser
-                    ? 'bg-[#E39A5E]/20 text-[#E39A5E] border border-[#E39A5E]/35 font-bold'
-                    : 'bg-white/[0.08] text-[var(--accent)] border border-white/[0.12]'
-                }`}
-              >
-                {isUser ? <User size={15} /> : <Bot size={16} />}
+        {chatMessages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 my-auto select-none">
+            <div className="relative mb-4 group">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-[#E39A5E]/40 shadow-xl shadow-[#E39A5E]/20 bg-black/30 mx-auto transition-transform duration-300 group-hover:scale-105">
+                <img
+                  src="/finai-mascot.jpg"
+                  alt="Maskot FinAI"
+                  className="w-full h-full object-cover"
+                />
               </div>
+              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-[#4FD3A4]/20 border border-[#4FD3A4]/40 text-[#4FD3A4] text-[10px] font-bold">
+                Online
+              </span>
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+              Halo! Saya FinAI
+            </h2>
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-md mt-1.5 leading-relaxed">
+              Asisten keuangan cerdas pribadimu. Tanyakan analisis pengeluaran, simulasi tabungan, evaluasi budget bulanan, atau curhat finansialmu secara santai.
+            </p>
+          </div>
+        ) : (
+          chatMessages.map((msg) => {
+            const isUser = msg.role === 'user';
+
+            return (
+              <div
+                key={msg.id}
+                className={`flex items-start gap-2.5 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+              >
+                {/* User / Bot Avatar */}
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shrink-0 shadow-xs overflow-hidden ${
+                    isUser
+                      ? 'bg-[#E39A5E]/20 text-[#E39A5E] border border-[#E39A5E]/35 font-bold'
+                      : 'border border-[#E39A5E]/30 bg-black/40'
+                  }`}
+                >
+                  {isUser ? (
+                    <User size={15} />
+                  ) : (
+                    <img
+                      src="/finai-mascot.jpg"
+                      alt="FinAI"
+                      className="w-full h-full object-cover scale-110"
+                    />
+                  )}
+                </div>
 
               {/* Message Bubble */}
               <div
@@ -302,7 +336,7 @@ export const AssistantPage: React.FC = () => {
               </div>
             </div>
           );
-        })}
+        }))}
 
         {isTyping && (
           <div className="flex items-center gap-2.5 text-xs text-[var(--accent)] py-2 pl-11 animate-pulse">
