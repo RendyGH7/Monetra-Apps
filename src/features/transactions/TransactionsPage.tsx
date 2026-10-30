@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Search,
   Plus,
@@ -16,6 +16,8 @@ import {
   Tag,
   ArrowDownLeft,
   ArrowUpRight,
+  Filter,
+  RotateCcw,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import {
@@ -27,7 +29,7 @@ import {
   stripEmoji,
 } from '../../utils/format';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
-import { Transaction, TransactionType } from '../../types';
+import { Transaction, TransactionType, Category } from '../../types';
 
 export const TransactionsPage: React.FC = () => {
   const {
@@ -57,11 +59,24 @@ export const TransactionsPage: React.FC = () => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  // Helper to reliably find category object for any transaction
+  const getTxCategory = (tx: Transaction): Category | undefined => {
+    if (!tx.category_id) {
+      return categories.find((c) => c.type === tx.type) || categories[0];
+    }
+    return (
+      categories.find((c) => c.id === tx.category_id) ||
+      categories.find((c) => c.name.toLowerCase() === tx.category_id?.toLowerCase()) ||
+      categories.find((c) => c.type === tx.type) ||
+      categories[0]
+    );
+  };
+
   const checkScrollState = () => {
     if (chipsScrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = chipsScrollRef.current;
-      setCanScrollLeft(scrollLeft > 10);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+      setCanScrollLeft(scrollLeft > 8);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 8);
     }
   };
 
@@ -73,15 +88,18 @@ export const TransactionsPage: React.FC = () => {
 
   const scrollChips = (direction: 'left' | 'right') => {
     if (chipsScrollRef.current) {
-      const offset = direction === 'left' ? -220 : 220;
+      const offset = direction === 'left' ? -200 : 200;
       chipsScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
-      setTimeout(checkScrollState, 250);
+      setTimeout(checkScrollState, 200);
     }
   };
 
+  // Handle switching transaction type tabs
   const handleTypeChange = (newType: TransactionType | 'all') => {
     setSelectedType(newType);
-    if (newType !== 'all' && selectedCategory !== 'all') {
+    if (newType === 'all') {
+      setSelectedCategory('all');
+    } else if (selectedCategory !== 'all') {
       const cat = categories.find((c) => c.id === selectedCategory);
       if (cat && cat.type !== newType) {
         setSelectedCategory('all');
@@ -89,39 +107,89 @@ export const TransactionsPage: React.FC = () => {
     }
   };
 
-  const availableCategories = categories.filter((c) => {
-    if (selectedType === 'all') return true;
-    return c.type === selectedType;
-  });
+  // Available categories for currently active type
+  const availableCategories = useMemo(() => {
+    if (selectedType === 'all') return categories;
+    return categories.filter((c) => c.type === selectedType);
+  }, [categories, selectedType]);
 
-  const filtered = transactions.filter((t) => {
-    if (selectedType !== 'all' && t.type !== selectedType) return false;
-    if (selectedCategory !== 'all' && t.category_id !== selectedCategory) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const cat = categories.find((c) => c.id === t.category_id);
-      const w = wallets.find((w) => w.id === t.wallet_id);
-      return (
-        t.note.toLowerCase().includes(q) ||
-        (t.merchant && t.merchant.toLowerCase().includes(q)) ||
-        (cat && cat.name.toLowerCase().includes(q)) ||
-        (w && w.name.toLowerCase().includes(q)) ||
-        t.amount.toString().includes(q)
-      );
-    }
-    return true;
-  });
+  // Count transactions per type for badge counts
+  const totalExpenseCount = useMemo(
+    () => transactions.filter((t) => t.type === 'expense').length,
+    [transactions]
+  );
+  const totalIncomeCount = useMemo(
+    () => transactions.filter((t) => t.type === 'income').length,
+    [transactions]
+  );
+
+  // Helper to count transactions for each category under current type
+  const getCategoryTxCount = (catId: string) => {
+    return transactions.filter((t) => {
+      if (selectedType !== 'all' && t.type !== selectedType) return false;
+      const txCat = getTxCategory(t);
+      return txCat?.id === catId;
+    }).length;
+  };
+
+  // Reset all filters in one click
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedType('all');
+    setSelectedCategory('all');
+  };
+
+  const isFilterActive = search.trim() !== '' || selectedType !== 'all' || selectedCategory !== 'all';
+
+  // Smart filtered transaction list
+  const filtered = useMemo(() => {
+    return transactions.filter((t) => {
+      // 1. Filter by Type
+      if (selectedType !== 'all' && t.type !== selectedType) return false;
+
+      // 2. Filter by Category (robust matching by ID or Name)
+      if (selectedCategory !== 'all') {
+        const txCat = getTxCategory(t);
+        if (txCat?.id !== selectedCategory) return false;
+      }
+
+      // 3. Search query
+      if (search.trim()) {
+        const q = search.toLowerCase().trim();
+        const txCat = getTxCategory(t);
+        const w = wallets.find((w) => w.id === t.wallet_id);
+
+        // Numeric search (supports "200.000", "200rb", "200k", "200000")
+        const cleanDigits = q.replace(/[^\d]/g, '');
+        const matchesDigits = cleanDigits.length >= 2 && t.amount.toString().includes(cleanDigits);
+
+        return (
+          t.note.toLowerCase().includes(q) ||
+          (t.merchant && t.merchant.toLowerCase().includes(q)) ||
+          (txCat && txCat.name.toLowerCase().includes(q)) ||
+          (w && w.name.toLowerCase().includes(q)) ||
+          matchesDigits
+        );
+      }
+      return true;
+    });
+  }, [transactions, selectedType, selectedCategory, search, categories, wallets]);
 
   // Group by WIB date
-  const grouped: Record<string, Transaction[]> = {};
-  filtered.forEach((t) => {
-    const dStr = getWIBDateString(t.occurred_at);
-    if (!grouped[dStr]) grouped[dStr] = [];
-    grouped[dStr].push(t);
-  });
+  const grouped: Record<string, Transaction[]> = useMemo(() => {
+    const map: Record<string, Transaction[]> = {};
+    filtered.forEach((t) => {
+      const dStr = getWIBDateString(t.occurred_at);
+      if (!map[dStr]) map[dStr] = [];
+      map[dStr].push(t);
+    });
+    return map;
+  }, [filtered]);
 
   // Sort dates descending (newest first)
-  const sortedDates = Object.keys(grouped).sort((a, b) => (a < b ? 1 : -1));
+  const sortedDates = useMemo(() => {
+    return Object.keys(grouped).sort((a, b) => (a < b ? 1 : -1));
+  }, [grouped]);
 
   // Open detail / edit modal
   const openDetailModal = (tx: Transaction) => {
@@ -199,13 +267,14 @@ export const TransactionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search and Filters Bar */}
-      <div className="glass-1 p-3 rounded-2xl border-[rgba(205,225,245,0.12)] space-y-3">
+      {/* ── FILTER & SEARCH SECTION ────────────────────────────────────────── */}
+      <div className="glass-1 p-3.5 sm:p-4 rounded-2xl border-[rgba(205,225,245,0.12)] space-y-3">
+        {/* Search Bar */}
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A3AFBC]" />
           <input
             type="text"
-            placeholder="Cari transaksi, kafe, warteg, dompet, nominal, atau catatan..."
+            placeholder="Cari transaksi, kafe, warteg, dompet, nominal (cth: 20rb), atau catatan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input-glow w-full h-10 pl-10 pr-9 rounded-xl glass-2 text-xs sm:text-sm text-[#EEF2F6] placeholder:text-[#74808E] border border-white/[0.08] outline-none"
@@ -222,86 +291,188 @@ export const TransactionsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Filter Chips Container with Smooth Scrolling Controls */}
+        {/* Row 1: Primary Type Tabs (Semua / Pengeluaran / Pemasukan) */}
+        <div className="flex items-center gap-2 border-b border-[rgba(205,225,245,0.08)] pb-2.5">
+          {[
+            {
+              label: 'Semua Tipe',
+              value: 'all' as const,
+              count: transactions.length,
+              activeClass: 'bg-[#E39A5E] text-[#1C0E04] border-transparent font-bold',
+            },
+            {
+              label: 'Pengeluaran',
+              value: 'expense' as const,
+              count: totalExpenseCount,
+              activeClass: 'bg-[#EE5D6C] text-white border-transparent font-bold',
+            },
+            {
+              label: 'Pemasukan',
+              value: 'income' as const,
+              count: totalIncomeCount,
+              activeClass: 'bg-[#4FD3A4] text-[#1C0E04] border-transparent font-bold',
+            },
+          ].map((chip) => {
+            const isActive = selectedType === chip.value;
+            return (
+              <button
+                key={chip.value}
+                type="button"
+                onClick={() => handleTypeChange(chip.value)}
+                className={`chip-press px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all border ${
+                  isActive
+                    ? `${chip.activeClass} shadow-md`
+                    : 'glass-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40 font-medium'
+                }`}
+              >
+                <span>{chip.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                    isActive
+                      ? 'bg-black/20 text-current'
+                      : 'bg-white/[0.06] text-[#A3AFBC]'
+                  }`}
+                >
+                  {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Row 2: Category Chips with Protected Scroll Controls (No Overlap) */}
         <div className="relative flex items-center">
           {canScrollLeft && (
-            <button
-              type="button"
-              onClick={() => scrollChips('left')}
-              className="hidden sm:flex absolute -left-2 z-10 w-7 h-7 rounded-full glass-3 border border-[#E39A5E]/40 text-[#E39A5E] items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer"
-              title="Geser Kiri"
-            >
-              <ChevronLeft size={15} />
-            </button>
+            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-2 bg-gradient-to-r from-[#0D1219] via-[#0D1219]/90 to-transparent">
+              <button
+                type="button"
+                onClick={() => scrollChips('left')}
+                className="w-7 h-7 rounded-full glass-3 border border-[#E39A5E]/40 text-[#E39A5E] flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Geser Kiri"
+              >
+                <ChevronLeft size={15} />
+              </button>
+            </div>
           )}
 
           <div
             ref={chipsScrollRef}
             onScroll={checkScrollState}
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 text-xs w-full scroll-smooth"
+            className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-0.5 text-xs w-full scroll-smooth"
           >
-            {[
-              { label: 'Semua Tipe', value: 'all' as const, activeClass: 'bg-[#E39A5E] text-[#1C0E04] border-transparent' },
-              { label: 'Pengeluaran', value: 'expense' as const, activeClass: 'bg-[#EE5D6C] text-white border-transparent' },
-              { label: 'Pemasukan', value: 'income' as const, activeClass: 'bg-[#4FD3A4] text-[#1C0E04] border-transparent' },
-            ].map((chip) => (
-              <button
-                key={chip.value}
-                type="button"
-                onClick={() => handleTypeChange(chip.value)}
-                className={`chip-press px-3.5 py-1.5 rounded-xl shrink-0 text-xs font-semibold cursor-pointer shadow-xs transition-all border ${
-                  selectedType === chip.value
-                    ? `${chip.activeClass} shadow-md`
-                    : 'glass-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40'
-                }`}
-              >
-                {chip.label}
-              </button>
-            ))}
+            {/* "Semua Kategori" Chip */}
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('all')}
+              className={`chip-press px-3 py-1.5 rounded-xl shrink-0 text-xs cursor-pointer shadow-xs transition-all border flex items-center gap-1.5 ${
+                selectedCategory === 'all'
+                  ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border-[#E39A5E]/60 shadow-sm'
+                  : 'glass-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40 font-medium'
+              }`}
+            >
+              <Filter size={12} className={selectedCategory === 'all' ? 'text-[#E39A5E]' : 'text-[#A3AFBC]'} />
+              <span>Semua Kategori</span>
+            </button>
 
-            <span className="text-[var(--text-tertiary)] px-1 shrink-0">|</span>
+            {/* Individual Category Chips */}
+            {availableCategories.map((c) => {
+              const isSelected = selectedCategory === c.id;
+              const count = getCategoryTxCount(c.id);
 
-            {availableCategories.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setSelectedCategory(selectedCategory === c.id ? 'all' : c.id)}
-                className={`chip-press px-3 py-1.5 rounded-xl shrink-0 text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-xs transition-all ${
-                  selectedCategory === c.id
-                    ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border border-[#E39A5E]/50 shadow-sm'
-                    : 'glass-2 border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40'
-                }`}
-              >
-                <CategoryIcon name={c.name} size={13} color={c.color} />
-                <span>{c.name}</span>
-              </button>
-            ))}
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(isSelected ? 'all' : c.id)}
+                  className={`chip-press px-3 py-1.5 rounded-xl shrink-0 text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all border ${
+                    isSelected
+                      ? 'bg-[#E39A5E]/25 text-[#E39A5E] font-semibold border-[#E39A5E]/70 shadow-sm ring-1 ring-[#E39A5E]/40'
+                      : 'glass-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40 font-medium'
+                  }`}
+                >
+                  <CategoryIcon name={c.name} size={13} color={c.color} />
+                  <span>{c.name}</span>
+                  {count > 0 && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                        isSelected
+                          ? 'bg-[#E39A5E]/30 text-[#E39A5E]'
+                          : 'bg-white/[0.06] text-[#A3AFBC]'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {canScrollRight && (
-            <button
-              type="button"
-              onClick={() => scrollChips('right')}
-              className="hidden sm:flex absolute -right-2 z-10 w-7 h-7 rounded-full glass-3 border border-[#E39A5E]/40 text-[#E39A5E] items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer"
-              title="Geser Kanan"
-            >
-              <ChevronRight size={15} />
-            </button>
+            <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-l from-[#0D1219] via-[#0D1219]/90 to-transparent">
+              <button
+                type="button"
+                onClick={() => scrollChips('right')}
+                className="w-7 h-7 rounded-full glass-3 border border-[#E39A5E]/40 text-[#E39A5E] flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Geser Kanan"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Active Filter Indicator & Instant Reset Bar */}
+        {isFilterActive && (
+          <div className="flex items-center justify-between pt-1 text-xs text-[#A3AFBC] border-t border-[rgba(205,225,245,0.06)]">
+            <span className="flex items-center gap-1.5">
+              <span>Menampilkan <strong className="text-[#EEF2F6]">{filtered.length}</strong> dari {transactions.length} transaksi</span>
+              {selectedCategory !== 'all' && (
+                <span className="text-[#E39A5E] font-medium">
+                  · Kategori: {categories.find((c) => c.id === selectedCategory)?.name}
+                </span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-[#E39A5E] hover:text-[#EEF2F6] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <RotateCcw size={12} />
+              <span>Reset Filter</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Grouped Transaction List */}
+      {/* ── GROUPED TRANSACTIONS LIST ──────────────────────────────────────── */}
       {sortedDates.length === 0 ? (
-        <div className="glass-1 p-12 rounded-2xl text-center space-y-3 border-[rgba(205,225,245,0.12)]">
-          <p className="text-sm font-medium text-[#EEF2F6]">
-            {transactions.length === 0 ? 'Belum ada transaksi yang dicatat' : 'Tidak ada transaksi yang cocok'}
-          </p>
-          <p className="text-xs text-[#A3AFBC]">
-            {transactions.length === 0
-              ? 'Mulai catat transaksi pertama kamu dengan tombol mikrofon atau tombol Tambah Manual.'
-              : 'Coba ubah kata kunci pencarian atau filter yang dipilih.'}
-          </p>
+        <div className="glass-1 p-10 sm:p-12 rounded-2xl text-center space-y-3.5 border-[rgba(205,225,245,0.12)]">
+          <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-[#A3AFBC] flex items-center justify-center mx-auto">
+            <Filter size={22} />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-[#EEF2F6]">
+              {transactions.length === 0
+                ? 'Belum ada transaksi yang dicatat'
+                : 'Tidak ada transaksi yang cocok dengan filter saat ini'}
+            </p>
+            <p className="text-xs text-[#A3AFBC] max-w-md mx-auto">
+              {transactions.length === 0
+                ? 'Mulai catat transaksi pertama kamu dengan tombol mikrofon atau tombol Tambah Manual.'
+                : 'Coba pilih kategori lain, ubah tipe transaksi, atau reset filter untuk melihat semua riwayat.'}
+            </p>
+          </div>
+          {isFilterActive && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold cursor-pointer shadow-md"
+            >
+              <RotateCcw size={13} />
+              <span>Tampilkan Semua Transaksi</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -348,7 +519,7 @@ export const TransactionsPage: React.FC = () => {
                 {/* Day Items List */}
                 <div className="glass-1 rounded-2xl overflow-hidden divide-y divide-[rgba(205,225,245,0.06)] border border-[rgba(205,225,245,0.12)]">
                   {dayItems.map((tx, rowIdx) => {
-                    const cat = categories.find((c) => c.id === tx.category_id);
+                    const cat = getTxCategory(tx);
                     const wallet = wallets.find((w) => w.id === tx.wallet_id);
                     const isExpense = tx.type === 'expense';
 
@@ -584,7 +755,7 @@ export const TransactionsPage: React.FC = () => {
                         <span>Kategori</span>
                       </div>
                       <p className="font-medium text-[#EEF2F6]">
-                        {categories.find((c) => c.id === viewingTx.category_id)?.name || 'Lainnya'}
+                        {getTxCategory(viewingTx)?.name || 'Lainnya'}
                       </p>
                     </div>
 
@@ -595,7 +766,7 @@ export const TransactionsPage: React.FC = () => {
                       </div>
                       <p className="font-medium text-[#EEF2F6] capitalize">
                         {(() => {
-                          const cat = categories.find((c) => c.id === viewingTx.category_id);
+                          const cat = getTxCategory(viewingTx);
                           const nw = cat?.need_want;
                           if (nw === 'need') return 'Kebutuhan Pokok (Need)';
                           if (nw === 'want') return 'Keinginan (Want)';

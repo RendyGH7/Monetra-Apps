@@ -161,18 +161,29 @@ export function parseVoiceInput(transcriptRaw: string): ParsedVoiceItem[] {
     if (
       seg.includes('gaji') ||
       seg.includes('gajian') ||
-      seg.includes('masuk') ||
-      seg.includes('dapat duit') ||
-      seg.includes('terima') ||
-      seg.includes('dikasih') ||
-      seg.includes('uang saku')
+      seg.includes('salary') ||
+      seg.includes('upah')
     ) {
       type = 'income';
-      category = 'Gaji Magang';
+      category = 'Gaji Pokok';
       needWant = 'saving';
-    } else if (seg.includes('roblox') || seg.includes('mlbb') || seg.includes('jual') || seg.includes('orderan')) {
+    } else if (
+      seg.includes('masuk') ||
+      seg.includes('pemasukan') ||
+      seg.includes('dapat duit') ||
+      seg.includes('terima') ||
+      seg.includes('transferan') ||
+      seg.includes('dikasih') ||
+      seg.includes('uang saku') ||
+      seg.includes('roblox') ||
+      seg.includes('mlbb') ||
+      seg.includes('jual') ||
+      seg.includes('orderan') ||
+      seg.includes('bonus') ||
+      seg.includes('thr')
+    ) {
       type = 'income';
-      category = 'Bisnis Roblox & MLBB';
+      category = 'Pemasukan Lainnya';
       needWant = 'saving';
     } else if (
       seg.includes('pacar') ||
@@ -194,7 +205,8 @@ export function parseVoiceInput(transcriptRaw: string): ParsedVoiceItem[] {
       seg.includes('grab') ||
       seg.includes('angkot') ||
       seg.includes('parkir') ||
-      seg.includes('tol')
+      seg.includes('tol') ||
+      seg.includes('ojek')
     ) {
       category = 'Transportasi';
       needWant = 'need';
@@ -206,9 +218,28 @@ export function parseVoiceInput(transcriptRaw: string): ParsedVoiceItem[] {
       seg.includes('air') ||
       seg.includes('pdam') ||
       seg.includes('wifi') ||
-      seg.includes('telkom')
+      seg.includes('telkom') ||
+      seg.includes('token')
     ) {
       category = 'Tagihan & Pulsa';
+      needWant = 'need';
+    } else if (
+      seg.includes('belanja') ||
+      seg.includes('alfa') ||
+      seg.includes('alfamart') ||
+      seg.includes('indomaret') ||
+      seg.includes('supermarket') ||
+      seg.includes('minimarket') ||
+      seg.includes('pasar') ||
+      seg.includes('sabun') ||
+      seg.includes('odol') ||
+      seg.includes('deterjen') ||
+      seg.includes('shampoo') ||
+      seg.includes('sampo') ||
+      seg.includes('tisu') ||
+      seg.includes('sembako')
+    ) {
+      category = 'Belanja Harian';
       needWant = 'need';
     } else if (
       seg.includes('game') ||
@@ -216,7 +247,9 @@ export function parseVoiceInput(transcriptRaw: string): ParsedVoiceItem[] {
       seg.includes('steam') ||
       seg.includes('skin') ||
       seg.includes('kafe') ||
-      seg.includes('hangout')
+      seg.includes('hangout') ||
+      seg.includes('karaoke') ||
+      seg.includes('jalan-jalan')
     ) {
       category = 'Hiburan';
       needWant = 'want';
@@ -224,14 +257,34 @@ export function parseVoiceInput(transcriptRaw: string): ParsedVoiceItem[] {
       seg.includes('nabung') ||
       seg.includes('tabungan') ||
       seg.includes('simpan') ||
-      seg.includes('investasi')
+      seg.includes('investasi') ||
+      seg.includes('reksadana') ||
+      seg.includes('bibit') ||
+      seg.includes('emas')
     ) {
       category = 'Tabungan & Dana Darurat';
       needWant = 'saving';
-    } else {
-      // Default food/drink
+    } else if (
+      seg.includes('makan') ||
+      seg.includes('minum') ||
+      seg.includes('warteg') ||
+      seg.includes('padang') ||
+      seg.includes('kopi') ||
+      seg.includes('sarapan') ||
+      seg.includes('siang') ||
+      seg.includes('malam') ||
+      seg.includes('jajan') ||
+      seg.includes('snack') ||
+      seg.includes('gorengan') ||
+      seg.includes('mie') ||
+      seg.includes('bakso') ||
+      seg.includes('nasi')
+    ) {
       category = 'Makanan & Minuman';
       needWant = 'need';
+    } else {
+      category = 'Lainnya';
+      needWant = 'want';
     }
 
     // Clean up note text (remove filler words and the price tag)

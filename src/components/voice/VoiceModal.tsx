@@ -178,8 +178,9 @@ export const VoiceModal: React.FC = () => {
     parsedItems.forEach((item) => {
       const matchedCategory = categories.find(
         (c) => c.name.toLowerCase() === item.category.toLowerCase()
-      );
+      ) || categories.find((c) => c.type === item.type);
       const defaultWallet = wallets[0]?.id || 'wallet-cash';
+      const fallbackCatId = item.type === 'income' ? 'cat-side' : 'cat-food';
 
       addTransaction({
         user_id: profile.id || 'default',
@@ -188,7 +189,7 @@ export const VoiceModal: React.FC = () => {
         note: stripEmoji(item.note),
         occurred_at: item.occurred_at,
         source: 'voice',
-        category_id: matchedCategory?.id || 'cat-food',
+        category_id: matchedCategory?.id || fallbackCatId,
         wallet_id: defaultWallet,
       });
     });

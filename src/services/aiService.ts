@@ -62,7 +62,6 @@ export async function askMonetra(
 
   if (hasRecordIntent && parsedItems.length > 0 && context.addTransaction) {
     const defaultWalletId = context.wallets?.[0]?.id || 'wallet-cash';
-    const defaultCatId = context.categories?.[0]?.id || 'cat-food';
 
     parsedItems.forEach((item) => {
       // Find matching wallet if mentioned
@@ -80,6 +79,15 @@ export async function askMonetra(
         }
       }
 
+      // Match category properly based on item.category and item.type
+      const matchedCat = context.categories?.find(
+        (c) => c.name.toLowerCase() === item.category.toLowerCase()
+      ) || context.categories?.find((c) => c.type === item.type);
+
+      const targetCatId =
+        matchedCat?.id ||
+        (item.type === 'income' ? 'cat-side' : 'cat-food');
+
       context.addTransaction!({
         user_id: context.profile.id,
         type: item.type,
@@ -87,7 +95,7 @@ export async function askMonetra(
         note: item.note,
         occurred_at: item.occurred_at,
         source: 'text',
-        category_id: defaultCatId,
+        category_id: targetCatId,
         wallet_id: targetWalletId,
       });
     });
