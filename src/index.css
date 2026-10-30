@@ -681,3 +681,55 @@ input[type="number"] {
   box-shadow: 0 0 0 3px rgba(207, 114, 45, 0.16) !important;
 }
 
+/* ── FinAI Mascot Living Floating & Breathing Animations ──────────── */
+@keyframes mascot-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(1.2deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(-0.8deg);
+  }
+  75% {
+    transform: translateY(-4px) rotate(0.8deg);
+  }
+}
+
+@keyframes mascot-shadow-pulse {
+  0%, 100% {
+    transform: scale(0.85);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+}
+
+@keyframes badge-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-mascot-float {
+  animation: mascot-float 3.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-mascot-shadow {
+  animation: mascot-shadow-pulse 3.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-badge-float {
+  animation: badge-float 3.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+
