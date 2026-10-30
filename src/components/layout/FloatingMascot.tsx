@@ -5,8 +5,8 @@ export const FloatingMascot: React.FC = () => {
   const { activeTab, setActiveTab } = useAppStore();
 
   // Di desktop navigasi asisten tersedia di sidebar.
-  // Saat sedang membuka halaman asisten di mobile, tombol mengambang disembunyikan agar tidak menutupi input chat & tombol kirim.
-  if (activeTab === 'asisten') {
+  // Di halaman asisten dan riwayat transaksi, tombol mengambang disembunyikan agar tidak menutupi daftar transaksi atau input chat.
+  if (activeTab === 'asisten' || activeTab === 'transaksi') {
     return null;
   }
 

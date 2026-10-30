@@ -789,7 +789,7 @@ input[type="number"] {
 
 .mobile-content-safe {
   padding-top: calc(4.75rem + var(--safe-top));
-  padding-bottom: calc(7.5rem + var(--safe-bottom));
+  padding-bottom: calc(8.5rem + var(--safe-bottom));
   padding-left: max(var(--safe-left), 1rem);
   padding-right: max(var(--safe-right), 1rem);
 }

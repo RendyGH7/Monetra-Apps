@@ -274,7 +274,7 @@ export const TransactionsPage: React.FC = () => {
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A3AFBC]" />
           <input
             type="text"
-            placeholder="Cari transaksi, kafe, warteg, dompet, nominal (cth: 20rb), atau catatan..."
+            placeholder="Cari transaksi, nominal, kafe, catatan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input-glow w-full h-10 pl-10 pr-9 rounded-xl glass-2 text-xs sm:text-sm text-[#EEF2F6] placeholder:text-[#74808E] border border-white/[0.08] outline-none"
@@ -291,26 +291,26 @@ export const TransactionsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Row 1: Primary Type Tabs (Semua / Pengeluaran / Pemasukan) */}
-        <div className="flex items-center gap-2 border-b border-[rgba(205,225,245,0.08)] pb-2.5">
+        {/* Row 1: Primary Type Tabs (Segmented Control 3 Kolom Responsif) */}
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08]">
           {[
             {
-              label: 'Semua Tipe',
+              label: 'Semua',
               value: 'all' as const,
               count: transactions.length,
-              activeClass: 'bg-[#E39A5E] text-[#1C0E04] border-transparent font-bold',
+              activeBg: 'bg-[#E39A5E] text-[#1C0E04] shadow-xs font-bold',
             },
             {
               label: 'Pengeluaran',
               value: 'expense' as const,
               count: totalExpenseCount,
-              activeClass: 'bg-[#EE5D6C] text-white border-transparent font-bold',
+              activeBg: 'bg-[#EE5D6C] text-white shadow-xs font-bold',
             },
             {
               label: 'Pemasukan',
               value: 'income' as const,
               count: totalIncomeCount,
-              activeClass: 'bg-[#4FD3A4] text-[#1C0E04] border-transparent font-bold',
+              activeBg: 'bg-[#4FD3A4] text-[#1C0E04] shadow-xs font-bold',
             },
           ].map((chip) => {
             const isActive = selectedType === chip.value;
@@ -319,13 +319,13 @@ export const TransactionsPage: React.FC = () => {
                 key={chip.value}
                 type="button"
                 onClick={() => handleTypeChange(chip.value)}
-                className={`chip-press px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-all border ${
+                className={`py-1.5 px-1 sm:px-2 rounded-lg text-xs flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer transition-all select-none ${
                   isActive
-                    ? `${chip.activeClass} shadow-md`
-                    : 'glass-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/40 font-medium'
+                    ? chip.activeBg
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.04] font-medium'
                 }`}
               >
-                <span>{chip.label}</span>
+                <span className="truncate">{chip.label}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
                     isActive
@@ -343,7 +343,7 @@ export const TransactionsPage: React.FC = () => {
         {/* Row 2: Category Chips with Protected Scroll Controls (No Overlap) */}
         <div className="relative flex items-center">
           {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-2 bg-gradient-to-r from-[#0D1219] via-[#0D1219]/90 to-transparent">
+            <div className="hidden sm:flex absolute left-0 top-0 bottom-0 z-10 items-center pr-2 bg-gradient-to-r from-[#0D1219] via-[#0D1219]/90 to-transparent">
               <button
                 type="button"
                 onClick={() => scrollChips('left')}
@@ -409,7 +409,7 @@ export const TransactionsPage: React.FC = () => {
           </div>
 
           {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-l from-[#0D1219] via-[#0D1219]/90 to-transparent">
+            <div className="hidden sm:flex absolute right-0 top-0 bottom-0 z-10 items-center pl-2 bg-gradient-to-l from-[#0D1219] via-[#0D1219]/90 to-transparent">
               <button
                 type="button"
                 onClick={() => scrollChips('right')}
@@ -492,32 +492,32 @@ export const TransactionsPage: React.FC = () => {
               .reduce((sum, i) => sum + i.amount, 0);
 
             return (
-              <div key={dateStr} className="space-y-2.5">
+              <div key={dateStr} className="space-y-2">
                 {/* Date Header with Both Income & Expense Totals */}
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-[#E39A5E]" />
+                <div className="flex flex-wrap items-center justify-between gap-1.5 px-1 pb-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Calendar size={13} className="text-[#E39A5E] shrink-0" />
                     <span className="text-xs font-semibold text-[#EEF2F6]">
                       {formatDateIndo(dateStr)}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-semibold num-tabular">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold num-tabular ml-auto shrink-0">
                     {dayTotalIncome > 0 && (
-                      <span className="px-2 py-0.5 rounded-md bg-[#4FD3A4]/15 border border-[#4FD3A4]/35 text-[#4FD3A4]">
-                        + {formatCurrency(dayTotalIncome)}
+                      <span className="px-2 py-0.5 rounded-lg bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4]">
+                        +{formatCurrency(dayTotalIncome)}
                       </span>
                     )}
                     {dayTotalExpense > 0 && (
-                      <span className="px-2 py-0.5 rounded-md bg-[#EE5D6C]/15 border border-[#EE5D6C]/35 text-[#EE5D6C]">
-                        - {formatCurrency(dayTotalExpense)}
+                      <span className="px-2 py-0.5 rounded-lg bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-[#EE5D6C]">
+                        -{formatCurrency(dayTotalExpense)}
                       </span>
                     )}
                   </div>
                 </div>
 
                 {/* Day Items List */}
-                <div className="glass-1 rounded-2xl overflow-hidden divide-y divide-[rgba(205,225,245,0.06)] border border-[rgba(205,225,245,0.12)]">
+                <div className="glass-1 rounded-2xl overflow-hidden divide-y divide-[rgba(205,225,245,0.06)] border border-[rgba(205,225,245,0.12)] shadow-xs">
                   {dayItems.map((tx, rowIdx) => {
                     const cat = getTxCategory(tx);
                     const wallet = wallets.find((w) => w.id === tx.wallet_id);
@@ -527,47 +527,46 @@ export const TransactionsPage: React.FC = () => {
                       <div
                         key={tx.id}
                         onClick={() => openDetailModal(tx)}
-                        className="group relative p-3.5 sm:p-4 flex items-center justify-between gap-3 animate-row-in card-interactive rounded-xl border border-transparent hover:border-[#E39A5E]/30 cursor-pointer transition-colors"
+                        className="group relative px-3.5 py-3 sm:px-4 sm:py-3.5 flex items-center justify-between gap-3 animate-row-in card-interactive hover:bg-white/[0.03] cursor-pointer transition-colors"
                         style={{
                           animationDelay: `${rowIdx * 0.03}s`,
                         }}
                       >
-                        <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                             <CategoryIcon
                               name={cat?.name || 'circle-ellipsis'}
-                              size={19}
+                              size={18}
                               color={cat?.color || '#A3AFBC'}
                             />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs sm:text-sm font-medium text-[#EEF2F6] truncate group-hover:text-[#E39A5E] transition-colors">
+                            <p className="text-xs sm:text-sm font-semibold text-[#EEF2F6] truncate group-hover:text-[#E39A5E] transition-colors leading-snug">
                               {tx.note}
                             </p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-[11px] text-[#A3AFBC]">
-                                {cat?.name || 'Lainnya'}
-                              </span>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[#A3AFBC] truncate">
+                              <span className="truncate">{cat?.name || 'Lainnya'}</span>
                               {wallet && (
-                                <span className="text-[10px] text-[#A3AFBC] px-1.5 py-0.2 rounded bg-white/[0.04] border border-white/[0.06]">
-                                  {wallet.name}
-                                </span>
+                                <>
+                                  <span className="text-[#74808E]">·</span>
+                                  <span className="truncate">{wallet.name}</span>
+                                </>
                               )}
                               {tx.merchant && (
-                                <span className="text-[10px] text-[#74808E]">
-                                  · {tx.merchant}
-                                </span>
+                                <>
+                                  <span className="text-[#74808E]">·</span>
+                                  <span className="truncate">{tx.merchant}</span>
+                                </>
                               )}
-                              <span className="text-[10px] text-[#74808E]">
-                                · {formatTimeShort(tx.occurred_at)}
-                              </span>
+                              <span className="text-[#74808E]">·</span>
+                              <span className="shrink-0 text-[#74808E]">{formatTimeShort(tx.occurred_at)}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
                           <span
-                            className={`text-xs sm:text-sm font-semibold num-tabular ${
+                            className={`text-xs sm:text-sm font-bold num-tabular ${
                               isExpense ? 'text-[#EE5D6C]' : 'text-[#4FD3A4]'
                             }`}
                           >
@@ -582,10 +581,10 @@ export const TransactionsPage: React.FC = () => {
                               setTxToDelete(tx);
                             }}
                             aria-label="Hapus transaksi"
-                            className="btn-danger p-2 rounded-xl text-[#74808E] hover:text-[#EE5D6C] hover:bg-[#EE5D6C]/15 border border-transparent hover:border-[#EE5D6C]/30 transition-all cursor-pointer shadow-xs"
+                            className="btn-danger w-8 h-8 rounded-lg text-[#74808E] hover:text-[#EE5D6C] hover:bg-[#EE5D6C]/15 flex items-center justify-center transition-all cursor-pointer"
                             title="Hapus Transaksi"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </div>
