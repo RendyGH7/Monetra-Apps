@@ -204,11 +204,11 @@ export const AssistantPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(205,225,245,0.1)] gap-2 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl overflow-hidden border border-[#E39A5E]/40 shadow-md shadow-[#E39A5E]/20 shrink-0 bg-black/40">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[#E39A5E]/40 shadow-md shadow-[#E39A5E]/20 shrink-0 glass-2 p-1">
             <img
-              src="/finai-mascot.jpg"
+              src="/finai-mascot.png"
               alt="Maskot FinAI"
-              className="w-full h-full object-cover scale-110"
+              className="w-full h-full object-contain drop-shadow-sm"
             />
           </div>
           <div className="min-w-0">
@@ -245,11 +245,11 @@ export const AssistantPage: React.FC = () => {
         {chatMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 my-auto select-none">
             <div className="relative mb-4 group">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-[#E39A5E]/40 shadow-xl shadow-[#E39A5E]/20 bg-black/30 mx-auto transition-transform duration-300 group-hover:scale-105">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center border-2 border-[#E39A5E]/35 shadow-xl shadow-[#E39A5E]/20 glass-2 mx-auto transition-transform duration-300 group-hover:scale-105 p-2">
                 <img
-                  src="/finai-mascot.jpg"
+                  src="/finai-mascot.png"
                   alt="Maskot FinAI"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain drop-shadow-md"
                 />
               </div>
               <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-[#4FD3A4]/20 border border-[#4FD3A4]/40 text-[#4FD3A4] text-[10px] font-bold">
@@ -277,16 +277,16 @@ export const AssistantPage: React.FC = () => {
                   className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shrink-0 shadow-xs overflow-hidden ${
                     isUser
                       ? 'bg-[#E39A5E]/20 text-[#E39A5E] border border-[#E39A5E]/35 font-bold'
-                      : 'border border-[#E39A5E]/30 bg-black/40'
+                      : 'border border-[#E39A5E]/30 glass-1 p-0.5'
                   }`}
                 >
                   {isUser ? (
                     <User size={15} />
                   ) : (
                     <img
-                      src="/finai-mascot.jpg"
+                      src="/finai-mascot.png"
                       alt="FinAI"
-                      className="w-full h-full object-cover scale-110"
+                      className="w-full h-full object-contain drop-shadow-sm"
                     />
                   )}
                 </div>

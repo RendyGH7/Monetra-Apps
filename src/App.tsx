@@ -4,6 +4,7 @@ import { useAppStore } from './store';
 import { supabase } from './lib/supabase';
 import { SidebarNav } from './components/layout/SidebarNav';
 import { BottomNav } from './components/layout/BottomNav';
+import { FloatingMascot } from './components/layout/FloatingMascot';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { AnalyticsPage } from './features/analytics/AnalyticsPage';
@@ -202,8 +203,9 @@ export default function App() {
         {renderActiveView()}
       </main>
 
-      {/* Mobile Floating Bottom Nav */}
+      {/* Mobile Floating Bottom Nav & Chatbot Mascot */}
       <BottomNav />
+      <FloatingMascot />
 
       {/* Global Modals & Toast */}
       <VoiceModal />
