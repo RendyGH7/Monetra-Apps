@@ -380,11 +380,6 @@ export const DashboardPage: React.FC = () => {
             </h1>
             <LiveWIBClock />
           </div>
-          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-1">
-            {profile.monthly_income > 0
-              ? `Pemasukan bulanan ${formatCurrency(profile.monthly_income)} · Gajian tiap tanggal ${profile.pay_day} · ${daysLeft} hari menuju gajian`
-              : 'Belum ada transaksi tercatat · Rekam suara atau tambah manual untuk mulai mencatat'}
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
