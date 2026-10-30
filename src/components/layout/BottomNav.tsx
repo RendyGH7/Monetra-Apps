@@ -23,9 +23,9 @@ export const BottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Navigasi bawah ponsel"
-      className="md:hidden fixed z-40 mobile-nav-safe max-w-md sm:max-w-lg mx-auto pointer-events-none"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 w-full pointer-events-none"
     >
-      <div className="pointer-events-auto glass-3 rounded-[24px] border border-[rgba(205,225,245,0.18)] shadow-[0_12px_36px_rgba(0,0,0,0.55)] backdrop-blur-2xl flex items-center justify-between h-[64px] px-1 relative">
+      <div className="pointer-events-auto w-full max-w-lg mx-auto bg-[var(--bg-base)]/95 border-t border-[rgba(205,225,245,0.16)] shadow-[0_-10px_35px_rgba(0,0,0,0.55)] backdrop-blur-2xl flex items-center justify-between pt-1.5 px-2 mobile-nav-safe relative">
         {navItems.map((item) => {
           if (item.isMic) {
             return (

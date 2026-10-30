@@ -782,31 +782,31 @@ input[type="number"] {
 
 /* ─── Mobile Safe Area & Fluid Ergonomic Utilities ────────────────── */
 .mobile-header-safe {
-  padding-top: max(var(--safe-top), 12px);
+  padding-top: max(var(--safe-top), 52px);
   padding-left: max(var(--safe-left), 1rem);
   padding-right: max(var(--safe-right), 1rem);
 }
 
 .mobile-content-safe {
-  padding-top: calc(4.75rem + var(--safe-top));
-  padding-bottom: calc(8.5rem + var(--safe-bottom));
+  padding-top: calc(max(var(--safe-top), 52px) + 3.75rem);
+  padding-bottom: calc(max(var(--safe-bottom), 16px) + 5.5rem);
   padding-left: max(var(--safe-left), 1rem);
   padding-right: max(var(--safe-right), 1rem);
 }
 
 .mobile-nav-safe {
-  bottom: calc(var(--safe-bottom) + 16px);
-  left: max(var(--safe-left), 0.75rem);
-  right: max(var(--safe-right), 0.75rem);
+  padding-bottom: max(var(--safe-bottom), 14px);
+  padding-left: max(var(--safe-left), 0.75rem);
+  padding-right: max(var(--safe-right), 0.75rem);
 }
 
 .mobile-mascot-safe {
-  bottom: calc(var(--safe-bottom) + 94px);
+  bottom: calc(max(var(--safe-bottom), 14px) + 72px);
   right: max(var(--safe-right), 1rem);
 }
 
 .assistant-container-safe {
-  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 8.5rem);
+  height: calc(100dvh - max(var(--safe-top), 52px) - max(var(--safe-bottom), 14px) - 7.5rem);
 }
 @media (min-width: 768px) {
   .assistant-container-safe {
