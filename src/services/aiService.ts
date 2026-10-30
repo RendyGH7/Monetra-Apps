@@ -225,29 +225,51 @@ PANDUAN MENJAWAB:
 4. Hindari penggunaan tanda baca em dash.
 `;
 
-  // Format past messages for Gemini
-  const contentsPayload: any[] = [];
-
-  // Add last 6 messages for context
+  // Format past messages for Gemini ensuring strict turn alternation and valid structure
+  const rawHistory: { role: 'user' | 'model'; text: string }[] = [];
   const recentHistory = chatHistory.slice(-6);
   recentHistory.forEach((msg) => {
-    contentsPayload.push({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    });
+    if (msg.content && msg.content.trim()) {
+      rawHistory.push({
+        role: msg.role === 'user' ? 'user' : 'model',
+        text: msg.content.trim(),
+      });
+    }
   });
 
-  // Add current user prompt
-  contentsPayload.push({
+  // Always append current user prompt
+  rawHistory.push({
     role: 'user',
-    parts: [{ text: userPrompt }],
+    text: userPrompt.trim(),
   });
 
+  // Sanitize to strictly alternate turns: user -> model -> user
+  const contentsPayload: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+  for (const item of rawHistory) {
+    if (contentsPayload.length === 0) {
+      if (item.role === 'user') {
+        contentsPayload.push({ role: 'user', parts: [{ text: item.text }] });
+      }
+    } else {
+      const prev = contentsPayload[contentsPayload.length - 1];
+      if (prev.role === item.role) {
+        prev.parts[0].text += `\n\n${item.text}`;
+      } else {
+        contentsPayload.push({ role: item.role, parts: [{ text: item.text }] });
+      }
+    }
+  }
+
+  // Fallback if empty
+  if (contentsPayload.length === 0) {
+    contentsPayload.push({ role: 'user', parts: [{ text: userPrompt.trim() }] });
+  }
+
+  // Prioritize ultra-fast sub-second models with strict safety timeouts
   const modelsToTry = [
-    'gemini-3.8-flash',
-    'gemini-3.5-flash',
-    'gemini-flash-latest',
     'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
   ];
   let lastError: any = null;
 
@@ -270,6 +292,7 @@ PANDUAN MENJAWAB:
             maxOutputTokens: 4096,
           },
         }),
+        signal: AbortSignal.timeout(8000), // Max 8s timeout so UI never hangs
       });
 
       if (response.ok) {
@@ -531,10 +554,9 @@ Format JSON array:
 Kalimat yang diucapkan: "${spokenText}"`;
 
       const modelsToTry = [
-        'gemini-3.8-flash',
-        'gemini-3.5-flash',
-        'gemini-flash-latest',
         'gemini-3.1-flash-lite',
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
       ];
       let parsed: any = null;
 
@@ -552,6 +574,7 @@ Kalimat yang diucapkan: "${spokenText}"`;
                   responseMimeType: 'application/json',
                 },
               }),
+              signal: AbortSignal.timeout(6000), // Max 6s timeout
             }
           );
 

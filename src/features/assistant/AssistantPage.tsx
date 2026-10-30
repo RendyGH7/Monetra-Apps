@@ -149,7 +149,7 @@ export const AssistantPage: React.FC = () => {
 
   const handleSend = async (userText: string) => {
     const cleanText = stripEmoji(userText).trim();
-    if (!cleanText) return;
+    if (!cleanText || isTyping) return;
 
     if (isListening) {
       stopVoicePrompt(false);
@@ -411,7 +411,7 @@ export const AssistantPage: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSend(input);
+            if (e.key === 'Enter' && !isTyping) handleSend(input);
           }}
           className={`input-glow flex-1 h-11 px-4 rounded-xl glass-1 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] border outline-none shadow-xs transition-colors duration-200 ${
             isListening ? 'border-[#EE5D6C]/60 bg-[#EE5D6C]/5' : 'border-[var(--glass-border)] focus:border-[#E39A5E]'
@@ -421,7 +421,7 @@ export const AssistantPage: React.FC = () => {
         <button
           type="button"
           onClick={() => handleSend(input)}
-          disabled={!input.trim()}
+          disabled={!input.trim() || isTyping}
           className="btn-primary p-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-md shrink-0 flex items-center justify-center"
           title="Kirim Pesan"
         >
