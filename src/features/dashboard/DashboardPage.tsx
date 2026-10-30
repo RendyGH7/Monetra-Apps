@@ -7,7 +7,6 @@ import {
   ArrowRight,
   ShieldCheck,
   Calendar,
-  AlertTriangle,
   Plus,
   BarChart3,
   ChevronRight,
