@@ -80,6 +80,7 @@ export const DashboardPage: React.FC = () => {
     setAssistantInitialPrompt,
   } = useAppStore();
 
+  const currentTimestamp = useMemo(() => Date.now(), []);
   const nowWIB = useMemo(() => getNowWIBParts(), []);
   const currentMonth = nowWIB.month;
   const currentYear = nowWIB.year;
@@ -377,10 +378,7 @@ export const DashboardPage: React.FC = () => {
             <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
               {getWIBGreeting()}, {profile.nama}
             </h1>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-[#EEF2F6] shadow-xs">
-              <Clock size={12} className="text-[#E39A5E]" />
-              <span className="num-tabular font-medium">{formatDateIndo(currentTimestamp)} · {formatTimeShort(currentTimestamp, true)}</span>
-            </div>
+            <LiveWIBClock />
           </div>
           <p className="text-xs sm:text-sm text-[#A3AFBC] mt-1">
             {profile.monthly_income > 0
