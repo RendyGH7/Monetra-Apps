@@ -658,16 +658,6 @@ export const DashboardPage: React.FC = () => {
               <span className="text-[10px] text-[var(--text-secondary)] font-medium">
                 · {dailyInsight.dayName}
               </span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium flex items-center gap-1 ${
-                dailyInsight.badgeType === 'warning'
-                  ? 'bg-[#EE5D6C]/20 text-[#EE5D6C] border border-[#EE5D6C]/40'
-                  : dailyInsight.badgeType === 'celebration'
-                  ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] border border-[#4FD3A4]/40'
-                  : 'bg-white/[0.06] text-[#EEF2F6] border border-white/[0.08]'
-              }`}>
-                {dailyInsight.badgeType === 'warning' && <AlertTriangle size={11} />}
-                <span>{dailyInsight.badge}</span>
-              </span>
             </div>
             <p className="text-xs sm:text-sm text-[#EEF2F6] leading-relaxed">
               {dailyInsight.message}
