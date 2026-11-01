@@ -36,7 +36,9 @@ export const AssistantPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef<boolean>(false);
-  const finalTranscriptRef = useRef<string>('');
+  const isSendingRef = useRef<boolean>(false);
+  const basePromptRef = useRef<string>('');
+  const sessionFinalPromptRef = useRef<string>('');
 
   // Pre-fill input if navigated from Insight or other prompt trigger
   useEffect(() => {
@@ -85,7 +87,8 @@ export const AssistantPage: React.FC = () => {
         }
       }
 
-      finalTranscriptRef.current = input ? input + ' ' : '';
+      basePromptRef.current = input.trim();
+      sessionFinalPromptRef.current = '';
       isListeningRef.current = true;
       setIsListening(true);
 
@@ -100,16 +103,20 @@ export const AssistantPage: React.FC = () => {
       };
 
       recognition.onresult = (event: any) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const chunk = event.results[i][0]?.transcript || '';
-          if (event.results[i].isFinal) {
-            finalTranscriptRef.current += chunk + ' ';
+        let finalChunk = '';
+        let interimChunk = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          const res = event.results[i];
+          const chunk = res[0]?.transcript || '';
+          if (res.isFinal) {
+            finalChunk += chunk + ' ';
           } else {
-            interim += chunk;
+            interimChunk += chunk;
           }
         }
-        const full = (finalTranscriptRef.current + ' ' + interim).trim();
+        sessionFinalPromptRef.current = finalChunk.trim();
+        const currentSession = (finalChunk + interimChunk).trim();
+        const full = (basePromptRef.current + ' ' + currentSession).trim();
         setInput(full);
       };
 
@@ -123,6 +130,10 @@ export const AssistantPage: React.FC = () => {
       };
 
       recognition.onend = () => {
+        if (sessionFinalPromptRef.current) {
+          basePromptRef.current = (basePromptRef.current + ' ' + sessionFinalPromptRef.current).trim();
+          sessionFinalPromptRef.current = '';
+        }
         // Auto-keepalive on mobile pauses
         if (isListeningRef.current) {
           try {
@@ -186,7 +197,8 @@ export const AssistantPage: React.FC = () => {
 
   const handleSend = async (userText: string) => {
     const cleanText = stripEmoji(userText).trim();
-    if (!cleanText || isTyping) return;
+    if (!cleanText || isTyping || isSendingRef.current) return;
+    isSendingRef.current = true;
 
     if (isListening) {
       stopVoicePrompt(false);
@@ -202,7 +214,7 @@ export const AssistantPage: React.FC = () => {
     setIsTyping(true);
 
     try {
-      // Query upgraded AI Engine (Google Gemini 3.5 Flash or Deep Local Reasoning)
+      // Query upgraded AI Engine (Google Gemini Flash or Deep Local Reasoning)
       const result = await askMonetra(cleanText, {
         profile,
         transactions,
@@ -233,6 +245,7 @@ export const AssistantPage: React.FC = () => {
       });
     } finally {
       setIsTyping(false);
+      isSendingRef.current = false;
     }
   };
 
@@ -325,52 +338,53 @@ export const AssistantPage: React.FC = () => {
                   )}
                 </div>
 
-              {/* Message Bubble */}
-              <div
-                className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm transition-all ${
-                  isUser
-                    ? 'max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-[#E39A5E]/20 to-[#CF8143]/10 border border-[#E39A5E]/30 text-[#EEF2F6] rounded-tr-none'
-                    : 'max-w-[92%] sm:max-w-[88%] glass-1 border border-[var(--glass-border)] text-[var(--text-primary)] rounded-tl-none space-y-2'
-                }`}
-              >
-                {isUser ? (
-                  <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
-                ) : (
-                  <MarkdownMessage content={msg.content} />
-                )}
-
-                {/* Footer with Timestamp and Copy button for assistant */}
+                {/* Message Bubble */}
                 <div
-                  className={`pt-1.5 flex items-center justify-between border-t border-white/[0.05] text-[10px] ${
-                    isUser ? 'text-[#E39A5E]' : 'text-[var(--text-tertiary)]'
+                  className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm transition-all ${
+                    isUser
+                      ? 'max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-[#E39A5E]/20 to-[#CF8143]/10 border border-[#E39A5E]/30 text-[#EEF2F6] rounded-tr-none'
+                      : 'max-w-[92%] sm:max-w-[88%] glass-1 border border-[var(--glass-border)] text-[var(--text-primary)] rounded-tl-none space-y-2'
                   }`}
                 >
-                  <span>{formatTimeShort(msg.created_at)}</span>
-                  {!isUser && (
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(msg.id, msg.content)}
-                      className="btn-ghost inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer"
-                      title="Salin jawaban Monetra"
-                    >
-                      {copiedId === msg.id ? (
-                        <>
-                          <Check size={11} className="text-[#4FD3A4]" />
-                          <span className="text-[#4FD3A4] font-medium">Tersalin</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={11} />
-                          <span>Salin</span>
-                        </>
-                      )}
-                    </button>
+                  {isUser ? (
+                    <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
+                  ) : (
+                    <MarkdownMessage content={msg.content} />
                   )}
+
+                  {/* Footer with Timestamp and Copy button for assistant */}
+                  <div
+                    className={`pt-1.5 flex items-center justify-between border-t border-white/[0.05] text-[10px] ${
+                      isUser ? 'text-[#E39A5E]' : 'text-[var(--text-tertiary)]'
+                    }`}
+                  >
+                    <span>{formatTimeShort(msg.created_at)}</span>
+                    {!isUser && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(msg.id, msg.content)}
+                        className="btn-ghost inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer"
+                        title="Salin jawaban Monetra"
+                      >
+                        {copiedId === msg.id ? (
+                          <>
+                            <Check size={11} className="text-[#4FD3A4]" />
+                            <span className="text-[#4FD3A4] font-medium">Tersalin</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={11} />
+                            <span>Salin</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        }))}
+            );
+          })
+        )}
 
         {isTyping && (
           <div className="flex items-center gap-2.5 text-xs text-[var(--accent)] py-2 pl-11 animate-pulse">
@@ -468,4 +482,3 @@ export const AssistantPage: React.FC = () => {
     </div>
   );
 };
-

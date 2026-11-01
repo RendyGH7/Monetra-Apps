@@ -4,7 +4,6 @@ import {
   Plus,
   Trash2,
   Calendar,
-  Mic,
   X,
   Edit3,
   Wallet as WalletIcon,
@@ -39,7 +38,6 @@ export const TransactionsPage: React.FC = () => {
     deleteTransaction,
     updateTransaction,
     setQuickManualOpen,
-    setVoiceModalOpen,
     showToast,
   } = useAppStore();
 
@@ -246,23 +244,13 @@ export const TransactionsPage: React.FC = () => {
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
           <button
             type="button"
-            onClick={() => setVoiceModalOpen(true)}
-            style={{ borderRadius: '0.75rem' }}
-            className="btn-ghost flex-1 sm:flex-initial h-10 px-4 !rounded-xl glass-1 border border-white/[0.08] text-xs font-semibold text-[#EEF2F6] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap transition-all shadow-xs"
-            title="Rekam Pengeluaran via Suara"
-          >
-            <Mic size={16} className="text-[#E39A5E]" strokeWidth={2.4} />
-            <span>Rekam Suara</span>
-          </button>
-          <button
-            type="button"
             onClick={() => setQuickManualOpen(true)}
             style={{ borderRadius: '0.75rem' }}
-            className="btn-primary flex-1 sm:flex-initial h-10 px-4 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/30 whitespace-nowrap transition-all"
+            className="btn-primary flex-1 sm:flex-initial h-10 px-4.5 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/30 whitespace-nowrap transition-all"
             title="Tambah Transaksi Manual"
           >
             <Plus size={16} strokeWidth={2.4} />
-            <span>Tambah</span>
+            <span>Tambah Transaksi</span>
           </button>
         </div>
       </div>

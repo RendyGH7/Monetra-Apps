@@ -32,6 +32,7 @@ export const QuickManualModal: React.FC = () => {
 
   const categoryRef = useRef<HTMLDivElement>(null);
   const walletRef = useRef<HTMLDivElement>(null);
+  const isSubmittingRef = useRef<boolean>(false);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -81,8 +82,10 @@ export const QuickManualModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     const num = parseInt(amount.replace(/[^\d]/g, ''), 10);
     if (!num || num <= 0) return;
+    isSubmittingRef.current = true;
 
     const needWant: NeedWantType = selectedCategory?.need_want || (type === 'income' ? 'saving' : 'need');
 
@@ -102,6 +105,7 @@ export const QuickManualModal: React.FC = () => {
     setAmount('');
     setNote('');
     setQuickManualOpen(false);
+    isSubmittingRef.current = false;
   };
 
   const numAmount = parseInt(amount.replace(/[^\d]/g, '') || '0', 10);

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Mic,
   TrendingDown,
   TrendingUp,
   Sparkles,
@@ -74,7 +73,6 @@ export const DashboardPage: React.FC = () => {
     categories,
     wallets,
     goals,
-    setVoiceModalOpen,
     setQuickManualOpen,
     setActiveTab,
     setAssistantInitialPrompt,
@@ -386,20 +384,11 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
-            className="btn-press flex-1 sm:flex-initial h-10 px-4 !rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[var(--text-primary)] hover:border-[#E39A5E]/40 flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap transition-all"
-            title="Catat Transaksi Manual Cepat"
+            className="btn-primary flex-1 sm:flex-initial h-10 px-4.5 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/25 whitespace-nowrap transition-all"
+            title="Catat Transaksi Cepat"
           >
-            <Plus size={16} strokeWidth={2.4} className="text-[#E39A5E]" />
-            <span>Catat Cepat</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setVoiceModalOpen(true)}
-            className="btn-primary flex-1 sm:flex-initial h-10 px-4 !rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-black/25 whitespace-nowrap transition-all"
-            title="Rekam Pengeluaran via Suara"
-          >
-            <Mic size={16} strokeWidth={2.4} />
-            <span>Bicara</span>
+            <Plus size={16} strokeWidth={2.4} />
+            <span>Catat Transaksi</span>
           </button>
         </div>
       </div>

@@ -312,5 +312,16 @@ export function parseVoiceInput(transcriptRaw: string): ParsedVoiceItem[] {
     });
   }
 
-  return items;
+  // Deduplicate identical items from the same spoken utterance
+  const uniqueItems: ParsedVoiceItem[] = [];
+  const seen = new Set<string>();
+  for (const it of items) {
+    const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+    if (!seen.has(k)) {
+      seen.add(k);
+      uniqueItems.push(it);
+    }
+  }
+
+  return uniqueItems;
 }

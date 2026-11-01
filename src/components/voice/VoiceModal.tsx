@@ -13,6 +13,15 @@ const getSpeechRecognition = () => {
   return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
 };
 
+// Check if running on iOS (iPhone, iPad, iPod)
+const checkIsIOS = () => {
+  if (typeof navigator === 'undefined') return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+};
+
 export const VoiceModal: React.FC = () => {
   const { voiceModalOpen, setVoiceModalOpen, addTransaction, categories, wallets, profile, showToast } =
     useAppStore();
@@ -24,6 +33,7 @@ export const VoiceModal: React.FC = () => {
   const [manualText, setManualText] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [parsedItems, setParsedItems] = useState<ParsedVoiceItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Real-time audio reactive visualizer state
   const [audioLevel, setAudioLevel] = useState(0); // 0 - 100
@@ -40,8 +50,9 @@ export const VoiceModal: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const isRecordingRef = useRef<boolean>(false);
-  const finalTranscriptRef = useRef<string>('');
-  const maxAudioLevelRef = useRef<number>(0);
+  const isSavingRef = useRef<boolean>(false);
+  const currentSessionFinalRef = useRef<string>('');
+  const previousSessionsTextRef = useRef<string>('');
 
   // Timer while recording
   useEffect(() => {
@@ -125,16 +136,34 @@ export const VoiceModal: React.FC = () => {
 
   if (!voiceModalOpen) return null;
 
-  // ── Start Robust Recording (Web Audio + MediaRecorder + SpeechRecognition) ──
+  // ── Start Recording (Native MediaRecorder + Web Audio + SpeechRecognition) ──
   const handleStartRecording = async () => {
     setErrorMessage(null);
     setLiveTranscript('');
-    finalTranscriptRef.current = '';
+    currentSessionFinalRef.current = '';
+    previousSessionsTextRef.current = '';
     audioChunksRef.current = [];
-    maxAudioLevelRef.current = 0;
     setHasDetectedVoice(false);
+    setIsSaving(false);
+    isSavingRef.current = false;
 
-    // 1. Request user media (Microphone Hardware Access)
+    const isIOS = checkIsIOS();
+
+    // 1. Instantiate AudioContext synchronously during user click to guarantee permission on iOS
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtx) {
+      try {
+        const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        audioContextRef.current = ctx;
+      } catch (ctxErr) {
+        console.warn('AudioContext init note:', ctxErr);
+      }
+    }
+
+    // 2. Request user media (Microphone Hardware Access)
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -159,22 +188,20 @@ export const VoiceModal: React.FC = () => {
       return;
     }
 
-    // 2. Set up Web Audio API for Real Audio Metering & Responsive Visualizer
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const audioCtx = new AudioCtx();
-        if (audioCtx.state === 'suspended') {
-          await audioCtx.resume();
+    // 3. Set up Web Audio API Analyser for Live Responsive Visualizer
+    if (audioContextRef.current && stream) {
+      try {
+        const ctx = audioContextRef.current;
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
         }
-        audioContextRef.current = audioCtx;
 
-        const analyser = audioCtx.createAnalyser();
+        const analyser = ctx.createAnalyser();
         analyser.fftSize = 64;
         analyser.smoothingTimeConstant = 0.8;
         analyserRef.current = analyser;
 
-        const source = audioCtx.createMediaStreamSource(stream);
+        const source = ctx.createMediaStreamSource(stream);
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -183,7 +210,7 @@ export const VoiceModal: React.FC = () => {
           if (!isRecordingRef.current) return;
           analyser.getByteFrequencyData(dataArray);
 
-          // Calculate average volume level (0 - 100)
+          // Calculate average volume level
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) {
             sum += dataArray[i];
@@ -192,20 +219,24 @@ export const VoiceModal: React.FC = () => {
           const normalized = Math.min(100, Math.round((avg / 128) * 100));
 
           setAudioLevel(normalized);
-          if (normalized > maxAudioLevelRef.current) {
-            maxAudioLevelRef.current = normalized;
-          }
-          if (normalized > 8) {
+          if (normalized > 6) {
             setHasDetectedVoice(true);
           }
 
-          // Generate 14 dynamic responsive bar heights
+          // Generate 14 dynamic responsive bars
           const step = Math.max(1, Math.floor(dataArray.length / 14));
           const bars: number[] = [];
+          const now = Date.now();
           for (let b = 0; b < 14; b++) {
             const val = dataArray[b * step] || 0;
-            // Floor at 15% so bars remain visible, scale dynamically up to 100%
-            const height = Math.min(100, Math.max(15, Math.round((val / 255) * 100)));
+            let height: number;
+            if (val > 0) {
+              height = Math.min(100, Math.max(15, Math.round((val / 255) * 100)));
+            } else {
+              // Gentle living sine pulse so user sees that the mic is active on mobile
+              const wave = Math.sin(now / 300 + b * 0.45) * 15 + 25;
+              height = Math.round(wave);
+            }
             bars.push(height);
           }
           setBarHeights(bars);
@@ -214,12 +245,12 @@ export const VoiceModal: React.FC = () => {
         };
 
         animFrameRef.current = requestAnimationFrame(updateMeter);
+      } catch (audioErr) {
+        console.warn('Audio metering note:', audioErr);
       }
-    } catch (audioErr) {
-      console.warn('Web Audio API setup warning (visualizer will fallback):', audioErr);
     }
 
-    // 3. Set up MediaRecorder as a rock-solid background audio recording fallback
+    // 4. Set up MediaRecorder as our primary lossless audio capture pipeline
     try {
       let mimeType = '';
       if (typeof MediaRecorder !== 'undefined') {
@@ -243,72 +274,85 @@ export const VoiceModal: React.FC = () => {
         }
       };
 
-      recorder.start(250); // Flush chunks every 250ms
+      recorder.start(250); // Flush chunks frequently
       mediaRecorderRef.current = recorder;
     } catch (recErr) {
       console.warn('MediaRecorder warning:', recErr);
     }
 
-    // 4. Mark recording active
+    // 5. Mark recording active
     isRecordingRef.current = true;
     setRecordState('recording');
 
-    // 5. Initialize Web Speech API with Seamless Keepalive for Mobile Pauses
-    const SpeechRecognition = getSpeechRecognition();
-    if (SpeechRecognition) {
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'id-ID';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
+    // 6. SpeechRecognition Strategy:
+    // IMPORTANT: On iOS (Chrome on iOS or Safari), running SpeechRecognition concurrently with getUserMedia
+    // locks up Apple's AVAudioSession and causes deadlock / silence.
+    // Therefore on iOS we use MediaRecorder + Gemini Multimodal AI.
+    // On Desktop & Android Chrome, we run SpeechRecognition for live on-screen transcript!
+    if (!isIOS) {
+      const SpeechRecognition = getSpeechRecognition();
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.lang = 'id-ID';
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.maxAlternatives = 1;
 
-        recognition.onresult = (event: any) => {
-          let interim = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            const transcriptChunk = event.results[i][0]?.transcript || '';
-            if (event.results[i].isFinal) {
-              finalTranscriptRef.current += transcriptChunk + ' ';
-            } else {
-              interim += transcriptChunk;
+          recognition.onresult = (event: any) => {
+            let sessionFinal = '';
+            let sessionInterim = '';
+            // Reconstruct cleanly from event.results to prevent duplicate chunks
+            for (let i = 0; i < event.results.length; ++i) {
+              const res = event.results[i];
+              const chunk = res[0]?.transcript || '';
+              if (res.isFinal) {
+                sessionFinal += chunk + ' ';
+              } else {
+                sessionInterim += chunk;
+              }
             }
-          }
-          const combined = (finalTranscriptRef.current + ' ' + interim).trim();
-          if (combined) {
-            setLiveTranscript(combined);
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          console.warn('SpeechRecognition event error:', event.error);
-          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            setErrorMessage(
-              'Izin akses mikrofon ditolak oleh browser. Silakan klik ikon gembok di address bar browser untuk mengizinkan mikrofon.'
-            );
-            handleStopRecording();
-          } else if (event.error === 'network') {
-            // Network glitch on speech recognition server - no panic, MediaRecorder is capturing!
-            console.info('SpeechRecognition network disconnect; background audio recorder active.');
-          }
-          // 'no-speech' is expected during pauses; do not abort recording
-        };
-
-        recognition.onend = () => {
-          // Critical Mobile Fix: Mobile browsers abruptly trigger onend after 1-2s pauses.
-          // If the user hasn't explicitly tapped "Selesai Bicara", seamlessly restart recognition!
-          if (isRecordingRef.current) {
-            try {
-              recognition.start();
-            } catch {
-              // Ignore if already active or restarting
+            currentSessionFinalRef.current = sessionFinal.trim();
+            const sessionText = (sessionFinal + sessionInterim).trim();
+            const combined = (previousSessionsTextRef.current + ' ' + sessionText).trim();
+            if (combined) {
+              setLiveTranscript(combined);
             }
-          }
-        };
+          };
 
-        recognition.start();
-        recognitionRef.current = recognition;
-      } catch (err: any) {
-        console.warn('Web Speech API start error, will rely on audio fallback:', err);
+          recognition.onerror = (event: any) => {
+            console.warn('SpeechRecognition event note:', event.error);
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+              setErrorMessage(
+                'Izin akses mikrofon ditolak oleh browser. Silakan klik ikon gembok di address bar browser untuk mengizinkan mikrofon.'
+              );
+              handleStopRecording();
+            }
+          };
+
+          recognition.onend = () => {
+            // Commit finalized text from the previous recognition cycle
+            if (currentSessionFinalRef.current) {
+              previousSessionsTextRef.current = (
+                previousSessionsTextRef.current + ' ' + currentSessionFinalRef.current
+              ).trim();
+              currentSessionFinalRef.current = '';
+            }
+            // Keep alive during pauses if user has not tapped Selesai Bicara
+            if (isRecordingRef.current) {
+              try {
+                recognition.start();
+              } catch {
+                // Ignore if already active
+              }
+            }
+          };
+
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (err: any) {
+          console.warn('SpeechRecognition start note:', err);
+        }
       }
     }
   };
@@ -351,35 +395,53 @@ export const VoiceModal: React.FC = () => {
     // 3. Completely stop hardware audio tracks
     cleanupAudio();
 
-    // 4. Resolve transcription
-    const recognizedText = (finalTranscriptRef.current + ' ' + liveTranscript).trim();
+    // 4. Resolve transcription text (strictly deduplicated and combined)
+    const recognizedText = (
+      liveTranscript ||
+      (previousSessionsTextRef.current + ' ' + currentSessionFinalRef.current).trim()
+    ).trim();
 
-    // Path A: Web Speech API transcribed the text cleanly!
+    // Path A: SpeechRecognition has transcribed text (Desktop / Android Chrome)!
     if (recognizedText) {
       await processTranscription(recognizedText);
       return;
     }
 
-    // Path B: Web Speech API returned nothing (common on iOS or network timeout),
-    // but MediaRecorder captured actual audio from the user!
-    if (audioBlob && audioBlob.size > 2000 && maxAudioLevelRef.current > 4) {
+    // Path B: MediaRecorder captured audio (iOS Chrome, Safari, or network timeout on SpeechRecognition)!
+    let multimodalErrorMsg: string | null = null;
+    if (audioBlob && audioBlob.size > 500) {
       try {
         const result = await parseVoiceAudioWithAI(audioBlob, categories);
-        if (result.transcript || result.items.length > 0) {
+        if (result.transcript || (result.items && result.items.length > 0)) {
           setTranscript(result.transcript || 'Rekaman Suara');
-          setParsedItems(result.items);
+
+          // Deduplicate items
+          const uniqueItems: ParsedVoiceItem[] = [];
+          const seen = new Set<string>();
+          for (const it of result.items) {
+            const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+            if (!seen.has(k)) {
+              seen.add(k);
+              uniqueItems.push(it);
+            }
+          }
+
+          setParsedItems(uniqueItems);
           setRecordState('confirm');
           return;
         }
-      } catch (err) {
-        console.warn('Multimodal audio parse failed, checking error:', err);
+      } catch (err: any) {
+        console.warn('Multimodal audio parse error:', err);
+        multimodalErrorMsg = err?.message || 'Gagal memproses audio dengan AI';
       }
     }
 
-    // Path C: Neither text nor audio sound detected (mic muted or user didn't speak)
+    // Path C: Zero audio or speech detected
     setRecordState('idle');
     setErrorMessage(
-      'Suara tidak terdeteksi atau mikrofon terlalu jauh. Silakan dekatkan mikrofon dan bicara lebih jelas, atau gunakan kolom ketik di bawah.'
+      multimodalErrorMsg
+        ? `${multimodalErrorMsg}. Silakan gunakan kolom ketik manual di bawah atau coba bicara lebih jelas.`
+        : 'Suara tidak terdeteksi atau mikrofon terlalu jauh. Silakan dekatkan mikrofon dan bicara lebih jelas, atau gunakan kolom ketik di bawah.'
     );
   };
 
@@ -389,11 +451,30 @@ export const VoiceModal: React.FC = () => {
     setRecordState('processing');
     try {
       const items = await parseVoiceInputWithAI(text, categories);
-      setParsedItems(items);
+      // Deduplicate items
+      const uniqueItems: ParsedVoiceItem[] = [];
+      const seen = new Set<string>();
+      for (const it of items) {
+        const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          uniqueItems.push(it);
+        }
+      }
+      setParsedItems(uniqueItems);
     } catch (err) {
       console.warn('Voice AI parse error, using smart fallback:', err);
       const items = parseVoiceInput(text);
-      setParsedItems(items);
+      const uniqueItems: ParsedVoiceItem[] = [];
+      const seen = new Set<string>();
+      for (const it of items) {
+        const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          uniqueItems.push(it);
+        }
+      }
+      setParsedItems(uniqueItems);
     }
     setRecordState('confirm');
   };
@@ -408,6 +489,10 @@ export const VoiceModal: React.FC = () => {
   };
 
   const handleSaveAll = () => {
+    if (isSavingRef.current || isSaving || parsedItems.length === 0) return;
+    isSavingRef.current = true;
+    setIsSaving(true);
+
     parsedItems.forEach((item) => {
       const matchedCategory =
         categories.find((c) => c.name.toLowerCase() === item.category.toLowerCase()) ||
@@ -433,6 +518,9 @@ export const VoiceModal: React.FC = () => {
 
   const handleClose = () => {
     isRecordingRef.current = false;
+    isSavingRef.current = false;
+    currentSessionFinalRef.current = '';
+    previousSessionsTextRef.current = '';
     cleanupAudio();
     setVoiceModalOpen(false);
     setRecordState('idle');
@@ -441,6 +529,7 @@ export const VoiceModal: React.FC = () => {
     setManualText('');
     setErrorMessage(null);
     setParsedItems([]);
+    setIsSaving(false);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -452,7 +541,7 @@ export const VoiceModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="voice-modal-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -570,7 +659,7 @@ export const VoiceModal: React.FC = () => {
                     className="w-1.5 rounded-full transition-all duration-75 ease-out"
                     style={{
                       height: `${h}%`,
-                      backgroundColor: audioLevel > 8 ? '#E39A5E' : '#EE5D6C',
+                      backgroundColor: audioLevel > 6 ? '#E39A5E' : '#EE5D6C',
                       opacity: Math.max(0.4, h / 100),
                     }}
                   />
@@ -589,7 +678,7 @@ export const VoiceModal: React.FC = () => {
                       Silakan bicara sekarang...
                     </p>
                     <p className="text-[11px] text-[#A3AFBC] italic">
-                      Contoh: &quot;Beli makan siang 20 ribu dan bensin 30 ribu&quot;
+                      Contoh: &quot;Dapat uang 70 ribu&quot; atau &quot;Makan siang 20 ribu&quot;
                     </p>
                   </div>
                 )}
@@ -732,10 +821,10 @@ export const VoiceModal: React.FC = () => {
             <button
               type="button"
               onClick={handleSaveAll}
-              disabled={parsedItems.length === 0}
+              disabled={isSaving || parsedItems.length === 0}
               className="btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold disabled:opacity-50 cursor-pointer shadow-md shadow-black/40"
             >
-              Simpan Semua ({parsedItems.length})
+              {isSaving ? 'Menyimpan...' : `Simpan Semua (${parsedItems.length})`}
             </button>
           </div>
         )}

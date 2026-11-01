@@ -273,11 +273,12 @@ PANDUAN MENJAWAB:
     contentsPayload.push({ role: 'user', parts: [{ text: userPrompt.trim() }] });
   }
 
-  // Prioritize ultra-fast sub-second models with strict safety timeouts
+  // Prioritize reliable, ultra-fast sub-second models with fallback
   const modelsToTry = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
     'gemini-3.1-flash-lite',
-    'gemini-3.5-flash-lite',
-    'gemini-3.5-flash',
   ];
   let lastError: any = null;
 
@@ -562,9 +563,10 @@ Format JSON array:
 Kalimat yang diucapkan: "${spokenText}"`;
 
       const modelsToTry = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
         'gemini-3.1-flash-lite',
-        'gemini-3.5-flash-lite',
-        'gemini-3.5-flash',
       ];
       let parsed: any = null;
 
@@ -626,15 +628,36 @@ Kalimat yang diucapkan: "${spokenText}"`;
                 };
               })
               .filter((item: ParsedVoiceItem) => item.amount > 0);
-            return items;
+
+            // Deduplicate items that have identical type, amount, and note
+            const uniqueItems: ParsedVoiceItem[] = [];
+            const seen = new Set<string>();
+            for (const it of items) {
+              const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+              if (!seen.has(k)) {
+                seen.add(k);
+                uniqueItems.push(it);
+              }
+            }
+            return uniqueItems;
           }
     } catch (e) {
       console.warn('Gemini voice parsing API error, falling back to smart local parser:', e);
     }
   }
 
-  // Fallback to high-accuracy smart local parser
-  return parseVoiceInput(spokenText);
+  // Fallback to high-accuracy smart local parser with deduplication
+  const localItems = parseVoiceInput(spokenText);
+  const uniqueLocal: ParsedVoiceItem[] = [];
+  const seenLocal = new Set<string>();
+  for (const it of localItems) {
+    const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+    if (!seenLocal.has(k)) {
+      seenLocal.add(k);
+      uniqueLocal.push(it);
+    }
+  }
+  return uniqueLocal;
 }
 
 /**
@@ -652,13 +675,15 @@ export async function parseVoiceAudioWithAI(
     throw new Error('API Key Gemini belum tersedia untuk memproses audio.');
   }
 
-  // Convert Blob to base64
+  // Convert Blob to base64 safely with 32KB chunking
   const arrayBuffer = await audioBlob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   let binary = '';
   const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const CHUNK_SIZE = 0x8000;
+  for (let i = 0; i < len; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, len));
+    binary += String.fromCharCode.apply(null, Array.from(chunk) as any);
   }
   const base64Data = btoa(binary);
 
@@ -684,16 +709,19 @@ Format output JSON murni tanpa markdown, tanpa code fences:
 }`;
 
   const modelsToTry = [
-    'gemini-3.1-flash-lite',
-    'gemini-3.5-flash-lite',
-    'gemini-3.5-flash',
     'gemini-2.5-flash',
+    'gemini-2.0-flash',
     'gemini-1.5-flash',
+    'gemini-3.1-flash-lite',
   ];
 
   let rawMime = audioBlob.type || 'audio/webm';
   // Strip codec attributes like ;codecs=opus for Gemini API compatibility
-  const cleanMime = rawMime.split(';')[0].trim() || 'audio/webm';
+  let cleanMime = rawMime.split(';')[0].trim() || 'audio/webm';
+  // Normalize iOS Safari container mime types for Gemini multimodal audio
+  if (cleanMime === 'audio/x-m4a' || cleanMime === 'audio/m4a') {
+    cleanMime = 'audio/mp4';
+  }
 
   let lastError: any = null;
 
@@ -763,9 +791,20 @@ Format output JSON murni tanpa markdown, tanpa code fences:
             items = parseVoiceInput(transcript);
           }
 
+          // Deduplicate items
+          const uniqueItems: ParsedVoiceItem[] = [];
+          const seen = new Set<string>();
+          for (const it of items) {
+            const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
+            if (!seen.has(k)) {
+              seen.add(k);
+              uniqueItems.push(it);
+            }
+          }
+
           return {
             transcript: transcript || 'Rekaman Suara',
-            items,
+            items: uniqueItems,
           };
         }
       } else {
