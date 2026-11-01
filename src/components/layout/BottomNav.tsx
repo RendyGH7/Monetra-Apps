@@ -23,25 +23,36 @@ export const BottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Navigasi bawah ponsel"
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 w-full pointer-events-none"
+      className="md:hidden fixed bottom-0 inset-x-0 z-50 w-full bg-[var(--bg-base)] border-t border-[rgba(205,225,245,0.16)] shadow-[0_-10px_35px_rgba(0,0,0,0.75)] select-none"
     >
-      <div className="pointer-events-auto w-full max-w-lg mx-auto bg-[var(--bg-base)]/95 border-t border-[rgba(205,225,245,0.16)] shadow-[0_-10px_35px_rgba(0,0,0,0.55)] backdrop-blur-2xl flex items-center justify-between pt-1.5 px-2 mobile-nav-safe relative">
+      {/* Solid bottom extension to guarantee 100% full coverage under the bar, preventing any subpixel gaps, overscroll bleeds, or safe-area leaks */}
+      <div
+        className="absolute inset-x-0 top-0 -bottom-16 bg-[var(--bg-base)] -z-10 pointer-events-none"
+        aria-hidden="true"
+      />
+
+      <div className="w-full max-w-lg mx-auto flex items-stretch justify-between px-1.5 mobile-nav-safe relative">
         {navItems.map((item) => {
           if (item.isMic) {
             return (
-              <div key="mic-center" className="flex-1 flex flex-col items-center justify-center relative -top-3">
+              <div
+                key="mic-center"
+                className="flex-1 min-w-0 flex flex-col items-center justify-start relative -top-3.5"
+              >
                 <button
                   type="button"
                   onClick={() => setVoiceModalOpen(true)}
                   aria-label="Rekam Pengeluaran Suara"
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-[#E39A5E]/35 border-2 border-[rgba(235,245,255,0.3)] ring-4 ring-[var(--bg-base)] active:scale-90 transition-transform duration-150 cursor-pointer"
+                  className="flex flex-col items-center justify-center group cursor-pointer touch-manipulation focus:outline-none w-full py-1"
                   title="Bicara untuk Catat Transaksi"
                 >
-                  <Mic size={20} strokeWidth={2.4} />
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-lg shadow-[#E39A5E]/35 border-2 border-[rgba(235,245,255,0.3)] ring-4 ring-[var(--bg-base)] active:scale-90 transition-transform duration-150">
+                    <Mic size={22} strokeWidth={2.4} />
+                  </div>
+                  <span className="text-[9px] font-bold text-[#E39A5E] tracking-tight mt-1 leading-none group-active:scale-95 transition-transform">
+                    Bicara
+                  </span>
                 </button>
-                <span className="text-[9px] font-bold text-[#E39A5E] tracking-tight mt-1 leading-none">
-                  Bicara
-                </span>
               </div>
             );
           }
@@ -55,7 +66,7 @@ export const BottomNav: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(item.key as NavTabKey)}
               aria-label={item.label}
-              className="flex-1 min-w-0 h-full flex flex-col items-center justify-center py-1 select-none cursor-pointer relative group transition-transform active:scale-92"
+              className="flex-1 min-w-0 flex flex-col items-center justify-center pt-2 pb-2 px-1 select-none cursor-pointer relative group transition-transform active:scale-95 touch-manipulation min-h-[52px]"
             >
               {/* Icon Container with smooth active glow */}
               <div
@@ -66,7 +77,7 @@ export const BottomNav: React.FC = () => {
                 }`}
               >
                 <Icon
-                  size={18}
+                  size={19}
                   strokeWidth={isActive ? 2.3 : 1.75}
                   style={{ transition: 'stroke-width 0.15s ease' }}
                 />
@@ -74,7 +85,7 @@ export const BottomNav: React.FC = () => {
 
               {/* Label */}
               <span
-                className={`text-[9px] tracking-tight mt-0.5 leading-none transition-colors duration-150 truncate max-w-[46px] ${
+                className={`text-[9px] tracking-tight mt-0.5 leading-none transition-colors duration-150 truncate max-w-[50px] ${
                   isActive
                     ? 'font-bold text-[var(--accent)]'
                     : 'font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'

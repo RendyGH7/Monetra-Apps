@@ -5,15 +5,15 @@ export const FloatingMascot: React.FC = () => {
   const { activeTab, setActiveTab } = useAppStore();
 
   // Di desktop navigasi asisten tersedia di sidebar.
-  // Di halaman asisten dan riwayat transaksi, tombol mengambang disembunyikan agar tidak menutupi daftar transaksi atau input chat.
-  if (activeTab === 'asisten' || activeTab === 'transaksi') {
+  // Tombol maskot chatbot mengambang disembunyikan hanya saat pengguna sedang berada di halaman asisten itu sendiri.
+  if (activeTab === 'asisten') {
     return null;
   }
 
   return (
     <aside
       aria-label="Akses Cepat Asisten Monetra"
-      className="md:hidden fixed z-40 mobile-mascot-safe flex flex-col items-end select-none pointer-events-none"
+      className="md:hidden fixed z-30 mobile-mascot-safe flex flex-col items-end select-none pointer-events-none"
     >
       <div className="relative pointer-events-auto group">
         {/* Tombol Maskot Mengambang dengan Gerakan Hidup */}
@@ -21,7 +21,7 @@ export const FloatingMascot: React.FC = () => {
           type="button"
           onClick={() => setActiveTab('asisten')}
           aria-label="Buka Chatbot Monetra"
-          className="relative flex flex-col items-center justify-center cursor-pointer transition-transform duration-200 active:scale-90 hover:scale-110"
+          className="relative flex flex-col items-center justify-center cursor-pointer transition-transform duration-200 active:scale-90 hover:scale-110 touch-manipulation"
         >
           {/* Karakter Maskot dengan Animasi Melayang Organik (Float & Tilt) */}
           <div className="animate-mascot-float relative w-15 h-15 sm:w-16 sm:h-16 drop-shadow-[0_10px_20px_rgba(227,154,94,0.4)] filter transition-all duration-300">

@@ -637,6 +637,149 @@ Kalimat yang diucapkan: "${spokenText}"`;
   return parseVoiceInput(spokenText);
 }
 
+/**
+ * Multimodal AI voice transaction parser from recorded Audio Blob:
+ * Converts audio blob (WebM/MP4/WAV) to base64 and prompts Gemini Multimodal to:
+ * 1. Transcribe the audio verbatim in Indonesian.
+ * 2. Extract transactions directly into structured JSON items.
+ */
+export async function parseVoiceAudioWithAI(
+  audioBlob: Blob,
+  categories: { id: string; name: string }[] = []
+): Promise<{ transcript: string; items: ParsedVoiceItem[] }> {
+  const apiKey = getStoredGeminiKey();
+  if (!apiKey) {
+    throw new Error('API Key Gemini belum tersedia untuk memproses audio.');
+  }
+
+  // Convert Blob to base64
+  const arrayBuffer = await audioBlob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64Data = btoa(binary);
+
+  const categoryNames =
+    categories.map((c) => c.name).join(', ') ||
+    'Makanan & Minuman, Transportasi, Kencan & Pacaran, Tagihan & Pulsa, Hiburan, Tabungan & Dana Darurat, Gaji Magang';
+
+  const systemPrompt = `Kamu adalah AI transcriptionist dan financial parser cerdas bahasa Indonesia.
+Tugas:
+1. Dengarkan rekaman suara pengguna dengan teliti, transkripsikan apa yang diucapkan dalam Bahasa Indonesia ke teks verbatim pada field "transcript".
+2. Ekstrak SEMUA transaksi pengeluaran/pemasukan yang disebutkan ke dalam array "items".
+Format output JSON murni tanpa markdown, tanpa code fences:
+{
+  "transcript": "teks apa yang diucapkan pengguna secara lengkap",
+  "items": [
+    {
+      "type": "expense" | "income",
+      "amount": number (integer positif rupiah, contoh 25000),
+      "category": string (pilih yang paling cocok dari: [${categoryNames}]),
+      "note": string (deskripsi ringkas rapi, contoh "Makan warteg", "Beli bensin")
+    }
+  ]
+}`;
+
+  const modelsToTry = [
+    'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
+  ];
+
+  let rawMime = audioBlob.type || 'audio/webm';
+  // Strip codec attributes like ;codecs=opus for Gemini API compatibility
+  const cleanMime = rawMime.split(';')[0].trim() || 'audio/webm';
+
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: cleanMime,
+                    data: base64Data,
+                  },
+                },
+                { text: systemPrompt },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+        signal: AbortSignal.timeout(12000), // Max 12s timeout for audio processing
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const textOut = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (textOut) {
+          const json = JSON.parse(textOut);
+          const transcript = String(json.transcript || '').trim();
+          const rawItems = Array.isArray(json.items) ? json.items : [];
+          const now = new Date().toISOString();
+
+          let items: ParsedVoiceItem[] = rawItems
+            .map((item: any) => {
+              const itemType: TransactionType = item.type === 'income' ? 'income' : 'expense';
+              const needWant: NeedWantType =
+                itemType === 'income'
+                  ? 'saving'
+                  : item.category === 'Kencan & Pacaran' || item.category === 'Hiburan'
+                  ? 'want'
+                  : 'need';
+
+              return {
+                id: 'parsed-' + Math.random().toString(36).slice(2, 7),
+                type: itemType,
+                amount: Math.abs(Number(item.amount)) || 0,
+                category: String(item.category || 'Makanan & Minuman'),
+                note: stripEmoji(item.note || 'Transaksi'),
+                occurred_at: now,
+                need_want: needWant,
+                confidence: 0.99,
+              };
+            })
+            .filter((item: ParsedVoiceItem) => item.amount > 0);
+
+          // If AI detected a transcript but failed to output items, fall back to local regex parser
+          if (items.length === 0 && transcript) {
+            items = parseVoiceInput(transcript);
+          }
+
+          return {
+            transcript: transcript || 'Rekaman Suara',
+            items,
+          };
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        lastError = new Error(errJson.error?.message || `HTTP ${res.status}`);
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('Gagal memproses audio rekaman.');
+}
+
 // Backwards-compatibility alias
 export const askFinAI = askMonetra;
 

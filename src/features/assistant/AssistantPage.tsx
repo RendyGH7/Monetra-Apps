@@ -35,6 +35,8 @@ export const AssistantPage: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const isListeningRef = useRef<boolean>(false);
+  const finalTranscriptRef = useRef<string>('');
 
   // Pre-fill input if navigated from Insight or other prompt trigger
   useEffect(() => {
@@ -62,7 +64,7 @@ export const AssistantPage: React.FC = () => {
   }, []);
 
   // ── Dedicated Voice Prompting (Bicara bebas ke AI tanpa ngetik) ────────────
-  const startVoicePrompt = () => {
+  const startVoicePrompt = async () => {
     const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {
       showToast('Browser Anda belum mendukung Web Speech API bawaan.');
@@ -70,6 +72,23 @@ export const AssistantPage: React.FC = () => {
     }
 
     try {
+      // Warm up microphone permission if available
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((t) => t.stop());
+        } catch (permErr: any) {
+          if (permErr.name === 'NotAllowedError') {
+            showToast('Izin akses mikrofon ditolak oleh browser.');
+            return;
+          }
+        }
+      }
+
+      finalTranscriptRef.current = input ? input + ' ' : '';
+      isListeningRef.current = true;
+      setIsListening(true);
+
       const recognition = new SpeechRecognition();
       recognition.lang = 'id-ID';
       recognition.continuous = true;
@@ -81,34 +100,52 @@ export const AssistantPage: React.FC = () => {
       };
 
       recognition.onresult = (event: any) => {
-        let fullText = '';
-        for (let i = 0; i < event.results.length; i++) {
-          fullText += event.results[i][0].transcript + ' ';
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const chunk = event.results[i][0]?.transcript || '';
+          if (event.results[i].isFinal) {
+            finalTranscriptRef.current += chunk + ' ';
+          } else {
+            interim += chunk;
+          }
         }
-        setInput(fullText.trim());
+        const full = (finalTranscriptRef.current + ' ' + interim).trim();
+        setInput(full);
       };
 
       recognition.onerror = (event: any) => {
         console.warn('Voice prompt error:', event?.error);
         if (event?.error === 'not-allowed') {
           showToast('Izin akses mikrofon tidak diizinkan di browser.');
+          isListeningRef.current = false;
+          setIsListening(false);
         }
-        setIsListening(false);
       };
 
       recognition.onend = () => {
-        setIsListening(false);
+        // Auto-keepalive on mobile pauses
+        if (isListeningRef.current) {
+          try {
+            recognition.start();
+          } catch {
+            // ignore
+          }
+        } else {
+          setIsListening(false);
+        }
       };
 
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
       console.warn('Failed to start voice prompt:', err);
+      isListeningRef.current = false;
       setIsListening(false);
     }
   };
 
   const stopVoicePrompt = (autoSend = false) => {
+    isListeningRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();

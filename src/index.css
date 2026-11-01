@@ -794,13 +794,13 @@ input[type="number"] {
 }
 
 .mobile-nav-safe {
-  padding-bottom: max(var(--safe-bottom), 14px);
+  padding-bottom: max(var(--safe-bottom), 16px);
   padding-left: max(var(--safe-left), 0.75rem);
   padding-right: max(var(--safe-right), 0.75rem);
 }
 
 .mobile-mascot-safe {
-  bottom: calc(max(var(--safe-bottom), 14px) + 72px);
+  bottom: calc(max(var(--safe-bottom), 16px) + 82px);
   right: max(var(--safe-right), 1rem);
 }
 
