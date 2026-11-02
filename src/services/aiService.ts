@@ -163,11 +163,46 @@ async function queryGeminiAPI(
     .filter((t) => t.note.toLowerCase().includes('date') || t.note.toLowerCase().includes('pacar'))
     .reduce((sum, t) => sum + t.amount, 0);
 
+  const catMap = new Map<string, Category>();
+  context.categories?.forEach((c) => catMap.set(c.id, c));
+
+  const getNeedWant = (t: Transaction): NeedWantType => {
+    if (t.type === 'income') return 'saving';
+    if (t.category_id && catMap.has(t.category_id)) {
+      return catMap.get(t.category_id)!.need_want;
+    }
+    const lowerNote = t.note.toLowerCase();
+    if (lowerNote.includes('date') || lowerNote.includes('pacar') || lowerNote.includes('nonton') || lowerNote.includes('kafe')) {
+      return 'want';
+    }
+    return 'need';
+  };
+
+  // 50/30/20 breakdown
+  const needsExpense = thisMonthTx
+    .filter((t) => t.type === 'expense' && getNeedWant(t) === 'need')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const wantsExpense = thisMonthTx
+    .filter((t) => t.type === 'expense' && getNeedWant(t) === 'want')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const savingsExpense = thisMonthTx
+    .filter((t) => t.type === 'expense' && getNeedWant(t) === 'saving')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const monthlyIncome = profile.monthly_income || 1500000;
+  const targetNeeds = Math.round(monthlyIncome * 0.5);
+  const targetWants = Math.round(monthlyIncome * 0.3);
+  const targetSavings = Math.round(monthlyIncome * 0.2);
+
   const todayDate = nowWIB.date;
   const payDay = profile.pay_day || 25;
   let daysLeft = payDay > todayDate ? payDay - todayDate : 30 - todayDate + payDay;
   if (daysLeft <= 0) daysLeft = 1;
   const safeDailySpend = Math.max(0, Math.round(netBalance / daysLeft));
+
+  const daysElapsed = Math.max(1, todayDate);
+  const dailyBurnRate = Math.round(totalExpense / daysElapsed);
+  const projectedMonthEndBalance = netBalance - (dailyBurnRate * daysLeft);
 
   const walletsSummary = (wallets && wallets.length > 0)
     ? wallets.map((w) => `${w.name}: ${formatCurrency(w.balance)}`).join(', ')
@@ -197,13 +232,22 @@ PROFIL PENGGUNA:
 - Nama: ${profile.nama}
 - Email Akun Google: ${profile.email || 'Lokal / Terisolasi'}
 - Status: ${profile.internship_status || 'Anak Magang'}
-- Gaji Magang: ${formatCurrency(profile.monthly_income || 1500000)} per bulan
+- Gaji Magang: ${formatCurrency(monthlyIncome)} per bulan
 - Gajian tiap tanggal: ${profile.pay_day || 25} (${daysLeft} hari lagi menuju gajian)
 - Sisa Saldo Bulan Ini: ${formatCurrency(netBalance)}
 - Batas Aman Belanja Harian: ${formatCurrency(safeDailySpend)}/hari
 - Total Pengeluaran Bulan Ini: ${formatCurrency(totalExpense)}
 - Pengeluaran Kencan Bulan Ini: ${formatCurrency(datingExpense)} (Budget: ${formatCurrency(profile.dating_budget_est || 600000)})
 - Bisnis Sampingan: ${profile.side_hustle_status || 'Belum aktif'}
+
+ANALISIS ALOKASI 50/30/20 REAL-TIME:
+- Kebutuhan (Needs 50%): Aktual ${formatCurrency(needsExpense)} / Target ${formatCurrency(targetNeeds)} (${Math.round((needsExpense / Math.max(1, targetNeeds)) * 100)}%)
+- Keinginan (Wants 30%): Aktual ${formatCurrency(wantsExpense)} / Target ${formatCurrency(targetWants)} (${Math.round((wantsExpense / Math.max(1, targetWants)) * 100)}%)
+- Tabungan/Investasi (Savings 20%): Aktual ${formatCurrency(savingsExpense)} / Target ${formatCurrency(targetSavings)} (${Math.round((savingsExpense / Math.max(1, targetSavings)) * 100)}%)
+
+PROYEKSI CASHFLOW AKHIR BULAN:
+- Rata-rata belanja saat ini: ${formatCurrency(dailyBurnRate)}/hari
+- Proyeksi sisa saldo akhir bulan: ${formatCurrency(projectedMonthEndBalance)} (${projectedMonthEndBalance >= 0 ? 'Surplus Aman' : 'Potensi Defisit'})
 
 DATA DOMPET & SALDO AKTIF:
 - ${walletsSummary} (Total saldo dompet: ${formatCurrency(totalWallets || netBalance)})
@@ -227,10 +271,11 @@ Contoh: [AUTO_LEARN: Pengguna kost di daerah Kebon Jeruk dengan biaya 850rb per 
 Fakta ini otomatis disimpan di memori eksklusif akun pengguna saat ini.
 
 PANDUAN MENJAWAB:
-1. Gunakan Bahasa Indonesia yang cerdas, ramah, luwes, dan berwawasan luas.
+1. Gunakan Bahasa Indonesia yang cerdas, ramah, luwes, dan solutif ala financial coach pribadi.
 2. Jika pengguna bertanya "siapakah aku?" atau menanyakan data dirinya, jawab dengan lengkap profilnya, akun Google-nya, saldo tiap dompetnya, target tabungannya, dan apa saja yang telah kamu pelajari tentangnya.
-3. Hubungkan setiap saran dengan situasi riil keuangan pengguna (saldo aktif, dompet, target tabungan, dan hari gajian).
-4. Hindari penggunaan tanda baca em dash.
+3. Hubungkan setiap saran dengan situasi riil keuangan pengguna (saldo aktif, dompet, alokasi 50/30/20, target tabungan, dan hari gajian).
+4. Berikan tips konkret yang realistis untuk anak magang bergaji Rp 1.500.000 di Indonesia (menu makan warteg hemat Rp 10-15k, promo transportasi, kencan romantis hemat, anti pinjol/paylater).
+5. Hindari penggunaan tanda baca em dash.
 `;
 
   // Format past messages for Gemini ensuring strict turn alternation and valid structure
@@ -379,6 +424,32 @@ function smartLocalFinancialReasoning(
   if (daysLeft <= 0) daysLeft = 1;
   const safeDaily = Math.max(0, Math.round(netBalance / daysLeft));
 
+  const monthlyIncome = profile.monthly_income || 1500000;
+  const localCatMap = new Map<string, Category>();
+  context.categories?.forEach((c) => localCatMap.set(c.id, c));
+
+  const resolveNeedWant = (t: Transaction): NeedWantType => {
+    if (t.type === 'income') return 'saving';
+    if (t.category_id && localCatMap.has(t.category_id)) {
+      return localCatMap.get(t.category_id)!.need_want;
+    }
+    const lowerNote = t.note.toLowerCase();
+    if (lowerNote.includes('date') || lowerNote.includes('pacar') || lowerNote.includes('nonton') || lowerNote.includes('kafe')) {
+      return 'want';
+    }
+    return 'need';
+  };
+
+  const needsExpense = thisMonthTx
+    .filter((t) => t.type === 'expense' && resolveNeedWant(t) === 'need')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const wantsExpense = thisMonthTx
+    .filter((t) => t.type === 'expense' && resolveNeedWant(t) === 'want')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const savingsExpense = thisMonthTx
+    .filter((t) => t.type === 'expense' && resolveNeedWant(t) === 'saving')
+    .reduce((sum, t) => sum + t.amount, 0);
+
   // Time / Date inquiry response in WIB
   if (
     lower.includes('jam berapa') ||
@@ -499,7 +570,59 @@ function smartLocalFinancialReasoning(
     return `Siap, ${firstName}! Tetap semangat magang dan bijak dalam mengelola pengeluaran ya. Kalau butuh saran atau mau catat sesuatu, saya selalu ada di sini!`;
   }
 
-  // 8. Bokek / Boros / Khawatir Uang Menipis
+  // 8. Alokasi 50/30/20 & Evaluasi Budget
+  if (lower.includes('50/30/20') || lower.includes('50 30 20') || lower.includes('alokasi') || lower.includes('pos keuangan') || lower.includes('budget') || lower.includes('anggaran')) {
+    const targetNeeds = Math.round(monthlyIncome * 0.5);
+    const targetWants = Math.round(monthlyIncome * 0.3);
+    const targetSavings = Math.round(monthlyIncome * 0.2);
+
+    const needsPct = Math.round((needsExpense / Math.max(1, targetNeeds)) * 100);
+    const wantsPct = Math.round((wantsExpense / Math.max(1, targetWants)) * 100);
+    const savingsPct = Math.round((savingsExpense / Math.max(1, targetSavings)) * 100);
+
+    return `Analisis Alokasi 50/30/20 untuk gaji ${formatCurrency(monthlyIncome)}:\n\n1. Kebutuhan Pokok (Needs 50% = ${formatCurrency(targetNeeds)}):\n   - Terpakai: ${formatCurrency(needsExpense)} (${needsPct}%)\n   - Status: ${needsExpense > targetNeeds ? 'Melebihi budget kebutuhan' : 'Aman terkendali'}\n\n2. Keinginan & Hiburan (Wants 30% = ${formatCurrency(targetWants)}):\n   - Terpakai: ${formatCurrency(wantsExpense)} (${wantsPct}%)\n   - Termasuk kencan: ${formatCurrency(datingExpense)}\n   - Status: ${wantsExpense > targetWants ? 'Perlu rem jajan & nongkrong' : 'Masih dalam batas wajar'}\n\n3. Tabungan & Dana Darurat (Savings 20% = ${formatCurrency(targetSavings)}):\n   - Teralokasi: ${formatCurrency(savingsExpense)} (${savingsPct}%)\n   - Rekomendasi: Selalu sisihkan ${formatCurrency(targetSavings)} langsung di awal gajian tanggal ${payDay}.`;
+  }
+
+  // 9. Prediksi Cashflow & Akhir Bulan (Surplus / Defisit)
+  if (lower.includes('prediksi') || lower.includes('forecast') || lower.includes('akhir bulan') || lower.includes('surplus') || lower.includes('defisit') || lower.includes('bertahan')) {
+    const daysElapsed = Math.max(1, todayDate);
+    const burnRate = Math.round(totalExpense / daysElapsed);
+    const projectedEnd = netBalance - (burnRate * daysLeft);
+
+    if (projectedEnd >= 0) {
+      return `Proyeksi Cashflow Positif untuk ${firstName}:\n- Rata-rata belanja harianmu: ${formatCurrency(burnRate)}/hari\n- Sisa saldo saat ini: ${formatCurrency(netBalance)}\n- Jarak ke gajian: ${daysLeft} hari (tanggal ${payDay})\n- Estimasi sisa saldo akhir bulan: **${formatCurrency(projectedEnd)}** (Surplus)\n\nKerja bagus! Jika ritme belanjamu dipertahankan maksimal ${formatCurrency(safeDaily)} per hari, kamu akan menyambut tanggal gajian dengan surplus dompet yang sehat.`;
+    } else {
+      return `Peringatan Cashflow Akhir Bulan untuk ${firstName}:\n- Rata-rata pengeluaran harianmu saat ini: ${formatCurrency(burnRate)}/hari\n- Sisa saldo aktif: ${formatCurrency(netBalance)}\n- Hari tersisa ke gajian: ${daysLeft} hari\n- Jika ritme ini berlanjut, diproyeksikan defisit sebesar: ${formatCurrency(Math.abs(projectedEnd))}.\n\nSolusi Monetra:\n1. Turunkan batas belanja harian menjadi maksimal ${formatCurrency(safeDaily)} per hari.\n2. Tunda jajan kopi dan hangout sampai tanggal ${payDay}.\n3. Pilih menu warteg atau masak sendiri untuk menghemat Rp 15.000 - Rp 25.000 per hari.`;
+    }
+  }
+
+  // 10. Pengeluaran Terbesar / Boros di Mana
+  if (lower.includes('terbesar') || lower.includes('paling boros') || lower.includes('boros di mana') || lower.includes('habis buat apa') || lower.includes('kemana uang')) {
+    const catTotals: Record<string, number> = {};
+    thisMonthTx.filter((t) => t.type === 'expense').forEach((t) => {
+      const c = t.category_id || 'Lainnya';
+      catTotals[c] = (catTotals[c] || 0) + t.amount;
+    });
+    const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+    if (sorted.length > 0) {
+      const topCatName = context.categories?.find((c) => c.id === sorted[0][0])?.name || sorted[0][0];
+      const topCatAmount = sorted[0][1];
+      const pct = Math.round((topCatAmount / Math.max(1, totalExpense)) * 100);
+      return `Analisis Pengeluaran Bulan Ini untuk ${firstName}:\n- Total pengeluaran tercatat: ${formatCurrency(totalExpense)}\n- Pos terbesar: **${topCatName}** sebesar ${formatCurrency(topCatAmount)} (${pct}% dari seluruh pengeluaranmu).\n- Pengeluaran kencan: ${formatCurrency(datingExpense)}\n\nSaran Monetra: Fokuskan kontrol anggaran pada pos "${topCatName}" agar sisa saldo ${formatCurrency(netBalance)} bertahan aman hingga gajian tanggal ${payDay}.`;
+    }
+  }
+
+  // 11. Tips Hemat Makan / Warteg / Kuliner
+  if (lower.includes('tips hemat') || lower.includes('makan hemat') || lower.includes('warteg') || lower.includes('kuliner') || lower.includes('masak')) {
+    return `Strategi Makan Hemat ala Monetra untuk Anak Magang:\n1. Menu Warteg Juara: Nasi + sayur matang + orek tempe + telur dadar/ceplok biasanya hanya Rp 12.000 - Rp 15.000, sudah padat gizi dan kenyang.\n2. Bawa Tumbler Air Putih: Menghemat pengeluaran air mineral botolan atau es teh manis Rp 5.000 - Rp 10.000 setiap hari (hemat Rp 150.000 - Rp 300.000 per bulan!).\n3. Masak Nasi Sendiri di Kos: Beli beras 5kg (sekitar Rp 75.000), di kos tinggal beli lauk pauk matang di luar.\n4. Kopi Saset Berkualitas: Ganti es kopi susu kafe (Rp 20.000 - Rp 28.000) dengan seduh kopi saset favorit di kantor/kos (hanya Rp 2.000 per cangkir).`;
+  }
+
+  // 12. Side Hustle / Ide Tambahan Penghasilan
+  if (lower.includes('side hustle') || lower.includes('penghasilan tambahan') || lower.includes('sampingan') || lower.includes('cari uang tambahan') || lower.includes('cuan tambahan')) {
+    return `Rekomendasi Side Hustle Realistis untuk Anak Magang:\n1. Jual/Trade Item Game (Roblox / MLBB): Menjual item virtual, joki harian, atau trading skin digital yang minim modal.\n2. Jasa Desain Canva & Template Medsos: Membantu UMKM sekitar membuat banner promosi atau feed Instagram (tarif Rp 25.000 - Rp 50.000 per desain).\n3. Admin Olshop / Freelance Data Entry: Tugas fleksibel yang bisa dikerjakan di malam hari setelah jam kantor.\n4. Menulis / Copywriting Pendek: Bantuan caption atau artikel blog SEO pemula.\nHasil sampingan Rp 300.000 - Rp 500.000 per bulan akan langsung mendongkrak saldo tabunganmu!`;
+  }
+
+  // 13. Bokek / Boros / Khawatir Uang Menipis
   if (lower.includes('bokek') || lower.includes('boros') || lower.includes('uang abis') || lower.includes('duit abis') || lower.includes('habis uang') || lower.includes('pusing')) {
     return `Tenang ${firstName}, jangan panik. Mari kita evaluasi bersama:\n- Sisa saldo aktifmu saat ini: ${formatCurrency(netBalance)}\n- Jarak gajian tanggal ${payDay}: ${daysLeft} hari lagi\n- Batas aman bertahan per hari: ${formatCurrency(safeDaily)}\n\nLangkah penyelamatan ala Monetra:\n1. Tahan dulu pengeluaran hiburan dan jajan kafe di luar rencana.\n2. Maksimalkan makan warteg atau menu hemat (budget Rp 15.000 - Rp 20.000 per hari).\n3. Untuk agenda kencan, pilih aktivitas hemat seperti jalan sore di taman atau nonton film di kos.\nKamu pasti bisa melewatinya sampai tanggal gajian tiba!`;
   }

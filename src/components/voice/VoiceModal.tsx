@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, X, Check, Trash2, Volume2, AlertCircle, RefreshCw, Send, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
-import { parseVoiceInput } from '../../utils/voiceParser';
+import { parseVoiceInput, deduplicateSpokenPhrases } from '../../utils/voiceParser';
 import { parseVoiceInputWithAI, parseVoiceAudioWithAI } from '../../services/aiService';
 import { ParsedVoiceItem } from '../../types';
 import { formatCurrency, stripEmoji } from '../../utils/format';
@@ -53,6 +53,7 @@ export const VoiceModal: React.FC = () => {
   const isSavingRef = useRef<boolean>(false);
   const currentSessionFinalRef = useRef<string>('');
   const previousSessionsTextRef = useRef<string>('');
+  const hasDetectedVoiceRef = useRef<boolean>(false);
 
   // Timer while recording
   useEffect(() => {
@@ -136,20 +137,153 @@ export const VoiceModal: React.FC = () => {
 
   if (!voiceModalOpen) return null;
 
-  // ── Start Recording (Native MediaRecorder + Web Audio + SpeechRecognition) ──
+  // ── Start Recording (Native Web Speech Recognition + Fallback MediaRecorder) ──
   const handleStartRecording = async () => {
     setErrorMessage(null);
     setLiveTranscript('');
     currentSessionFinalRef.current = '';
     previousSessionsTextRef.current = '';
     audioChunksRef.current = [];
+    hasDetectedVoiceRef.current = false;
     setHasDetectedVoice(false);
     setIsSaving(false);
     isSavingRef.current = false;
+    isRecordingRef.current = true;
+    setRecordState('recording');
 
+    // 1. Primary Engine: Web Speech API (Direct real-time word-by-word streaming)
+    // Runs with exclusive microphone access to avoid iOS AVAudioSession deadlock!
+    const SpeechRecognition = getSpeechRecognition();
     const isIOS = checkIsIOS();
 
-    // 1. Instantiate AudioContext synchronously during user click to guarantee permission on iOS
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'id-ID';
+        // On iOS Safari, continuous=false ensures smooth native dictation without audio locks; on Desktop/Android Chrome continuous=true
+        recognition.continuous = !isIOS;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        let speechActive = false;
+
+        // Dynamic audio visualizer driven by real-time speech events
+        const updateSpeechMeter = () => {
+          if (!isRecordingRef.current) return;
+          const now = Date.now();
+          const bars: number[] = [];
+          for (let b = 0; b < 14; b++) {
+            let height: number;
+            if (speechActive || hasDetectedVoiceRef.current) {
+              const wave = Math.sin(now / 150 + b * 0.5) * 25 + (Math.random() * 25 + 35);
+              height = Math.min(100, Math.max(16, Math.round(wave)));
+            } else {
+              const wave = Math.sin(now / 350 + b * 0.45) * 8 + 18;
+              height = Math.round(wave);
+            }
+            bars.push(height);
+          }
+          setBarHeights(bars);
+          animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
+        };
+        animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
+
+        recognition.onstart = () => {
+          setAudioLevel(20);
+        };
+
+        recognition.onspeechstart = () => {
+          speechActive = true;
+          hasDetectedVoiceRef.current = true;
+          setHasDetectedVoice(true);
+          setAudioLevel(75);
+        };
+
+        recognition.onsoundstart = () => {
+          speechActive = true;
+          hasDetectedVoiceRef.current = true;
+          setHasDetectedVoice(true);
+          setAudioLevel(65);
+        };
+
+        recognition.onspeechend = () => {
+          speechActive = false;
+        };
+
+        recognition.onsoundend = () => {
+          speechActive = false;
+        };
+
+        // Every single word spoken by the user streams in real-time right here!
+        recognition.onresult = (event: any) => {
+          speechActive = true;
+          hasDetectedVoiceRef.current = true;
+          setHasDetectedVoice(true);
+          setAudioLevel(85);
+
+          let sessionFinal = '';
+          let sessionInterim = '';
+          for (let i = 0; i < event.results.length; ++i) {
+            const res = event.results[i];
+            const chunk = res[0]?.transcript || '';
+            if (res.isFinal) {
+              sessionFinal += chunk + ' ';
+            } else {
+              sessionInterim += chunk;
+            }
+          }
+          currentSessionFinalRef.current = sessionFinal.trim();
+          const sessionText = (sessionFinal + (sessionInterim ? ' ' + sessionInterim : '')).trim();
+          const combined = (previousSessionsTextRef.current + ' ' + sessionText).trim();
+          if (combined) {
+            setLiveTranscript(combined);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.warn('SpeechRecognition event note:', event.error);
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            setErrorMessage(
+              'Izin mikrofon/dikte ditolak oleh browser. Silakan klik ikon pengaturan di address bar browser dan izinkan akses mikrofon.'
+            );
+          }
+        };
+
+        recognition.onend = () => {
+          speechActive = false;
+          if (currentSessionFinalRef.current) {
+            const finalChunk = currentSessionFinalRef.current.trim();
+            if (finalChunk && !previousSessionsTextRef.current.toLowerCase().includes(finalChunk.toLowerCase())) {
+              previousSessionsTextRef.current = (
+                previousSessionsTextRef.current + ' ' + finalChunk
+              ).trim();
+            }
+            currentSessionFinalRef.current = '';
+          }
+          // Keep alive while user has not clicked Selesai Bicara
+          if (isRecordingRef.current) {
+            try {
+              recognition.start();
+            } catch {
+              // Ignore if already active
+            }
+          }
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+        return; // SpeechRecognition is successfully running with exclusive microphone access!
+      } catch (err: any) {
+        console.warn('SpeechRecognition start error, switching to MediaRecorder fallback:', err);
+      }
+    }
+
+    // 2. Fallback Engine: MediaRecorder + Web Audio API (For browsers without Web Speech API)
+    await startMediaRecorderFallback();
+  };
+
+  // ── Fallback MediaRecorder for Browsers without Web Speech Support ──────────
+  const startMediaRecorderFallback = async () => {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioCtx) {
       try {
@@ -163,7 +297,6 @@ export const VoiceModal: React.FC = () => {
       }
     }
 
-    // 2. Request user media (Microphone Hardware Access)
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -185,10 +318,11 @@ export const VoiceModal: React.FC = () => {
       } else {
         setErrorMessage(`Gagal mengakses mikrofon: ${err.message || 'Error tidak diketahui'}`);
       }
+      setRecordState('idle');
+      isRecordingRef.current = false;
       return;
     }
 
-    // 3. Set up Web Audio API Analyser for Live Responsive Visualizer
     if (audioContextRef.current && stream) {
       try {
         const ctx = audioContextRef.current;
@@ -210,7 +344,6 @@ export const VoiceModal: React.FC = () => {
           if (!isRecordingRef.current) return;
           analyser.getByteFrequencyData(dataArray);
 
-          // Calculate average volume level
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) {
             sum += dataArray[i];
@@ -221,9 +354,9 @@ export const VoiceModal: React.FC = () => {
           setAudioLevel(normalized);
           if (normalized > 6) {
             setHasDetectedVoice(true);
+            hasDetectedVoiceRef.current = true;
           }
 
-          // Generate 14 dynamic responsive bars
           const step = Math.max(1, Math.floor(dataArray.length / 14));
           const bars: number[] = [];
           const now = Date.now();
@@ -233,7 +366,6 @@ export const VoiceModal: React.FC = () => {
             if (val > 0) {
               height = Math.min(100, Math.max(15, Math.round((val / 255) * 100)));
             } else {
-              // Gentle living sine pulse so user sees that the mic is active on mobile
               const wave = Math.sin(now / 300 + b * 0.45) * 15 + 25;
               height = Math.round(wave);
             }
@@ -250,7 +382,6 @@ export const VoiceModal: React.FC = () => {
       }
     }
 
-    // 4. Set up MediaRecorder as our primary lossless audio capture pipeline
     try {
       let mimeType = '';
       if (typeof MediaRecorder !== 'undefined') {
@@ -274,86 +405,10 @@ export const VoiceModal: React.FC = () => {
         }
       };
 
-      recorder.start(250); // Flush chunks frequently
+      recorder.start(250);
       mediaRecorderRef.current = recorder;
     } catch (recErr) {
       console.warn('MediaRecorder warning:', recErr);
-    }
-
-    // 5. Mark recording active
-    isRecordingRef.current = true;
-    setRecordState('recording');
-
-    // 6. SpeechRecognition Strategy:
-    // IMPORTANT: On iOS (Chrome on iOS or Safari), running SpeechRecognition concurrently with getUserMedia
-    // locks up Apple's AVAudioSession and causes deadlock / silence.
-    // Therefore on iOS we use MediaRecorder + Gemini Multimodal AI.
-    // On Desktop & Android Chrome, we run SpeechRecognition for live on-screen transcript!
-    if (!isIOS) {
-      const SpeechRecognition = getSpeechRecognition();
-      if (SpeechRecognition) {
-        try {
-          const recognition = new SpeechRecognition();
-          recognition.lang = 'id-ID';
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.maxAlternatives = 1;
-
-          recognition.onresult = (event: any) => {
-            let sessionFinal = '';
-            let sessionInterim = '';
-            // Reconstruct cleanly from event.results to prevent duplicate chunks
-            for (let i = 0; i < event.results.length; ++i) {
-              const res = event.results[i];
-              const chunk = res[0]?.transcript || '';
-              if (res.isFinal) {
-                sessionFinal += chunk + ' ';
-              } else {
-                sessionInterim += chunk;
-              }
-            }
-            currentSessionFinalRef.current = sessionFinal.trim();
-            const sessionText = (sessionFinal + sessionInterim).trim();
-            const combined = (previousSessionsTextRef.current + ' ' + sessionText).trim();
-            if (combined) {
-              setLiveTranscript(combined);
-            }
-          };
-
-          recognition.onerror = (event: any) => {
-            console.warn('SpeechRecognition event note:', event.error);
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-              setErrorMessage(
-                'Izin akses mikrofon ditolak oleh browser. Silakan klik ikon gembok di address bar browser untuk mengizinkan mikrofon.'
-              );
-              handleStopRecording();
-            }
-          };
-
-          recognition.onend = () => {
-            // Commit finalized text from the previous recognition cycle
-            if (currentSessionFinalRef.current) {
-              previousSessionsTextRef.current = (
-                previousSessionsTextRef.current + ' ' + currentSessionFinalRef.current
-              ).trim();
-              currentSessionFinalRef.current = '';
-            }
-            // Keep alive during pauses if user has not tapped Selesai Bicara
-            if (isRecordingRef.current) {
-              try {
-                recognition.start();
-              } catch {
-                // Ignore if already active
-              }
-            }
-          };
-
-          recognition.start();
-          recognitionRef.current = recognition;
-        } catch (err: any) {
-          console.warn('SpeechRecognition start note:', err);
-        }
-      }
     }
   };
 
@@ -395,11 +450,12 @@ export const VoiceModal: React.FC = () => {
     // 3. Completely stop hardware audio tracks
     cleanupAudio();
 
-    // 4. Resolve transcription text (strictly deduplicated and combined)
-    const recognizedText = (
+    // 4. Resolve transcription text (strictly deduplicated across sessions and phrases)
+    const rawRecognizedText = (
       liveTranscript ||
       (previousSessionsTextRef.current + ' ' + currentSessionFinalRef.current).trim()
     ).trim();
+    const recognizedText = deduplicateSpokenPhrases(rawRecognizedText);
 
     // Path A: SpeechRecognition has transcribed text (Desktop / Android Chrome)!
     if (recognizedText) {
@@ -666,12 +722,36 @@ export const VoiceModal: React.FC = () => {
                 ))}
               </div>
 
-              {/* Live speech transcription text box */}
-              <div className="p-4 rounded-xl glass-1 border border-[#E39A5E]/30 min-h-[72px] flex flex-col items-center justify-center text-center">
+              {/* Live speech transcription text box with dynamic real-time feedback */}
+              <div
+                className={`p-4 rounded-xl min-h-[80px] flex flex-col items-center justify-center text-center transition-all duration-200 ${
+                  liveTranscript
+                    ? 'bg-[#E39A5E]/10 border-2 border-[#E39A5E] shadow-lg shadow-[#E39A5E]/15'
+                    : hasDetectedVoice
+                    ? 'glass-2 border border-[#4FD3A4]/40 shadow-sm shadow-[#4FD3A4]/10'
+                    : 'glass-1 border border-white/[0.1]'
+                }`}
+              >
                 {liveTranscript ? (
-                  <p className="text-sm font-medium text-[#EEF2F6] leading-relaxed">
-                    &quot;{liveTranscript}&quot;
-                  </p>
+                  <div className="space-y-1 w-full">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#E39A5E]/20 text-[#E39A5E] text-[10px] font-bold tracking-wider uppercase">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E] animate-ping" />
+                      <span>Terdeteksi Langsung</span>
+                    </span>
+                    <p className="text-sm sm:text-base font-bold text-[#EEF2F6] leading-snug break-words">
+                      &quot;{liveTranscript}&quot;
+                    </p>
+                  </div>
+                ) : hasDetectedVoice ? (
+                  <div className="space-y-1">
+                    <p className="text-xs text-[#4FD3A4] font-semibold flex items-center justify-center gap-1.5 animate-pulse">
+                      <Radio size={13} />
+                      <span>Suara terdeteksi, teruskan bicara...</span>
+                    </p>
+                    <p className="text-[11px] text-[#A3AFBC]">
+                      Katakan nominal (contoh: &quot;Dapat uang 70 ribu&quot;)
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-1">
                     <p className="text-xs text-[#EEF2F6] font-medium">

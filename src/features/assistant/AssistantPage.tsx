@@ -3,6 +3,7 @@ import { Bot, Send, Mic, MicOff, Sparkles, Trash2, User, Copy, Check, Radio } fr
 import { useAppStore } from '../../store';
 import { stripEmoji, formatTimeShort } from '../../utils/format';
 import { askMonetra } from '../../services/aiService';
+import { deduplicateSpokenPhrases } from '../../utils/voiceParser';
 import { MarkdownMessage } from '../../components/common/MarkdownMessage';
 
 const getSpeechRecognition = () => {
@@ -131,7 +132,10 @@ export const AssistantPage: React.FC = () => {
 
       recognition.onend = () => {
         if (sessionFinalPromptRef.current) {
-          basePromptRef.current = (basePromptRef.current + ' ' + sessionFinalPromptRef.current).trim();
+          const finalPrompt = sessionFinalPromptRef.current.trim();
+          if (finalPrompt && !basePromptRef.current.toLowerCase().includes(finalPrompt.toLowerCase())) {
+            basePromptRef.current = (basePromptRef.current + ' ' + finalPrompt).trim();
+          }
           sessionFinalPromptRef.current = '';
         }
         // Auto-keepalive on mobile pauses
@@ -181,11 +185,13 @@ export const AssistantPage: React.FC = () => {
 
   const quickQuestions = [
     'Siapakah aku dan apa saja data yang kamu ketahui?',
+    'Analisis alokasi gaji magang 50/30/20',
     'Berapa sisa aman belanja hari ini?',
     'Rincian saldo di semua dompet dan target tabunganku',
+    'Prediksi cashflow akhir bulan (surplus atau defisit?)',
     'Tips kencan hemat agar gaji magang cukup',
-    'Catat makan siang 20 ribu di dompet tunai',
     'Investasi apa yang cocok untuk gaji magang 1.5 juta?',
+    'Catat makan siang 20 ribu di dompet tunai',
   ];
 
   const handleCopy = (id: string, text: string) => {
