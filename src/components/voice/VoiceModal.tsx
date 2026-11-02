@@ -42,6 +42,7 @@ export const VoiceModal: React.FC = () => {
 
   // References for audio hardware and streaming
   const timerRef = useRef<number | null>(null);
+  const restartTimerRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -76,21 +77,46 @@ export const VoiceModal: React.FC = () => {
     };
   }, [recordState]);
 
+  // Helper to cleanly dismantle any SpeechRecognition instance and detach all callbacks
+  const terminateRecognition = (rec: any) => {
+    if (!rec) return;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
+    rec.onstart = null;
+    rec.onspeechstart = null;
+    rec.onsoundstart = null;
+    rec.onspeechend = null;
+    rec.onsoundend = null;
+    try {
+      rec.abort();
+    } catch {
+      // ignore
+    }
+    try {
+      rec.stop();
+    } catch {
+      // ignore
+    }
+  };
+
   // Comprehensive hardware & stream cleanup
   const cleanupAudio = () => {
+    // 0. Clear any pending restart timers
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+
     // 1. Cancel visualizer animation
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     }
 
-    // 2. Stop SpeechRecognition
+    // 2. Stop and completely detach SpeechRecognition
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch {
-        // ignore
-      }
+      terminateRecognition(recognitionRef.current);
       recognitionRef.current = null;
     }
 
@@ -139,6 +165,12 @@ export const VoiceModal: React.FC = () => {
 
   // ── Start Recording (Native Web Speech Recognition + Fallback MediaRecorder) ──
   const handleStartRecording = async () => {
+    // 1. Ensure any lingering audio / recognition hardware locks are completely dismantled
+    cleanupAudio();
+
+    // Give mobile OS audio daemon (iOS Safari / Android AudioFlinger) a 120ms breather to fully release mic
+    await new Promise((resolve) => setTimeout(resolve, 120));
+
     setErrorMessage(null);
     setLiveTranscript('');
     currentSessionFinalRef.current = '';
@@ -152,129 +184,158 @@ export const VoiceModal: React.FC = () => {
     setRecordState('recording');
 
     // 1. Primary Engine: Web Speech API (Direct real-time word-by-word streaming)
-    // Runs with exclusive microphone access to avoid iOS AVAudioSession deadlock!
     const SpeechRecognition = getSpeechRecognition();
-    const isIOS = checkIsIOS();
+    const isMobile = typeof navigator !== 'undefined' && (
+      /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
 
     if (SpeechRecognition) {
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'id-ID';
-        // On iOS Safari, continuous=false ensures smooth native dictation without audio locks; on Desktop/Android Chrome continuous=true
-        recognition.continuous = !isIOS;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
+      let speechActive = false;
 
-        let speechActive = false;
-
-        // Dynamic audio visualizer driven by real-time speech events
-        const updateSpeechMeter = () => {
-          if (!isRecordingRef.current) return;
-          const now = Date.now();
-          const bars: number[] = [];
-          for (let b = 0; b < 14; b++) {
-            let height: number;
-            if (speechActive || hasDetectedVoiceRef.current) {
-              const wave = Math.sin(now / 150 + b * 0.5) * 25 + (Math.random() * 25 + 35);
-              height = Math.min(100, Math.max(16, Math.round(wave)));
-            } else {
-              const wave = Math.sin(now / 350 + b * 0.45) * 8 + 18;
-              height = Math.round(wave);
-            }
-            bars.push(height);
+      // Dynamic audio visualizer driven by real-time speech events
+      const updateSpeechMeter = () => {
+        if (!isRecordingRef.current) return;
+        const now = Date.now();
+        const bars: number[] = [];
+        for (let b = 0; b < 14; b++) {
+          let height: number;
+          if (speechActive || hasDetectedVoiceRef.current) {
+            const wave = Math.sin(now / 150 + b * 0.5) * 25 + (Math.random() * 25 + 35);
+            height = Math.min(100, Math.max(16, Math.round(wave)));
+          } else {
+            const wave = Math.sin(now / 350 + b * 0.45) * 8 + 18;
+            height = Math.round(wave);
           }
-          setBarHeights(bars);
-          animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
-        };
+          bars.push(height);
+        }
+        setBarHeights(bars);
         animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
+      };
+      animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
 
-        recognition.onstart = () => {
-          setAudioLevel(20);
-        };
+      // Function to spawn a fresh, clean SpeechRecognition cycle
+      // Ensures that on mobile (iOS/Android), subsequent recordings start completely isolated without zombie locks!
+      const spawnRecognitionCycle = (): any => {
+        if (!isRecordingRef.current) return null;
 
-        recognition.onspeechstart = () => {
-          speechActive = true;
-          hasDetectedVoiceRef.current = true;
-          setHasDetectedVoice(true);
-          setAudioLevel(75);
-        };
+        try {
+          const rec = new SpeechRecognition();
+          rec.lang = 'id-ID';
+          // On mobile, continuous=false prevents OS speech daemon locks across pauses
+          rec.continuous = !isMobile;
+          rec.interimResults = true;
+          rec.maxAlternatives = 1;
 
-        recognition.onsoundstart = () => {
-          speechActive = true;
-          hasDetectedVoiceRef.current = true;
-          setHasDetectedVoice(true);
-          setAudioLevel(65);
-        };
+          rec.onstart = () => {
+            setAudioLevel(20);
+          };
 
-        recognition.onspeechend = () => {
-          speechActive = false;
-        };
+          rec.onspeechstart = () => {
+            speechActive = true;
+            hasDetectedVoiceRef.current = true;
+            setHasDetectedVoice(true);
+            setAudioLevel(75);
+          };
 
-        recognition.onsoundend = () => {
-          speechActive = false;
-        };
+          rec.onsoundstart = () => {
+            speechActive = true;
+            hasDetectedVoiceRef.current = true;
+            setHasDetectedVoice(true);
+            setAudioLevel(65);
+          };
 
-        // Every single word spoken by the user streams in real-time right here!
-        recognition.onresult = (event: any) => {
-          speechActive = true;
-          hasDetectedVoiceRef.current = true;
-          setHasDetectedVoice(true);
-          setAudioLevel(85);
+          rec.onspeechend = () => {
+            speechActive = false;
+          };
 
-          let sessionFinal = '';
-          let sessionInterim = '';
-          for (let i = 0; i < event.results.length; ++i) {
-            const res = event.results[i];
-            const chunk = res[0]?.transcript || '';
-            if (res.isFinal) {
-              sessionFinal += chunk + ' ';
-            } else {
-              sessionInterim += chunk;
+          rec.onsoundend = () => {
+            speechActive = false;
+          };
+
+          // Streams words live directly to screen as user speaks!
+          rec.onresult = (event: any) => {
+            speechActive = true;
+            hasDetectedVoiceRef.current = true;
+            setHasDetectedVoice(true);
+            setAudioLevel(85);
+
+            let sessionFinal = '';
+            let sessionInterim = '';
+            for (let i = 0; i < event.results.length; ++i) {
+              const res = event.results[i];
+              const chunk = res[0]?.transcript || '';
+              if (res.isFinal) {
+                sessionFinal += chunk + ' ';
+              } else {
+                sessionInterim += chunk;
+              }
             }
-          }
-          currentSessionFinalRef.current = sessionFinal.trim();
-          const sessionText = (sessionFinal + (sessionInterim ? ' ' + sessionInterim : '')).trim();
-          const combined = (previousSessionsTextRef.current + ' ' + sessionText).trim();
-          if (combined) {
-            setLiveTranscript(combined);
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          console.warn('SpeechRecognition event note:', event.error);
-          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            setErrorMessage(
-              'Izin mikrofon/dikte ditolak oleh browser. Silakan klik ikon pengaturan di address bar browser dan izinkan akses mikrofon.'
-            );
-          }
-        };
-
-        recognition.onend = () => {
-          speechActive = false;
-          if (currentSessionFinalRef.current) {
-            const finalChunk = currentSessionFinalRef.current.trim();
-            if (finalChunk && !previousSessionsTextRef.current.toLowerCase().includes(finalChunk.toLowerCase())) {
-              previousSessionsTextRef.current = (
-                previousSessionsTextRef.current + ' ' + finalChunk
-              ).trim();
+            currentSessionFinalRef.current = sessionFinal.trim();
+            const sessionText = (sessionFinal + (sessionInterim ? ' ' + sessionInterim : '')).trim();
+            const combined = (previousSessionsTextRef.current + ' ' + sessionText).trim();
+            if (combined) {
+              setLiveTranscript(combined);
             }
-            currentSessionFinalRef.current = '';
-          }
-          // Keep alive while user has not clicked Selesai Bicara
-          if (isRecordingRef.current) {
-            try {
-              recognition.start();
-            } catch {
-              // Ignore if already active
-            }
-          }
-        };
+          };
 
-        recognition.start();
-        recognitionRef.current = recognition;
-        return; // SpeechRecognition is successfully running with exclusive microphone access!
-      } catch (err: any) {
-        console.warn('SpeechRecognition start error, switching to MediaRecorder fallback:', err);
+          rec.onerror = (event: any) => {
+            console.warn('SpeechRecognition event note:', event.error);
+            // Benign events during silence or stops
+            if (event.error === 'no-speech' || event.error === 'aborted') {
+              return;
+            }
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+              setErrorMessage(
+                'Izin mikrofon/dikte ditolak oleh browser. Buka pengaturan izin browser dan izinkan akses mikrofon.'
+              );
+            }
+          };
+
+          rec.onend = () => {
+            speechActive = false;
+            if (currentSessionFinalRef.current) {
+              const finalChunk = currentSessionFinalRef.current.trim();
+              if (finalChunk && !previousSessionsTextRef.current.toLowerCase().includes(finalChunk.toLowerCase())) {
+                previousSessionsTextRef.current = (
+                  previousSessionsTextRef.current + ' ' + finalChunk
+                ).trim();
+              }
+              currentSessionFinalRef.current = '';
+            }
+
+            // If user has not finished recording (e.g. natural pause on mobile):
+            // Gracefully spawn next clean cycle with a 180ms delay to keep listening seamlessly without InvalidStateError!
+            if (isRecordingRef.current) {
+              terminateRecognition(rec);
+              if (restartTimerRef.current) {
+                clearTimeout(restartTimerRef.current);
+              }
+              const delay = isMobile ? 180 : 60;
+              restartTimerRef.current = window.setTimeout(() => {
+                if (!isRecordingRef.current) return;
+                try {
+                  const nextRec = spawnRecognitionCycle();
+                  recognitionRef.current = nextRec;
+                } catch (e) {
+                  console.warn('Recognition restart note:', e);
+                }
+              }, delay);
+            }
+          };
+
+          rec.start();
+          return rec;
+        } catch (err: any) {
+          console.warn('SpeechRecognition start error:', err);
+          return null;
+        }
+      };
+
+      const initialRec = spawnRecognitionCycle();
+      if (initialRec) {
+        recognitionRef.current = initialRec;
+        return; // Success! Running with exclusive mic access!
       }
     }
 
@@ -417,17 +478,30 @@ export const VoiceModal: React.FC = () => {
     isRecordingRef.current = false;
     setRecordState('processing');
 
-    // 1. Stop SpeechRecognition gracefully
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {
-        // ignore
+    // 0. Cancel any pending keepalive restart timers
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+
+    // 1. Commit any final interim chunk into previousSessionsTextRef
+    if (currentSessionFinalRef.current) {
+      const finalChunk = currentSessionFinalRef.current.trim();
+      if (finalChunk && !previousSessionsTextRef.current.toLowerCase().includes(finalChunk.toLowerCase())) {
+        previousSessionsTextRef.current = (
+          previousSessionsTextRef.current + ' ' + finalChunk
+        ).trim();
       }
+      currentSessionFinalRef.current = '';
+    }
+
+    // 2. Stop SpeechRecognition gracefully and detach listeners
+    if (recognitionRef.current) {
+      terminateRecognition(recognitionRef.current);
       recognitionRef.current = null;
     }
 
-    // 2. Stop MediaRecorder and retrieve audio blob
+    // 3. Stop MediaRecorder and retrieve audio blob (if fallback was active)
     const audioBlob = await new Promise<Blob | null>((resolve) => {
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== 'inactive') {
@@ -447,23 +521,23 @@ export const VoiceModal: React.FC = () => {
       }
     });
 
-    // 3. Completely stop hardware audio tracks
+    // 4. Completely release hardware audio tracks
     cleanupAudio();
 
-    // 4. Resolve transcription text (strictly deduplicated across sessions and phrases)
+    // 5. Resolve transcription text (strictly deduplicated across sessions and phrases)
     const rawRecognizedText = (
       liveTranscript ||
-      (previousSessionsTextRef.current + ' ' + currentSessionFinalRef.current).trim()
+      previousSessionsTextRef.current
     ).trim();
     const recognizedText = deduplicateSpokenPhrases(rawRecognizedText);
 
-    // Path A: SpeechRecognition has transcribed text (Desktop / Android Chrome)!
+    // Path A: SpeechRecognition has transcribed text (Desktop / Mobile Speech Recognition)!
     if (recognizedText) {
       await processTranscription(recognizedText);
       return;
     }
 
-    // Path B: MediaRecorder captured audio (iOS Chrome, Safari, or network timeout on SpeechRecognition)!
+    // Path B: MediaRecorder captured audio (Fallback when SpeechRecognition is unavailable)!
     let multimodalErrorMsg: string | null = null;
     if (audioBlob && audioBlob.size > 500) {
       try {
@@ -493,12 +567,37 @@ export const VoiceModal: React.FC = () => {
     }
 
     // Path C: Zero audio or speech detected
-    setRecordState('idle');
+    handleResetToIdle();
     setErrorMessage(
       multimodalErrorMsg
         ? `${multimodalErrorMsg}. Silakan gunakan kolom ketik manual di bawah atau coba bicara lebih jelas.`
         : 'Suara tidak terdeteksi atau mikrofon terlalu jauh. Silakan dekatkan mikrofon dan bicara lebih jelas, atau gunakan kolom ketik di bawah.'
     );
+  };
+
+  // ── Reset state cleanly back to idle for subsequent recordings ─────────────
+  const handleResetToIdle = () => {
+    isRecordingRef.current = false;
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+    cleanupAudio();
+    hasDetectedVoiceRef.current = false;
+    setHasDetectedVoice(false);
+    setLiveTranscript('');
+    setTranscript('');
+    currentSessionFinalRef.current = '';
+    previousSessionsTextRef.current = '';
+    setParsedItems([]);
+    setErrorMessage(null);
+    setRecordState('idle');
+  };
+
+  // Re-record with clean audio isolation
+  const handleRestartRecording = async () => {
+    handleResetToIdle();
+    await handleStartRecording();
   };
 
   // ── Parse Text (Gemini AI or Smart Local Parser) ───────────────────────────
@@ -573,18 +672,9 @@ export const VoiceModal: React.FC = () => {
   };
 
   const handleClose = () => {
-    isRecordingRef.current = false;
-    isSavingRef.current = false;
-    currentSessionFinalRef.current = '';
-    previousSessionsTextRef.current = '';
-    cleanupAudio();
+    handleResetToIdle();
     setVoiceModalOpen(false);
-    setRecordState('idle');
-    setTranscript('');
-    setLiveTranscript('');
     setManualText('');
-    setErrorMessage(null);
-    setParsedItems([]);
     setIsSaving(false);
   };
 
@@ -798,7 +888,7 @@ export const VoiceModal: React.FC = () => {
                   <span>Hasil Suara yang Didengar:</span>
                   <button
                     type="button"
-                    onClick={() => setRecordState('idle')}
+                    onClick={handleRestartRecording}
                     className="text-[#E39A5E] normal-case font-medium hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw size={11} />
@@ -821,7 +911,7 @@ export const VoiceModal: React.FC = () => {
                     <p>Tidak ada nominal transaksi yang terdeteksi dari ucapan tersebut.</p>
                     <button
                       type="button"
-                      onClick={() => setRecordState('idle')}
+                      onClick={handleResetToIdle}
                       className="btn-ghost px-3 py-1.5 rounded-lg border border-[var(--glass-border)] text-xs text-[#E39A5E] font-medium"
                     >
                       Bicara Lagi atau Ketik Ulang
@@ -893,7 +983,7 @@ export const VoiceModal: React.FC = () => {
           <div className="p-4 border-t border-[rgba(205,225,245,0.1)] flex items-center justify-end gap-3 bg-[var(--bg-base)]/60">
             <button
               type="button"
-              onClick={() => setRecordState('idle')}
+              onClick={handleResetToIdle}
               className="btn-ghost px-4 py-2.5 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] cursor-pointer"
             >
               Bicara Lagi

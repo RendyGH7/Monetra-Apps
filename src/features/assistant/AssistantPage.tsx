@@ -36,10 +36,30 @@ export const AssistantPage: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const restartTimerRef = useRef<number | null>(null);
   const isListeningRef = useRef<boolean>(false);
   const isSendingRef = useRef<boolean>(false);
   const basePromptRef = useRef<string>('');
   const sessionFinalPromptRef = useRef<string>('');
+
+  // Clean helper to tear down SpeechRecognition callbacks and handles cleanly
+  const terminateRecognition = (rec: any) => {
+    if (!rec) return;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
+    rec.onstart = null;
+    try {
+      rec.abort();
+    } catch {
+      // ignore
+    }
+    try {
+      rec.stop();
+    } catch {
+      // ignore
+    }
+  };
 
   // Pre-fill input if navigated from Insight or other prompt trigger
   useEffect(() => {
@@ -56,12 +76,13 @@ export const AssistantPage: React.FC = () => {
   // Clean up speech recognition on unmount
   useEffect(() => {
     return () => {
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
       if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort();
-        } catch {
-          // ignore
-        }
+        terminateRecognition(recognitionRef.current);
+        recognitionRef.current = null;
       }
     };
   }, []);
@@ -74,18 +95,19 @@ export const AssistantPage: React.FC = () => {
       return;
     }
 
+    const isMobile = typeof navigator !== 'undefined' && (
+      /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+
     try {
-      // Warm up microphone permission if available
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          stream.getTracks().forEach((t) => t.stop());
-        } catch (permErr: any) {
-          if (permErr.name === 'NotAllowedError') {
-            showToast('Izin akses mikrofon ditolak oleh browser.');
-            return;
-          }
-        }
+      if (recognitionRef.current) {
+        terminateRecognition(recognitionRef.current);
+        recognitionRef.current = null;
+      }
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
       }
 
       basePromptRef.current = input.trim();
@@ -95,7 +117,7 @@ export const AssistantPage: React.FC = () => {
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'id-ID';
-      recognition.continuous = true;
+      recognition.continuous = !isMobile;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
@@ -117,8 +139,8 @@ export const AssistantPage: React.FC = () => {
         }
         sessionFinalPromptRef.current = finalChunk.trim();
         const currentSession = (finalChunk + interimChunk).trim();
-        const full = (basePromptRef.current + ' ' + currentSession).trim();
-        setInput(full);
+        const fullPrompt = (basePromptRef.current + ' ' + currentSession).trim();
+        setInput(fullPrompt);
       };
 
       recognition.onerror = (event: any) => {
@@ -138,13 +160,21 @@ export const AssistantPage: React.FC = () => {
           }
           sessionFinalPromptRef.current = '';
         }
-        // Auto-keepalive on mobile pauses
+        // Auto-keepalive on mobile pauses with clean transition delay
         if (isListeningRef.current) {
-          try {
-            recognition.start();
-          } catch {
-            // ignore
+          terminateRecognition(recognition);
+          if (restartTimerRef.current) {
+            clearTimeout(restartTimerRef.current);
           }
+          const delay = isMobile ? 180 : 60;
+          restartTimerRef.current = window.setTimeout(() => {
+            if (!isListeningRef.current) return;
+            try {
+              startVoicePrompt();
+            } catch {
+              // ignore
+            }
+          }, delay);
         } else {
           setIsListening(false);
         }
@@ -161,12 +191,12 @@ export const AssistantPage: React.FC = () => {
 
   const stopVoicePrompt = (autoSend = false) => {
     isListeningRef.current = false;
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {
-        // ignore
-      }
+      terminateRecognition(recognitionRef.current);
       recognitionRef.current = null;
     }
     setIsListening(false);
