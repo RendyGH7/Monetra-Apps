@@ -109,146 +109,136 @@ export const AssistantPage: React.FC = () => {
 
   // ── Dedicated Voice Prompting (Bicara bebas ke AI tanpa ngetik) ────────────
   const startVoicePrompt = async () => {
-    const isIOS = isDeviceIOS();
-
-    // On iOS Safari: Use MediaRecorder + Gemini Multimodal for 100% reliable hardware audio capture
-    if (isIOS) {
-      try {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((t) => t.stop());
-          streamRef.current = null;
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
-        streamRef.current = stream;
-
-        let mimeType = '';
-        if (typeof MediaRecorder !== 'undefined') {
-          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-          else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
-        }
-
-        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-        audioChunksRef.current = [];
-
-        recorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
-        };
-
-        recorder.start(150);
-        mediaRecorderRef.current = recorder;
-        isListeningRef.current = true;
-        setIsListening(true);
-        return;
-      } catch (err: any) {
-        console.warn('iOS mic access error:', err);
-        showToast('Izin akses mikrofon ditolak oleh browser.');
-        setIsListening(false);
-        isListeningRef.current = false;
-        return;
-      }
-    }
-
-    // On Desktop & Android: Use Web Speech API for streaming words
+    // 1. Primary Engine: Web Speech API for real-time word-by-word streaming
     const SpeechRecognition = getSpeechRecognition();
-    if (!SpeechRecognition) {
-      showToast('Browser Anda belum mendukung Web Speech API bawaan.');
-      return;
-    }
-
     const isMobile = typeof navigator !== 'undefined' && (
       /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     );
 
-    try {
-      if (recognitionRef.current) {
-        terminateRecognition(recognitionRef.current);
-        recognitionRef.current = null;
+    if (SpeechRecognition) {
+      try {
+        if (recognitionRef.current) {
+          terminateRecognition(recognitionRef.current);
+          recognitionRef.current = null;
+        }
+        if (restartTimerRef.current) {
+          clearTimeout(restartTimerRef.current);
+          restartTimerRef.current = null;
+        }
+
+        basePromptRef.current = input.trim();
+        sessionFinalPromptRef.current = '';
+        isListeningRef.current = true;
+        setIsListening(true);
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'id-ID';
+        recognition.continuous = !isMobile;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognition.onresult = (event: any) => {
+          let finalChunk = '';
+          let interimChunk = '';
+          for (let i = 0; i < event.results.length; ++i) {
+            const res = event.results[i];
+            const chunk = res[0]?.transcript || '';
+            if (res.isFinal) {
+              finalChunk += chunk + ' ';
+            } else {
+              interimChunk += chunk;
+            }
+          }
+          sessionFinalPromptRef.current = finalChunk.trim();
+          const currentSession = (finalChunk + interimChunk).trim();
+          const fullPrompt = (basePromptRef.current + ' ' + currentSession).trim();
+          setInput(fullPrompt);
+        };
+
+        recognition.onerror = (event: any) => {
+          console.warn('Voice prompt error:', event?.error);
+          if (event?.error === 'not-allowed') {
+            showToast('Izin akses mikrofon tidak diizinkan di browser.');
+            isListeningRef.current = false;
+            setIsListening(false);
+          }
+        };
+
+        recognition.onend = () => {
+          if (sessionFinalPromptRef.current) {
+            const finalPrompt = sessionFinalPromptRef.current.trim();
+            if (finalPrompt && !basePromptRef.current.toLowerCase().includes(finalPrompt.toLowerCase())) {
+              basePromptRef.current = (basePromptRef.current + ' ' + finalPrompt).trim();
+            }
+            sessionFinalPromptRef.current = '';
+          }
+          // Auto-keepalive on mobile pauses with clean transition delay
+          if (isListeningRef.current) {
+            terminateRecognition(recognition);
+            if (restartTimerRef.current) {
+              clearTimeout(restartTimerRef.current);
+            }
+            const delay = isMobile ? 250 : 60;
+            restartTimerRef.current = window.setTimeout(() => {
+              if (!isListeningRef.current) return;
+              try {
+                startVoicePrompt();
+              } catch {
+                // ignore
+              }
+            }, delay);
+          } else {
+            setIsListening(false);
+          }
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+        return;
+      } catch (err) {
+        console.warn('Failed to start voice prompt:', err);
       }
-      if (restartTimerRef.current) {
-        clearTimeout(restartTimerRef.current);
-        restartTimerRef.current = null;
+    }
+
+    // 2. Fallback Engine: MediaRecorder + Gemini Multimodal AI
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
 
-      basePromptRef.current = input.trim();
-      sessionFinalPromptRef.current = '';
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      streamRef.current = stream;
+
+      let mimeType = '';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+        else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+      }
+
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.start(150);
+      mediaRecorderRef.current = recorder;
       isListeningRef.current = true;
       setIsListening(true);
-
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'id-ID';
-      recognition.continuous = !isMobile;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        let finalChunk = '';
-        let interimChunk = '';
-        for (let i = 0; i < event.results.length; ++i) {
-          const res = event.results[i];
-          const chunk = res[0]?.transcript || '';
-          if (res.isFinal) {
-            finalChunk += chunk + ' ';
-          } else {
-            interimChunk += chunk;
-          }
-        }
-        sessionFinalPromptRef.current = finalChunk.trim();
-        const currentSession = (finalChunk + interimChunk).trim();
-        const fullPrompt = (basePromptRef.current + ' ' + currentSession).trim();
-        setInput(fullPrompt);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.warn('Voice prompt error:', event?.error);
-        if (event?.error === 'not-allowed') {
-          showToast('Izin akses mikrofon tidak diizinkan di browser.');
-          isListeningRef.current = false;
-          setIsListening(false);
-        }
-      };
-
-      recognition.onend = () => {
-        if (sessionFinalPromptRef.current) {
-          const finalPrompt = sessionFinalPromptRef.current.trim();
-          if (finalPrompt && !basePromptRef.current.toLowerCase().includes(finalPrompt.toLowerCase())) {
-            basePromptRef.current = (basePromptRef.current + ' ' + finalPrompt).trim();
-          }
-          sessionFinalPromptRef.current = '';
-        }
-        // Auto-keepalive on mobile pauses with clean transition delay
-        if (isListeningRef.current) {
-          terminateRecognition(recognition);
-          if (restartTimerRef.current) {
-            clearTimeout(restartTimerRef.current);
-          }
-          const delay = isMobile ? 180 : 60;
-          restartTimerRef.current = window.setTimeout(() => {
-            if (!isListeningRef.current) return;
-            try {
-              startVoicePrompt();
-            } catch {
-              // ignore
-            }
-          }, delay);
-        } else {
-          setIsListening(false);
-        }
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.warn('Failed to start voice prompt:', err);
-      isListeningRef.current = false;
+    } catch (err: any) {
+      console.warn('Microphone access fallback error:', err);
+      showToast('Izin akses mikrofon ditolak oleh browser.');
       setIsListening(false);
+      isListeningRef.current = false;
     }
   };
 

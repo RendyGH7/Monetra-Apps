@@ -180,16 +180,7 @@ export const VoiceModal: React.FC = () => {
     isRecordingRef.current = true;
     setRecordState('recording');
 
-    const isIOS = checkIsIOS();
-
-    // On iOS (iPhone/iPad): Use the dedicated High-Sensitivity Hardware Audio Engine!
-    // (Apple WebKit's webkitSpeechRecognition locks hardware audio and frequently fails silently without Dictation)
-    if (isIOS) {
-      await startMediaRecorderFallback();
-      return;
-    }
-
-    // On Desktop & Android: Web Speech API for direct real-time word-by-word streaming
+    // Primary Engine: Web Speech API for direct real-time word-by-word streaming on iOS, Android, and Desktop
     const SpeechRecognition = getSpeechRecognition();
     const isMobile = typeof navigator !== 'undefined' && (
       /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
@@ -207,10 +198,10 @@ export const VoiceModal: React.FC = () => {
         for (let b = 0; b < 14; b++) {
           let height: number;
           if (speechActive || hasDetectedVoiceRef.current) {
-            const wave = Math.sin(now / 150 + b * 0.5) * 25 + (Math.random() * 25 + 35);
-            height = Math.min(100, Math.max(16, Math.round(wave)));
+            const wave = Math.sin(now / 150 + b * 0.5) * 28 + (Math.random() * 28 + 35);
+            height = Math.min(100, Math.max(20, Math.round(wave)));
           } else {
-            const wave = Math.sin(now / 350 + b * 0.45) * 8 + 18;
+            const wave = Math.sin(now / 350 + b * 0.45) * 8 + 14;
             height = Math.round(wave);
           }
           bars.push(height);
@@ -221,7 +212,7 @@ export const VoiceModal: React.FC = () => {
       animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
 
       // Function to spawn a fresh, clean SpeechRecognition cycle
-      // Ensures that on mobile (iOS/Android), subsequent recordings start completely isolated without zombie locks!
+      // Ensures that on mobile (iPhone iOS 15 Pro Max / Android), speech streams word-by-word in real time!
       const spawnRecognitionCycle = (): any => {
         if (!isRecordingRef.current) return null;
 
@@ -311,13 +302,13 @@ export const VoiceModal: React.FC = () => {
             }
 
             // If user has not finished recording (e.g. natural pause on mobile):
-            // Gracefully spawn next clean cycle with a 180ms delay to keep listening seamlessly without InvalidStateError!
+            // Gracefully spawn next clean cycle with a 250ms delay to keep listening seamlessly without InvalidStateError!
             if (isRecordingRef.current) {
               terminateRecognition(rec);
               if (restartTimerRef.current) {
                 clearTimeout(restartTimerRef.current);
               }
-              const delay = isMobile ? 180 : 60;
+              const delay = isMobile ? 250 : 60;
               restartTimerRef.current = window.setTimeout(() => {
                 if (!isRecordingRef.current) return;
                 try {
