@@ -168,9 +168,6 @@ export const VoiceModal: React.FC = () => {
     // 1. Ensure any lingering audio / recognition hardware locks are completely dismantled
     cleanupAudio();
 
-    // Give mobile OS audio daemon (iOS Safari / Android AudioFlinger) a 120ms breather to fully release mic
-    await new Promise((resolve) => setTimeout(resolve, 120));
-
     setErrorMessage(null);
     setLiveTranscript('');
     currentSessionFinalRef.current = '';
@@ -183,7 +180,16 @@ export const VoiceModal: React.FC = () => {
     isRecordingRef.current = true;
     setRecordState('recording');
 
-    // 1. Primary Engine: Web Speech API (Direct real-time word-by-word streaming)
+    const isIOS = checkIsIOS();
+
+    // On iOS (iPhone/iPad): Use the dedicated High-Sensitivity Hardware Audio Engine!
+    // (Apple WebKit's webkitSpeechRecognition locks hardware audio and frequently fails silently without Dictation)
+    if (isIOS) {
+      await startMediaRecorderFallback();
+      return;
+    }
+
+    // On Desktop & Android: Web Speech API for direct real-time word-by-word streaming
     const SpeechRecognition = getSpeechRecognition();
     const isMobile = typeof navigator !== 'undefined' && (
       /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
@@ -410,10 +416,11 @@ export const VoiceModal: React.FC = () => {
             sum += dataArray[i];
           }
           const avg = sum / dataArray.length;
-          const normalized = Math.min(100, Math.round((avg / 128) * 100));
+          // Ultra-high sensitivity scaling: picks up normal speech and whispers effortlessly
+          const normalized = Math.min(100, Math.round((avg / 36) * 100));
 
           setAudioLevel(normalized);
-          if (normalized > 6) {
+          if (normalized > 2 || avg > 1.2) {
             setHasDetectedVoice(true);
             hasDetectedVoiceRef.current = true;
           }
@@ -425,9 +432,9 @@ export const VoiceModal: React.FC = () => {
             const val = dataArray[b * step] || 0;
             let height: number;
             if (val > 0) {
-              height = Math.min(100, Math.max(15, Math.round((val / 255) * 100)));
+              height = Math.min(100, Math.max(18, Math.round((val / 140) * 100)));
             } else {
-              const wave = Math.sin(now / 300 + b * 0.45) * 15 + 25;
+              const wave = Math.sin(now / 300 + b * 0.45) * 8 + 14;
               height = Math.round(wave);
             }
             bars.push(height);
@@ -446,12 +453,13 @@ export const VoiceModal: React.FC = () => {
     try {
       let mimeType = '';
       if (typeof MediaRecorder !== 'undefined') {
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        // Prioritize audio/mp4 on iOS / Safari for pristine recording
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
           mimeType = 'audio/webm;codecs=opus';
         } else if (MediaRecorder.isTypeSupported('audio/webm')) {
           mimeType = 'audio/webm';
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
         } else if (MediaRecorder.isTypeSupported('audio/aac')) {
           mimeType = 'audio/aac';
         }
@@ -466,7 +474,7 @@ export const VoiceModal: React.FC = () => {
         }
       };
 
-      recorder.start(250);
+      recorder.start(150);
       mediaRecorderRef.current = recorder;
     } catch (recErr) {
       console.warn('MediaRecorder warning:', recErr);
@@ -805,7 +813,7 @@ export const VoiceModal: React.FC = () => {
                     className="w-1.5 rounded-full transition-all duration-75 ease-out"
                     style={{
                       height: `${h}%`,
-                      backgroundColor: audioLevel > 6 ? '#E39A5E' : '#EE5D6C',
+                      backgroundColor: audioLevel > 2 ? '#E39A5E' : '#EE5D6C',
                       opacity: Math.max(0.4, h / 100),
                     }}
                   />
@@ -833,13 +841,16 @@ export const VoiceModal: React.FC = () => {
                     </p>
                   </div>
                 ) : hasDetectedVoice ? (
-                  <div className="space-y-1">
-                    <p className="text-xs text-[#4FD3A4] font-semibold flex items-center justify-center gap-1.5 animate-pulse">
+                  <div className="space-y-1.5 w-full">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#4FD3A4]/20 border border-[#4FD3A4]/40 text-[#4FD3A4] text-xs font-semibold animate-pulse">
                       <Radio size={13} />
-                      <span>Suara terdeteksi, teruskan bicara...</span>
+                      <span>Mikrofon Aktif & Suara Terdeteksi</span>
+                    </span>
+                    <p className="text-sm font-medium text-[#EEF2F6]">
+                      Suaramu terdengar jelas! Teruskan bicara...
                     </p>
                     <p className="text-[11px] text-[#A3AFBC]">
-                      Katakan nominal (contoh: &quot;Dapat uang 70 ribu&quot;)
+                      Tekan tombol <strong className="text-white">Selesai Bicara</strong> jika sudah selesai
                     </p>
                   </div>
                 ) : (

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Mic, MicOff, Sparkles, Trash2, User, Copy, Check, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { stripEmoji, formatTimeShort } from '../../utils/format';
-import { askMonetra } from '../../services/aiService';
+import { askMonetra, parseVoiceAudioWithAI } from '../../services/aiService';
 import { deduplicateSpokenPhrases } from '../../utils/voiceParser';
 import { MarkdownMessage } from '../../components/common/MarkdownMessage';
 
@@ -37,6 +37,9 @@ export const AssistantPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const restartTimerRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
   const isListeningRef = useRef<boolean>(false);
   const isSendingRef = useRef<boolean>(false);
   const basePromptRef = useRef<string>('');
@@ -84,11 +87,71 @@ export const AssistantPage: React.FC = () => {
         terminateRecognition(recognitionRef.current);
         recognitionRef.current = null;
       }
+      if (streamRef.current) {
+        try {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+        } catch {
+          // ignore
+        }
+        streamRef.current = null;
+      }
     };
   }, []);
 
+  // Check if device is iOS (iPhone/iPad)
+  const isDeviceIOS = () => {
+    if (typeof navigator === 'undefined') return false;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+  };
+
   // ── Dedicated Voice Prompting (Bicara bebas ke AI tanpa ngetik) ────────────
   const startVoicePrompt = async () => {
+    const isIOS = isDeviceIOS();
+
+    // On iOS Safari: Use MediaRecorder + Gemini Multimodal for 100% reliable hardware audio capture
+    if (isIOS) {
+      try {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        streamRef.current = stream;
+
+        let mimeType = '';
+        if (typeof MediaRecorder !== 'undefined') {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+          else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+        }
+
+        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        audioChunksRef.current = [];
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        recorder.start(150);
+        mediaRecorderRef.current = recorder;
+        isListeningRef.current = true;
+        setIsListening(true);
+        return;
+      } catch (err: any) {
+        console.warn('iOS mic access error:', err);
+        showToast('Izin akses mikrofon ditolak oleh browser.');
+        setIsListening(false);
+        isListeningRef.current = false;
+        return;
+      }
+    }
+
+    // On Desktop & Android: Use Web Speech API for streaming words
     const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {
       showToast('Browser Anda belum mendukung Web Speech API bawaan.');
@@ -199,6 +262,43 @@ export const AssistantPage: React.FC = () => {
       terminateRecognition(recognitionRef.current);
       recognitionRef.current = null;
     }
+
+    if (streamRef.current) {
+      try {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      } catch {
+        // ignore
+      }
+      streamRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      const rec = mediaRecorderRef.current;
+      rec.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: rec.mimeType || 'audio/mp4' });
+        if (blob.size > 500) {
+          try {
+            showToast('Memproses audio dengan AI...');
+            const res = await parseVoiceAudioWithAI(blob, categories);
+            if (res.transcript) {
+              setInput(res.transcript);
+              if (autoSend) {
+                handleSend(res.transcript);
+              }
+            }
+          } catch (e: any) {
+            console.warn('Multimodal audio parse error in chat:', e);
+          }
+        }
+      };
+      try {
+        rec.stop();
+      } catch {
+        // ignore
+      }
+      mediaRecorderRef.current = null;
+    }
+
     setIsListening(false);
     if (autoSend && input.trim()) {
       handleSend(input.trim());
