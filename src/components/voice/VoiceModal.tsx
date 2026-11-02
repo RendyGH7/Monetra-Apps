@@ -133,23 +133,17 @@ export const VoiceModal: React.FC = () => {
     // 4. Release microphone tracks so device mic indicator turns off immediately
     if (streamRef.current) {
       try {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
       } catch {
         // ignore
       }
       streamRef.current = null;
     }
 
-    // 5. Close Web Audio context
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      try {
-        audioContextRef.current.close();
-      } catch {
-        // ignore
-      }
-      audioContextRef.current = null;
-    }
-
+    // 5. DO NOT close AudioContext! Reusing the warm AudioContext is the key to infinite, repeated voice sessions on iOS Safari and Android without hitting browser limits!
     analyserRef.current = null;
     setAudioLevel(0);
   };
@@ -158,6 +152,15 @@ export const VoiceModal: React.FC = () => {
   useEffect(() => {
     return () => {
       cleanupAudio();
+      // Permanently close AudioContext only when component completely unmounts
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        try {
+          audioContextRef.current.close();
+        } catch {
+          // ignore
+        }
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -180,12 +183,21 @@ export const VoiceModal: React.FC = () => {
     isRecordingRef.current = true;
     setRecordState('recording');
 
-    // Primary Engine: Web Speech API for direct real-time word-by-word streaming on iOS, Android, and Desktop
-    const SpeechRecognition = getSpeechRecognition();
     const isMobile = typeof navigator !== 'undefined' && (
       /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     );
+
+    // On mobile devices (iOS iPhone / Android):
+    // Dedicated High-Sensitivity Hardware Audio Engine with warm, persistent AudioContext!
+    // Ensures 100% reliable microphone detection, dancing waveform bars, and infinite repeated recordings!
+    if (isMobile) {
+      await startMediaRecorderFallback();
+      return;
+    }
+
+    // On Desktop (Laptop Chrome/Edge): Web Speech API for direct real-time word-by-word streaming
+    const SpeechRecognition = getSpeechRecognition();
 
     if (SpeechRecognition) {
       let speechActive = false;
@@ -340,18 +352,26 @@ export const VoiceModal: React.FC = () => {
     await startMediaRecorderFallback();
   };
 
-  // ── Fallback MediaRecorder for Browsers without Web Speech Support ──────────
+  // ── High-Sensitivity Hardware Audio Engine (Mobile iOS / Android & Fallback) ──
   const startMediaRecorderFallback = async () => {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioCtx) {
-      try {
-        const ctx = new AudioCtx();
-        if (ctx.state === 'suspended') {
-          ctx.resume();
+    // 1. Maintain or warm up a single persistent AudioContext (required by iOS Safari)
+    let ctx = audioContextRef.current;
+    if (!ctx || ctx.state === 'closed') {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        try {
+          ctx = new AudioCtx();
+          audioContextRef.current = ctx;
+        } catch (ctxErr) {
+          console.warn('AudioContext init note:', ctxErr);
         }
-        audioContextRef.current = ctx;
-      } catch (ctxErr) {
-        console.warn('AudioContext init note:', ctxErr);
+      }
+    }
+    if (ctx && ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch (resumeErr) {
+        console.warn('AudioContext resume note:', resumeErr);
       }
     }
 
@@ -383,17 +403,17 @@ export const VoiceModal: React.FC = () => {
 
     if (audioContextRef.current && stream) {
       try {
-        const ctx = audioContextRef.current;
-        if (ctx.state === 'suspended') {
-          await ctx.resume();
+        const audioCtx = audioContextRef.current;
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
         }
 
-        const analyser = ctx.createAnalyser();
+        const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
         analyser.smoothingTimeConstant = 0.8;
         analyserRef.current = analyser;
 
-        const source = ctx.createMediaStreamSource(stream);
+        const source = audioCtx.createMediaStreamSource(stream);
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -408,10 +428,10 @@ export const VoiceModal: React.FC = () => {
           }
           const avg = sum / dataArray.length;
           // Ultra-high sensitivity scaling: picks up normal speech and whispers effortlessly
-          const normalized = Math.min(100, Math.round((avg / 36) * 100));
+          const normalized = Math.min(100, Math.round((avg / 20) * 100));
 
           setAudioLevel(normalized);
-          if (normalized > 2 || avg > 1.2) {
+          if (normalized > 1 || avg > 0.8) {
             setHasDetectedVoice(true);
             hasDetectedVoiceRef.current = true;
           }
@@ -423,7 +443,7 @@ export const VoiceModal: React.FC = () => {
             const val = dataArray[b * step] || 0;
             let height: number;
             if (val > 0) {
-              height = Math.min(100, Math.max(18, Math.round((val / 140) * 100)));
+              height = Math.min(100, Math.max(22, Math.round((val / 100) * 100)));
             } else {
               const wave = Math.sin(now / 300 + b * 0.45) * 8 + 14;
               height = Math.round(wave);
@@ -536,9 +556,9 @@ export const VoiceModal: React.FC = () => {
       return;
     }
 
-    // Path B: MediaRecorder captured audio (Fallback when SpeechRecognition is unavailable)!
+    // Path B: MediaRecorder captured audio (Mobile iOS / Android & Multimodal AI)!
     let multimodalErrorMsg: string | null = null;
-    if (audioBlob && audioBlob.size > 500) {
+    if (audioBlob && audioBlob.size > 200) {
       try {
         const result = await parseVoiceAudioWithAI(audioBlob, categories);
         if (result.transcript || (result.items && result.items.length > 0)) {

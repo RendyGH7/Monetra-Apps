@@ -109,12 +109,53 @@ export const AssistantPage: React.FC = () => {
 
   // ── Dedicated Voice Prompting (Bicara bebas ke AI tanpa ngetik) ────────────
   const startVoicePrompt = async () => {
-    // 1. Primary Engine: Web Speech API for real-time word-by-word streaming
-    const SpeechRecognition = getSpeechRecognition();
     const isMobile = typeof navigator !== 'undefined' && (
       /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     );
+
+    // On mobile devices (iOS / Android): Use MediaRecorder + Gemini Multimodal for 100% reliable hardware audio capture
+    if (isMobile) {
+      try {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        streamRef.current = stream;
+
+        let mimeType = '';
+        if (typeof MediaRecorder !== 'undefined') {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+          else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+        }
+
+        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        audioChunksRef.current = [];
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        recorder.start(150);
+        mediaRecorderRef.current = recorder;
+        isListeningRef.current = true;
+        setIsListening(true);
+        return;
+      } catch (err: any) {
+        console.warn('Microphone access error:', err);
+        showToast('Izin akses mikrofon ditolak oleh browser.');
+        setIsListening(false);
+        isListeningRef.current = false;
+        return;
+      }
+    }
+
+    // On Desktop (Laptop): Web Speech API for streaming words
+    const SpeechRecognition = getSpeechRecognition();
 
     if (SpeechRecognition) {
       try {
