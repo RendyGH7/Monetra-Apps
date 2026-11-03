@@ -3,6 +3,7 @@ import { Target, AlertTriangle, Plus, PiggyBank } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { formatCurrency, stripEmoji } from '../../utils/format';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
+import { useScrollLock } from '../../utils/useScrollLock';
 
 export const BudgetPage: React.FC = () => {
   const { categories, transactions, goals, addGoal, updateGoalProgress, profile } = useAppStore();
@@ -10,6 +11,9 @@ export const BudgetPage: React.FC = () => {
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalTarget, setNewGoalTarget] = useState('');
   const [addGoalModal, setAddGoalModal] = useState(false);
+
+  // Lock background scroll when modal is active
+  useScrollLock(addGoalModal);
 
   const budgetAllocations = [
     {
@@ -211,10 +215,14 @@ export const BudgetPage: React.FC = () => {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => { if (e.target === e.currentTarget) setAddGoalModal(false); }}
+          onTouchMove={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}
         >
-          <div className="animate-scale-in glass-3 w-full max-w-sm p-5 rounded-2xl border border-[rgba(205,225,245,0.18)] space-y-4">
+          <div
+            className="animate-scale-in glass-3 w-full max-w-sm p-5 rounded-2xl border border-[rgba(205,225,245,0.18)] space-y-4 touch-auto overscroll-contain select-text"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-sm font-semibold text-[#EEF2F6]">Tambah Target Tabungan Baru</h3>
             <form onSubmit={handleCreateGoal} className="space-y-3">
               <div>

@@ -21,12 +21,16 @@ import {
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
 import { stripEmoji } from '../../utils/format';
+import { useScrollLock } from '../../utils/useScrollLock';
 
 export const SettingsPage: React.FC = () => {
   const { profile, updateProfile, showToast, signOut, transactions, resetAllData } = useAppStore();
 
   const [editingProfile, setEditingProfile] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Lock background scroll when reset confirm modal is active
+  useScrollLock(showResetConfirm);
   const [status, setStatus] = useState(profile.internship_status || '-');
   const [salary, setSalary] = useState(String(profile.monthly_income));
   const [payDay, setPayDay] = useState(String(profile.pay_day));
@@ -361,12 +365,18 @@ export const SettingsPage: React.FC = () => {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowResetConfirm(false);
           }}
+          onTouchMove={(e) => {
+            if (e.target === e.currentTarget) e.preventDefault();
+          }}
         >
-          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[#EE5D6C]/30 rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-7 space-y-5 animate-scale-in relative">
+          <div
+            className="w-full max-w-md bg-[var(--bg-elevated)] border border-[#EE5D6C]/30 rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-7 space-y-5 animate-scale-in relative touch-auto overscroll-contain select-text"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => setShowResetConfirm(false)}

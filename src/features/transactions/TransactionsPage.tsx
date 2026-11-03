@@ -28,6 +28,7 @@ import {
   stripEmoji,
 } from '../../utils/format';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
+import { useScrollLock } from '../../utils/useScrollLock';
 import { Transaction, TransactionType, Category } from '../../types';
 
 export const TransactionsPage: React.FC = () => {
@@ -84,29 +85,8 @@ export const TransactionsPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkScrollState);
   }, [categories, selectedType]);
 
-  // Prevent background scrolling on mobile & desktop when detail modal or delete confirmation is open
-  useEffect(() => {
-    if (viewingTx || txToDelete) {
-      const scrollY = window.scrollY;
-      const originalOverflow = document.body.style.overflow;
-      const originalPosition = document.body.style.position;
-      const originalTop = document.body.style.top;
-      const originalWidth = document.body.style.width;
-
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.body.style.position = originalPosition;
-        document.body.style.top = originalTop;
-        document.body.style.width = originalWidth;
-        window.scrollTo(0, scrollY);
-      };
-    }
-  }, [viewingTx, txToDelete]);
+  // Prevent background scrolling on mobile & desktop only when detail modal or delete confirmation is open
+  useScrollLock(Boolean(viewingTx || txToDelete));
 
   const scrollChips = (direction: 'left' | 'right') => {
     if (chipsScrollRef.current) {
