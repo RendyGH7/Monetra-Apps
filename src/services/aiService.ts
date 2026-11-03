@@ -672,15 +672,16 @@ export async function parseVoiceInputWithAI(
   if (apiKey) {
     try {
       const categoryNames = categories.map((c) => c.name).join(', ') || 'Makanan & Minuman, Transportasi, Kencan & Pacaran, Tagihan & Pulsa, Hiburan, Tabungan & Dana Darurat, Gaji Magang';
-      const prompt = `Kamu adalah AI parser pencatatan transaksi keuangan bahasa Indonesia.
-Tugas: Ekstrak SEMUA transaksi dari ucapan pengguna menjadi format JSON array murni tanpa markdown, tanpa backticks.
+      const prompt = `Kamu adalah AI parser pencatatan transaksi keuangan cerdas bahasa Indonesia dengan sensitivitas tinggi terhadap ucapan manusia.
+Tugas: Pahami ucapan pengguna (bahkan jika ada kata terpotong atau tercampur suara lain), lalu ekstrak SEMUA transaksi menjadi format JSON array murni tanpa markdown.
+Pahami istilah angka: "rebu/ribu", "jt/juta", "k", "goceng" (5000), "ceban" (10000), "seceng" (1000), "noceng" (2000), "goban" (50000), "cepek" (100000), "setengah juta" (500000).
 Format JSON array:
 [
   {
     "type": "expense" | "income",
-    "amount": number (integer positif),
+    "amount": number (integer positif rupiah),
     "category": string (pilih yang paling cocok dari: [${categoryNames}]),
-    "note": string (deskripsi ringkas rapi, contoh "Makan warteg", "Beli bensin")
+    "note": string (deskripsi ringkas rapi, contoh "Makan siang", "Beli bensin")
   }
 ]
 Kalimat yang diucapkan: "${spokenText}"`;
@@ -814,19 +815,37 @@ export async function parseVoiceAudioWithAI(
     categories.map((c) => c.name).join(', ') ||
     'Makanan & Minuman, Transportasi, Kencan & Pacaran, Tagihan & Pulsa, Hiburan, Tabungan & Dana Darurat, Gaji Magang';
 
-  const systemPrompt = `Kamu adalah AI transcriptionist dan financial parser cerdas bahasa Indonesia.
-Tugas:
-1. Dengarkan rekaman suara pengguna dengan teliti, transkripsikan apa yang diucapkan dalam Bahasa Indonesia ke teks verbatim pada field "transcript".
-2. Ekstrak SEMUA transaksi pengeluaran/pemasukan yang disebutkan ke dalam array "items".
-Format output JSON murni tanpa markdown, tanpa code fences:
+  const systemPrompt = `Kamu adalah AI Voice Extraction dan Financial Parser paling mutakhir, dirancang khusus dengan sensitivitas tinggi terhadap SUARA MANUSIA (User).
+
+AKUSTIK & SENSITIVITAS SUARA MANUSIA:
+1. Rekaman ini berasal dari perangkat mobile (HP) di lingkungan nyata yang mungkin memiliki suara bising (suara latar, dengung AC/kipas, bising kendaraan, TV, musik, atau suara orang lain di kejauhan).
+2. FOKUS UTAMA & SENSITIVITAS TINGGI: Kamu memiliki algoritma isolasi vokal cerdas yang memusatkan perhatian 100% pada SUARA MANUSIA UTAMA (User yang berbicara di dekat mikrofon HP).
+3. ISOLASI DARI GANGGUAN SUARA:
+   - Abaikan semua suara latar belakang, dengung, bising kendaraan, ketukan, musik, atau gumaman orang lain yang jauh.
+   - Tangkap dengan sangat peka dan teliti setiap kata, bisikan, desah, atau ucapan lembut yang dikeluarkan user.
+   - Bahkan jika suara user bercampur atau sedikit tertumpuk dengan suara lain, utamakan ucapan user terdekat.
+4. PEMAHAMAN BAHASA & SLANG RUPIAH INDONESIA:
+   - Pahami kalimat cepat, pengucapan informal, bahasa sehari-hari, dan dialek Indonesia.
+   - Pahami penyebutan angka rupiah: "ribu/rebu", "ratus", "juta/jt", "k", "seceng" (1.000), "goceng" (5.000), "ceban" (10.000), "noceng" (2.000), "gocap" (50.000), "cepek" (100.000), "setengah juta" (500.000), dll.
+   - Contoh ucapan: "Makan siang dua puluh lima ribu", "Beli bensin 30 rebu", "Dapat uang jajan seratus ribu", "Ngopi ceban".
+
+TUGAS UTAMA:
+1. Field "transcript": Tuliskan kata demi kata yang diucapkan user secara verbatim, jernih, dan lengkap (hanya ucapan user, bersihkan dari gangguan suara lain).
+2. Field "items": Ekstrak SEMUA transaksi pengeluaran atau pemasukan yang diucapkan user ke dalam array:
+   - type: "expense" (pengeluaran/beli/bayar) atau "income" (pemasukan/gaji/terima uang).
+   - amount: angka integer rupiah positif (contoh: 25000, 30000, 100000).
+   - category: pilih kategori paling relevan dari: [${categoryNames}].
+   - note: catatan ringkas transaksi (contoh: "Makan siang", "Beli bensin", "Uang jajan", "Kopi").
+
+FORMAT OUTPUT JSON MURNI (tanpa markdown, tanpa code block, tanpa teks pengantar):
 {
-  "transcript": "teks apa yang diucapkan pengguna secara lengkap",
+  "transcript": "teks ucapan user secara lengkap",
   "items": [
     {
       "type": "expense" | "income",
-      "amount": number (integer positif rupiah, contoh 25000),
-      "category": string (pilih yang paling cocok dari: [${categoryNames}]),
-      "note": string (deskripsi ringkas rapi, contoh "Makan warteg", "Beli bensin")
+      "amount": number,
+      "category": string,
+      "note": string
     }
   ]
 }`;
