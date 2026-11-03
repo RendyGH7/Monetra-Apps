@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   Plus,
@@ -590,11 +591,11 @@ export const TransactionsPage: React.FC = () => {
       )}
 
       {/* ── DETAIL & EDIT MODAL ────────────────────────────────────────────── */}
-      {viewingTx && (
+      {viewingTx && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setViewingTx(null);
@@ -802,7 +803,7 @@ export const TransactionsPage: React.FC = () => {
 
             {/* Modal Footer (Fixed at bottom with safe-area padding for iOS Home bar) */}
             {!isEditing && (
-              <div className="px-5 py-3.5 pb-[max(1.25rem,env(safe-area-inset-bottom,20px))] sm:pb-3.5 border-t border-[var(--glass-border)] bg-[var(--bg-base)]/60 flex items-center justify-between gap-3 shrink-0">
+              <div className="px-5 py-3.5 pb-[max(1.5rem,env(safe-area-inset-bottom,24px))] sm:pb-3.5 border-t border-[var(--glass-border)] bg-[var(--bg-base)]/80 backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setTxToDelete(viewingTx)}
@@ -825,15 +826,16 @@ export const TransactionsPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── CUSTOM DELETE CONFIRMATION MODAL ───────────────────────────────── */}
-      {txToDelete && (
+      {txToDelete && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in touch-none select-none"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => {
             if (e.target === e.currentTarget) setTxToDelete(null);
           }}
@@ -885,7 +887,8 @@ export const TransactionsPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
