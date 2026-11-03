@@ -84,6 +84,30 @@ export const TransactionsPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkScrollState);
   }, [categories, selectedType]);
 
+  // Prevent background scrolling on mobile & desktop when detail modal or delete confirmation is open
+  useEffect(() => {
+    if (viewingTx || txToDelete) {
+      const scrollY = window.scrollY;
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalTop = document.body.style.top;
+      const originalWidth = document.body.style.width;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.top = originalTop;
+        document.body.style.width = originalWidth;
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [viewingTx, txToDelete]);
+
   const scrollChips = (direction: 'left' | 'right') => {
     if (chipsScrollRef.current) {
       const offset = direction === 'left' ? -200 : 200;
@@ -590,14 +614,28 @@ export const TransactionsPage: React.FC = () => {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setViewingTx(null);
+            if (e.target === e.currentTarget) {
+              setViewingTx(null);
+              setIsEditing(false);
+            }
+          }}
+          onTouchMove={(e) => {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
+            }
           }}
         >
-          <div className="bg-[var(--bg-elevated)] w-full max-w-md overflow-hidden border border-[var(--glass-border)] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col animate-slide-up sm:animate-scale-in">
+          <div
+            className="bg-[var(--bg-elevated)] w-full max-w-md border border-[var(--glass-border)] rounded-t-[28px] sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] animate-slide-up sm:animate-scale-in touch-auto overscroll-contain select-text overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile Sheet Drag Handle Indicator */}
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
+
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--glass-border)] bg-[var(--bg-base)]/40">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--glass-border)] bg-[var(--bg-base)]/40 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
@@ -633,49 +671,54 @@ export const TransactionsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="p-1.5 rounded-lg text-[#A3AFBC] hover:text-[#E39A5E] hover:bg-white/[0.04] transition-colors cursor-pointer"
+                    className="p-2 rounded-lg text-[#A3AFBC] hover:text-[#E39A5E] hover:bg-white/[0.04] transition-colors cursor-pointer"
                     title="Edit Transaksi"
+                    aria-label="Edit Transaksi"
                   >
                     <Edit3 size={16} />
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() => setViewingTx(null)}
-                  className="p-1.5 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.04] transition-colors cursor-pointer"
+                  onClick={() => {
+                    setViewingTx(null);
+                    setIsEditing(false);
+                  }}
+                  className="p-2 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.04] transition-colors cursor-pointer"
                   title="Tutup"
+                  aria-label="Tutup"
                 >
                   <X size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 space-y-4">
+            {/* Modal Body (Scrollable with overscroll protection) */}
+            <div className="p-5 space-y-4 overflow-y-auto overscroll-contain">
               {isEditing ? (
                 <form onSubmit={handleSaveEdit} className="space-y-4">
                   <div>
-                    <label className="text-xs font-medium text-[#A3AFBC] block mb-1">
+                    <label className="text-xs font-semibold text-[#A3AFBC] block mb-1.5">
                       Catatan Transaksi
                     </label>
                     <input
                       type="text"
                       value={editNote}
                       onChange={(e) => setEditNote(e.target.value)}
-                      className="input-glow w-full h-10 px-3.5 rounded-xl glass-2 text-sm text-[#EEF2F6] border border-white/[0.1] outline-none"
+                      className="input-glow w-full h-11 px-3.5 rounded-xl glass-2 text-sm text-[#EEF2F6] border border-white/[0.1] outline-none"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-[#A3AFBC] block mb-1">
+                    <label className="text-xs font-semibold text-[#A3AFBC] block mb-1.5">
                       Nominal (Rp)
                     </label>
                     <input
                       type="number"
                       value={editAmount}
                       onChange={(e) => setEditAmount(e.target.value)}
-                      className="input-glow w-full h-10 px-3.5 rounded-xl glass-2 text-sm text-[#EEF2F6] border border-white/[0.1] outline-none"
+                      className="input-glow w-full h-11 px-3.5 rounded-xl glass-2 text-sm text-[#EEF2F6] border border-white/[0.1] outline-none"
                       required
                     />
                   </div>
@@ -684,13 +727,13 @@ export const TransactionsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsEditing(false)}
-                      className="px-3.5 py-2 rounded-xl glass-2 text-xs font-medium text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl glass-2 text-xs font-semibold text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer transition-all active:scale-95"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
-                      className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5"
+                      className="btn-primary px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5 active:scale-95 transition-all"
                     >
                       <Check size={14} />
                       <span>Simpan Perubahan</span>
@@ -702,89 +745,105 @@ export const TransactionsPage: React.FC = () => {
                   {/* Amount Display */}
                   <div className="text-center py-2 border-b border-[rgba(205,225,245,0.08)]">
                     <div
-                      className={`text-2xl sm:text-3xl font-display font-bold num-tabular ${
+                      className={`text-2xl sm:text-3xl font-display font-bold num-tabular tracking-tight ${
                         viewingTx.type === 'expense' ? 'text-[#EE5D6C]' : 'text-[#4FD3A4]'
                       }`}
                     >
                       {viewingTx.type === 'expense' ? '-' : '+'}
                       {formatCurrency(viewingTx.amount)}
                     </div>
-                    <p className="text-sm font-medium text-[#EEF2F6] mt-1">
+                    <p className="text-sm font-medium text-[#EEF2F6] mt-1 break-words">
                       {viewingTx.note}
                     </p>
                   </div>
 
                   {/* Metadata Grid */}
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)]">
+                  <div className="grid grid-cols-2 gap-2.5 text-xs">
+                    {/* Waktu Transaksi */}
+                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)] bg-white/[0.02]">
                       <div className="flex items-center gap-1.5 text-[#A3AFBC] mb-1">
-                        <Clock size={13} />
-                        <span>Waktu Transaksi</span>
+                        <Clock size={13} className="text-[#A3AFBC]" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">Waktu Transaksi</span>
                       </div>
-                      <p className="font-medium text-[#EEF2F6]">
+                      <p className="font-semibold text-[#EEF2F6] text-xs leading-snug">
                         {formatDateTimeWIB(viewingTx.occurred_at)}
                       </p>
                     </div>
 
-                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)]">
+                    {/* Sumber Dana */}
+                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)] bg-white/[0.02]">
                       <div className="flex items-center gap-1.5 text-[#A3AFBC] mb-1">
-                        <WalletIcon size={13} />
-                        <span>Sumber Dana</span>
+                        <WalletIcon size={13} className="text-[#A3AFBC]" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">Sumber Dana</span>
                       </div>
-                      <p className="font-medium text-[#EEF2F6]">
+                      <p className="font-semibold text-[#EEF2F6] text-xs leading-snug truncate">
                         {wallets.find((w) => w.id === viewingTx.wallet_id)?.name || 'Dompet Tunai'}
                       </p>
                     </div>
 
-                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)]">
+                    {/* Kategori */}
+                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)] bg-white/[0.02]">
                       <div className="flex items-center gap-1.5 text-[#A3AFBC] mb-1">
-                        <Tag size={13} />
-                        <span>Kategori</span>
+                        <Tag size={13} className="text-[#A3AFBC]" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">Kategori</span>
                       </div>
-                      <p className="font-medium text-[#EEF2F6]">
-                        {getTxCategory(viewingTx)?.name || 'Lainnya'}
-                      </p>
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <CategoryIcon
+                          icon={getTxCategory(viewingTx)?.icon || 'Tag'}
+                          color={getTxCategory(viewingTx)?.color || '#E39A5E'}
+                          size={13}
+                        />
+                        <p className="font-semibold text-[#EEF2F6] text-xs leading-snug truncate">
+                          {getTxCategory(viewingTx)?.name || 'Lainnya'}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)]">
+                    {/* Kebutuhan / Keinginan */}
+                    <div className="glass-2 p-3 rounded-xl border border-[rgba(205,225,245,0.08)] bg-white/[0.02]">
                       <div className="flex items-center gap-1.5 text-[#A3AFBC] mb-1">
-                        <Check size={13} />
-                        <span>Kebutuhan / Keinginan</span>
+                        <Check size={13} className="text-[#A3AFBC]" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider">Kebutuhan / Keinginan</span>
                       </div>
-                      <p className="font-medium text-[#EEF2F6] capitalize">
+                      <p className="font-semibold text-[#EEF2F6] text-xs leading-snug truncate">
                         {(() => {
                           const cat = getTxCategory(viewingTx);
                           const nw = cat?.need_want;
-                          if (nw === 'need') return 'Kebutuhan Pokok (Need)';
+                          if (nw === 'need') return 'Kebutuhan (Need)';
                           if (nw === 'want') return 'Keinginan (Want)';
                           return 'Tabungan (Saving)';
                         })()}
                       </p>
                     </div>
                   </div>
-
-                  {/* Footer Actions */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[rgba(205,225,245,0.08)]">
-                    <button
-                      type="button"
-                      onClick={() => setTxToDelete(viewingTx)}
-                      className="px-3 py-2 rounded-xl text-xs font-semibold text-[#EE5D6C] hover:bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 flex items-center gap-1.5 cursor-pointer transition-colors"
-                    >
-                      <Trash2 size={14} />
-                      <span>Hapus Transaksi</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewingTx(null)}
-                      className="btn-primary px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold cursor-pointer shadow-md"
-                    >
-                      Selesai
-                    </button>
-                  </div>
                 </>
               )}
             </div>
+
+            {/* Modal Footer (Fixed at bottom with safe-area padding for iOS Home bar) */}
+            {!isEditing && (
+              <div className="px-5 py-3.5 pb-[max(1.25rem,env(safe-area-inset-bottom,20px))] sm:pb-3.5 border-t border-[var(--glass-border)] bg-[var(--bg-base)]/60 flex items-center justify-between gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setTxToDelete(viewingTx)}
+                  className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#EE5D6C] hover:bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
+                >
+                  <Trash2 size={14} />
+                  <span>Hapus Transaksi</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingTx(null);
+                    setIsEditing(false);
+                  }}
+                  className="btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold cursor-pointer shadow-md active:scale-95 transition-all"
+                >
+                  Selesai
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -794,12 +853,20 @@ export const TransactionsPage: React.FC = () => {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => {
             if (e.target === e.currentTarget) setTxToDelete(null);
           }}
+          onTouchMove={(e) => {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
+            }
+          }}
         >
-          <div className="bg-[var(--bg-elevated)] w-full max-w-sm rounded-2xl border border-[rgba(238,93,108,0.3)] shadow-2xl p-5 text-center space-y-4 animate-scale-in">
+          <div
+            className="bg-[var(--bg-elevated)] w-full max-w-sm rounded-2xl border border-[rgba(238,93,108,0.3)] shadow-2xl p-5 text-center space-y-4 animate-scale-in select-text"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-12 h-12 rounded-2xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-[#EE5D6C] flex items-center justify-center mx-auto shadow-md shadow-[#EE5D6C]/10">
               <AlertTriangle size={24} />
             </div>
@@ -825,7 +892,7 @@ export const TransactionsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setTxToDelete(null)}
-                className="h-10 px-4 rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[#EEF2F6] hover:bg-white/[0.04] cursor-pointer transition-all"
+                className="h-10 px-4 rounded-xl glass-2 border border-[var(--glass-border)] text-xs font-semibold text-[#EEF2F6] hover:bg-white/[0.04] cursor-pointer transition-all active:scale-95"
               >
                 Batal
               </button>
