@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Mic, X, Check, Trash2, Volume2, AlertCircle, RefreshCw, Send, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { parseVoiceInput, deduplicateSpokenPhrases } from '../../utils/voiceParser';
@@ -705,12 +706,14 @@ export const VoiceModal: React.FC = () => {
     setParsedItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="voice-modal-title"
-      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -1036,6 +1039,7 @@ export const VoiceModal: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

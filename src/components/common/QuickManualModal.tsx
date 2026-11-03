@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Check,
@@ -114,11 +115,13 @@ export const QuickManualModal: React.FC = () => {
 
   const numAmount = parseInt(amount.replace(/[^\d]/g, '') || '0', 10);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) setQuickManualOpen(false);
       }}
@@ -420,7 +423,8 @@ export const QuickManualModal: React.FC = () => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

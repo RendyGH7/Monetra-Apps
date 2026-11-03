@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Edit2,
   ShieldCheck,
@@ -361,11 +362,11 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Modal Konfirmasi Kosongkan Data: Elegan, Bersih, dan Reassuring */}
-      {showResetConfirm && (
+      {showResetConfirm && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowResetConfirm(false);
           }}
@@ -431,7 +432,8 @@ export const SettingsPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

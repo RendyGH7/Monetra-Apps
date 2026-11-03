@@ -212,11 +212,11 @@ export const BudgetPage: React.FC = () => {
       </div>
 
       {/* Add Goal Modal */}
-      {addGoalModal && (
+      {addGoalModal && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
           onClick={(e) => { if (e.target === e.currentTarget) setAddGoalModal(false); }}
           onTouchMove={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}
         >
@@ -268,7 +268,8 @@ export const BudgetPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
