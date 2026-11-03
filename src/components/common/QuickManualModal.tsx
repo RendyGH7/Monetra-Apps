@@ -48,6 +48,30 @@ export const QuickManualModal: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Prevent background scrolling when manual transaction modal is open
+  useEffect(() => {
+    if (quickManualOpen) {
+      const scrollY = window.scrollY;
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalTop = document.body.style.top;
+      const originalWidth = document.body.style.width;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.top = originalTop;
+        document.body.style.width = originalWidth;
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [quickManualOpen]);
+
   // Update category when switching type
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
@@ -114,14 +138,25 @@ export const QuickManualModal: React.FC = () => {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in touch-none select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) setQuickManualOpen(false);
       }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+        }
+      }}
     >
-      <div className="animate-slide-up sm:animate-scale-in bg-[var(--bg-elevated)] w-full max-w-lg overflow-hidden border border-[var(--glass-border)] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh]">
+      <div
+        className="animate-slide-up sm:animate-scale-in bg-[var(--bg-elevated)] w-full max-w-lg border border-[var(--glass-border)] rounded-t-[28px] sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] touch-auto overscroll-contain select-text overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Mobile Sheet Drag Handle Indicator */}
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--glass-border)] bg-[var(--bg-base)]/40">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--glass-border)] bg-[var(--bg-base)]/40 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)] flex items-center justify-center shrink-0">
               <PlusCircle size={17} />

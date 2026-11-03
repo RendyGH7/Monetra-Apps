@@ -77,6 +77,28 @@ export const VoiceModal: React.FC = () => {
     };
   }, [recordState]);
 
+  // Lock background scrolling while voice modal is open
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.width = originalWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
   // Helper to cleanly dismantle any SpeechRecognition instance and detach all callbacks
   const terminateRecognition = (rec: any) => {
     if (!rec) return;
@@ -706,14 +728,25 @@ export const VoiceModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="voice-modal-title"
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+        }
+      }}
     >
-      <div className="animate-slide-up sm:animate-scale-in glass-3 w-full max-w-lg overflow-hidden border border-[var(--glass-border)] max-h-[92dvh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl">
+      <div
+        className="animate-slide-up sm:animate-scale-in glass-3 w-full max-w-lg border border-[var(--glass-border)] max-h-[92dvh] flex flex-col rounded-t-[28px] sm:rounded-2xl shadow-2xl touch-auto overscroll-contain select-text overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Mobile Sheet Drag Handle Indicator */}
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(205,225,245,0.1)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(205,225,245,0.1)] shrink-0">
           <div className="flex items-center gap-2">
             <Volume2 size={18} className="text-[#E39A5E]" />
             <h2 id="voice-modal-title" className="text-base font-semibold text-[#EEF2F6]">

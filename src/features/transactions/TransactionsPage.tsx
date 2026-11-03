@@ -789,9 +789,9 @@ export const TransactionsPage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1.5 overflow-hidden">
                         <CategoryIcon
-                          icon={getTxCategory(viewingTx)?.icon || 'Tag'}
+                          name={getTxCategory(viewingTx)?.name || 'Tag'}
                           color={getTxCategory(viewingTx)?.color || '#E39A5E'}
-                          size={13}
+                          size={14}
                         />
                         <p className="font-semibold text-[#EEF2F6] text-xs leading-snug truncate">
                           {getTxCategory(viewingTx)?.name || 'Lainnya'}
