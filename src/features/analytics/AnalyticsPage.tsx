@@ -476,14 +476,47 @@ export const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-4 md:pb-8">
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div>
-        <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
-          Statistik & Analisis
-        </h1>
-        <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
-          Pola konsumsi {periodLabel.toLowerCase()} dan evaluasi kesehatan finansial
-        </p>
+      {/* ── Page Header & Period Switcher ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
+            Statistik & Analisis
+          </h1>
+          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
+            Pola konsumsi {periodLabel.toLowerCase()} dan evaluasi kesehatan finansial
+          </p>
+        </div>
+
+        {/* Minimalist, Responsive & Animated Period Switcher */}
+        <div
+          role="tablist"
+          aria-label="Pilih Rentang Waktu"
+          className="grid grid-cols-3 sm:flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-inner gap-1 w-full sm:w-auto self-stretch sm:self-auto"
+        >
+          {([
+            { id: 'week', label: 'Mingguan' },
+            { id: 'month', label: 'Bulanan' },
+            { id: 'year', label: 'Tahunan' },
+          ] as const).map(({ id, label }) => {
+            const isActive = period === id;
+            return (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={isActive}
+                type="button"
+                onClick={() => setPeriod(id)}
+                className={`relative px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center select-none transition-all duration-200 ease-out active:scale-95 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#E39A5E] to-[#D88746] text-[#140B03] shadow-md shadow-[#E39A5E]/25 font-bold'
+                    : 'text-[#A3AFBC] hover:text-[#EEF2F6] hover:bg-white/[0.06]'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Summary Stat Cards ───────────────────────────────────────────── */}
@@ -535,7 +568,7 @@ export const AnalyticsPage: React.FC = () => {
 
       {/* ── Minimalist Periodic Statistics (Mingguan / Bulanan / Tahunan) ── */}
       <div className="card-hover-subtle glass-2 p-5 rounded-2xl border border-[var(--glass-border)] space-y-4">
-        {/* Header with Title and Minimalist Period Switcher */}
+        {/* Header with Title and Metric Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
@@ -551,68 +584,52 @@ export const AnalyticsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Minimalist Clean Period Switcher */}
-          <div className="flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs self-start sm:self-auto gap-1">
-            {(['week', 'month', 'year'] as Period[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPeriod(p)}
-                className={`chip-press px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-180 ${
-                  period === p
-                    ? 'bg-[#E39A5E] text-[#1C0E04] shadow-md shadow-[#E39A5E]/20'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.06]'
-                }`}
-              >
-                {p === 'week' ? 'Mingguan' : p === 'month' ? 'Bulanan' : 'Tahunan'}
-              </button>
-            ))}
+          {/* Metric Switcher (Semua / Pengeluaran / Pemasukan) */}
+          <div className="flex items-center gap-1.5 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] text-[11px] self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setChartMetric('all')}
+              className={`chip-press px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                chartMetric === 'all'
+                  ? 'bg-white/[0.14] text-[var(--text-primary)] font-semibold shadow-xs'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Semua
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartMetric('expense')}
+              className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                chartMetric === 'expense'
+                  ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border border-[#E39A5E]/40 shadow-xs'
+                  : 'text-[var(--text-tertiary)] hover:text-[#E39A5E]'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
+              Pengeluaran
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartMetric('income')}
+              className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                chartMetric === 'income'
+                  ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] font-semibold border border-[#4FD3A4]/40 shadow-xs'
+                  : 'text-[var(--text-tertiary)] hover:text-[#4FD3A4]'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4]" />
+              Pemasukan
+            </button>
           </div>
         </div>
 
         {/* Detailed Statistical Area & Line Chart */}
         <div className="pt-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-[#A3AFBC] mb-2 px-1 gap-2">
+          <div className="flex items-center justify-between text-[11px] text-[#A3AFBC] mb-2 px-1">
             <span className="text-[11px] text-[var(--text-tertiary)]">
               Tren {periodStats.chartSubtitle}
             </span>
-            <div className="flex items-center gap-1.5 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] text-[11px] self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setChartMetric('all')}
-                className={`chip-press px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  chartMetric === 'all'
-                    ? 'bg-white/[0.14] text-[var(--text-primary)] font-semibold shadow-xs'
-                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Semua
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartMetric('expense')}
-                className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-                  chartMetric === 'expense'
-                    ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border border-[#E39A5E]/40 shadow-xs'
-                    : 'text-[var(--text-tertiary)] hover:text-[#E39A5E]'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
-                Pengeluaran
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartMetric('income')}
-                className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-                  chartMetric === 'income'
-                    ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] font-semibold border border-[#4FD3A4]/40 shadow-xs'
-                    : 'text-[var(--text-tertiary)] hover:text-[#4FD3A4]'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4]" />
-                Pemasukan
-              </button>
-            </div>
           </div>
 
           <div className="h-44 sm:h-52 w-full">
