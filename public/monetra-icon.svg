@@ -1,17 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <linearGradient id="g1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#818cf8"/>
-      <stop offset="100%" stop-color="#6366f1"/>
+    <!-- Background Luxury Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161D27" />
+      <stop offset="50%" stop-color="#0E131A" />
+      <stop offset="100%" stop-color="#070A0F" />
     </linearGradient>
-    <linearGradient id="g2" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#c4b5fd"/>
-      <stop offset="100%" stop-color="#a78bfa"/>
+
+    <!-- Metallic Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE8C7" />
+      <stop offset="25%" stop-color="#F5BA72" />
+      <stop offset="70%" stop-color="#E39A5E" />
+      <stop offset="100%" stop-color="#BA6520" />
     </linearGradient>
+
+    <!-- Emerald Mint Financial Accent -->
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A7F3D0" />
+      <stop offset="50%" stop-color="#4FD3A4" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <!-- Refined Border Stroke -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(245, 186, 114, 0.75)" />
+      <stop offset="60%" stop-color="rgba(227, 154, 94, 0.25)" />
+      <stop offset="100%" stop-color="rgba(79, 211, 164, 0.35)" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow Filter for Vector -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#E39A5E" flood-opacity="0.38" />
+    </filter>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#g1)"/>
-  <path d="M20 44V24l8 12 8-12v20" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <circle cx="46" cy="22" r="4" fill="url(#g2)" opacity="0.8"/>
-  <circle cx="46" cy="34" r="3" fill="url(#g2)" opacity="0.5"/>
-  <circle cx="46" cy="44" r="2" fill="url(#g2)" opacity="0.3"/>
+
+  <!-- Luxury Obsidian Squircle Base -->
+  <rect x="5" y="5" width="118" height="118" rx="32" fill="url(#bgGrad)" stroke="url(#rimGrad)" stroke-width="2.5" />
+
+  <!-- Ambient Glow Behind Icon -->
+  <circle cx="64" cy="64" r="38" fill="#E39A5E" opacity="0.14" />
+
+  <!-- Monetra Iconic M Monogram with Financial Depth -->
+  <g filter="url(#softGlow)">
+    <!-- Left Pillar of M -->
+    <rect x="26" y="34" width="15" height="60" rx="7.5" fill="url(#goldGrad)" />
+
+    <!-- Right Pillar of M -->
+    <rect x="87" y="34" width="15" height="60" rx="7.5" fill="url(#goldGrad)" />
+
+    <!-- Center Chevron of M with Rounded Joints -->
+    <path d="M 33.5 41.5 L 64 73 L 94.5 41.5" fill="none" stroke="url(#goldGrad)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Upward Financial Growth Pulse (Arrow/Wave) at bottom right -->
+    <path d="M 66 94 L 77 82 L 86 87 L 98 71" fill="none" stroke="url(#cyanGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 91 71 L 98 71 L 98 78" fill="none" stroke="url(#cyanGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- Glowing AI Diamond / Sparkle at Upper Right of M -->
+  <circle cx="100" cy="28" r="5" fill="#4FD3A4" />
+  <circle cx="100" cy="28" r="2.5" fill="#FFFFFF" />
 </svg>

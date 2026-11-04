@@ -1,12 +1,19 @@
-# Monetra
-
 <div align="center">
 
-![Monetra Logo](public/monetra-icon.svg)
+<a href="https://monetra-apps.vercel.app" target="_blank" rel="noopener noreferrer">
+  <img src="public/favicon.svg" alt="Monetra Logo" width="96" height="96" />
+</a>
+
+# Monetra
 
 ### Asisten Keuangan Pribadi Berbasis AI & Pelacak Pengeluaran Pintar
 **Catat transaksi secepat berbicara, kelola anggaran dengan aturan 50/30/20, dan evaluasi kesehatan finansial Anda secara real-time.**
 
+[**Coba Aplikasi Sekarang (monetra-apps.vercel.app) »**](https://monetra-apps.vercel.app)
+
+<br />
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-monetra--apps.vercel.app-E39A5E?style=for-the-badge&logo=vercel&logoColor=white)](https://monetra-apps.vercel.app)
 [![React](https://img.shields.io/badge/React-19.3-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
@@ -15,7 +22,7 @@
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 [![License](https://img.shields.io/badge/License-MIT-E39A5E?style=for-the-badge)](LICENSE)
 
-[Fitur Unggulan](#-fitur-unggulan) • [Teknologi](#-arsitektur--teknologi) • [Cara Kerja Voice AI](#-cara-kerja-voice-to-transaction) • [Panduan Instalasi](#-panduan-instalasi--menjalankan-lokal) • [Struktur Proyek](#-struktur-direktori)
+[Fitur Aplikasi](#-fitur-aplikasi-sesuai-hasil-akhir) • [Alur Voice AI & DSP](#-alur-voice-to-transaction--pemfilteran-dsp) • [Arsitektur & Teknologi](#-arsitektur--teknologi) • [Panduan Instalasi](#-panduan-instalasi--menjalankan-lokal) • [Struktur Proyek](#-struktur-direktori)
 
 </div>
 
@@ -23,135 +30,161 @@
 
 ## Ringkasan Produk
 
-Banyak orang gagal mengelola keuangan pribadi bukan karena tidak punya niat, melainkan karena proses pencatatan manual yang lambat, melelahkan, dan mudah terlupakan. Aplikasi pencatat konvensional menuntut pengguna mengetik angka satu per satu, memilih kategori secara manual, dan hanya berakhir sebagai buku kas pasif tanpa memberi arahan konkret.
+Banyak orang gagal mengelola keuangan pribadi bukan karena tidak memiliki niat, melainkan karena proses pencatatan manual yang lambat, melelahkan, dan sering terlupakan. Aplikasi pencatat keuangan konvensional mengharuskan pengguna mengetik angka satu per satu, memilih kategori secara berulang, dan hanya berakhir sebagai buku kas pasif tanpa arahan perbaikan finansial.
 
-**Monetra** hadir untuk mengubah cara Anda berinteraksi dengan uang Anda:
-1. **Pencatatan Tanpa Mengetik:** Cukup ceritakan pengeluaran Anda lewat rekaman suara. Monetra memproses ucapan Anda menjadi catatan transaksi terstruktur dalam hitungan detik.
-2. **Kecerdasan Kontekstual:** AI tidak hanya menyimpan angka, melainkan mengelompokkan pos pengeluaran berdasarkan metodologi finansial teruji (50/30/20), mengenali kebiasaan Anda, dan memberikan peringatan sebelum anggaran bulanan terlampaui.
-3. **Privasi & Keamanan Penuh:** Data Anda diisolasi menggunakan *Row Level Security* (RLS) PostgreSQL di Supabase. Anda memegang kendali penuh atas data dan riwayat AI Anda.
+**Monetra** dirancang untuk menyelesaikan masalah tersebut dengan pendekatan modern:
+1. **Pencatatan Tanpa Mengetik:** Cukup ceritakan pengeluaran Anda lewat rekaman suara. Monetra langsung mengekstrak ucapan Anda menjadi catatan transaksi terstruktur dalam hitungan detik.
+2. **Kecerdasan Kontekstual & Aturan 50/30/20:** AI secara otomatis mengelompokkan pos pengeluaran (*Kebutuhan*, *Keinginan*, dan *Tabungan*), mempelajari kebiasaan berbelanja Anda, dan memberi peringatan proaktif sebelum anggaran terlampaui.
+3. **Privasi & Keamanan Penuh:** Data Anda diisolasi menggunakan *Row Level Security* (RLS) PostgreSQL di Supabase. Anda memegang kendali penuh atas data dan riwayat memori AI Anda.
 
 ---
 
-## Fitur Unggulan
+## Fitur Aplikasi (Sesuai Hasil Akhir)
 
-### 1. Pencatatan Suara Pintar (Voice-to-Transaction AI)
-* **Ekstraksi Multi-Transaksi:** Sebutkan beberapa transaksi sekaligus dalam satu kalimat (misal: *"Tadi makan siang soto 20 ribu, beli bensin 30 ribu, sama tadi sore ditransfer adik 150 ribu"*). AI akan otomatis memecahnya menjadi 3 transaksi berbeda dengan nominal, tipe, dan kategori yang tepat.
-* **Pemahaman Bahasa Percakapan Indonesia:** Mendukung istilah nominal kasual sehari-hari (*ceban, goceng, seceng, noceng, goban, cepek, 50 rebu, 1,5 juta*).
-* **Pemfilteran Suara Manusia (Vocal DSP):** Dilengkapi rangkaian pemrosesan audio *High-Pass*, *Formant Peaking*, dan *Dynamic Compression* menggunakan Web Audio API untuk meredam kebisingan sekitar dan memprioritaskan frekuensi vokal pengguna.
-* **Streaming Teks Real-Time:** Menampilkan kata demi kata yang diucapkan secara langsung pada layar di browser mobile (iOS Safari & Android Chrome).
+### 1. Pencatatan Suara Pintar (Voice-to-Transaction Modal)
+* **Ekstraksi Multi-Transaksi dalam Satu Ucapan:** Sebutkan beberapa transaksi sekaligus (misal: *"Tadi makan siang soto 20 ribu, isi bensin 30 ribu, lalu ditransfer teman 100 ribu"*). AI langsung memecahnya menjadi 3 transaksi terpisah dengan nominal, tipe, dan kategori yang akurat.
+* **Pemahaman Bahasa Percakapan Indonesia:** Mendukung berbagai istilah nominal kasual (*ceban, goceng, seceng, noceng, goban, cepek, 50 rebu, 1,5 juta*).
+* **Rangkaian Filter Vokal Web Audio DSP:**
+  * **85 Hz High-Pass Filter:** Memotong suara getaran genggaman tangan (*handling noise*), hembusan angin dekat, dan gemuruh *sub-bass*.
+  * **2.400 Hz Vocal Formant Peaking Filter (+5.0 dB):** Mengangkat frekuensi artikulasi konsonan percakapan bahasa Indonesia agar terdengar jernih dan tegas.
+  * **7.500 Hz Low-Pass Filter:** Memotong desis frekuensi tinggi (*hiss*), deru kipas angin, pendingin ruangan (AC), serta distorsi latar belakang.
+  * **Dynamics Compressor (-32 dB threshold, 4.5:1 ratio):** Menangkap suara pelan atau bisikan tanpa membuat suara keras menjadi pecah (*clipping*).
+* **Streaming Teks Real-Time:** Menampilkan kata demi kata yang sedang diucapkan secara langsung pada layar di browser mobile (iOS Safari iPhone 15 Pro Max & Android Chrome).
+* **Kartu Konfirmasi:** Tinjau dan edit hasil ekstraksi sebelum disimpan ke database dengan satu ketukan.
 
-### 2. Konsultan Finansial Cerdas (AI Financial Advisor)
-* Asisten percakapan interaktif bertenaga Google Gemini.
-* Menganalisis pola arus kas harian, mingguan, dan bulanan.
-* Memberikan rekomendasi alokasi dana darurat, evaluasi pengeluaran impulsif, dan simulasi perencanaan tabungan.
-* Dilengkapi *AI Memory Engine* yang mengingat profil, preferensi gaya komunikasi, dan target finansial Anda.
+### 2. Beranda Finansial (Dashboard)
+* **Ringkasan Saldo Komprehensif:** Pemantauan Saldo Bersih (*Net Worth*), Total Pemasukan, Total Pengeluaran, dan Saldo Tabungan.
+* **Daily Financial Insight:** Analisis ringkas harian berbasis kebiasaan transaksi terbaru untuk menjaga kedisiplinan keuangan.
+* **Aksi Cepat (Quick Actions):** Akses instan untuk Catat Suara (*Voice*), Catat Manual Cepat, dan Tinjauan Analisis.
+* **Riwayat Transaksi Terkini:** Daftar transaksi terbaru dengan kartu berdesain *glassmorphism* dan indikator kategori visual.
 
-### 3. Metodologi Alokasi 50/30/20 & Manajemen Anggaran
-* Pengelompokan transaksi otomatis ke dalam 3 pilar:
-  * **Kebutuhan (Needs - 50%):** Makanan pokok, tagihan, transportasi, kesehatan.
-  * **Keinginan (Wants - 30%):** Hiburan, belanja hobi, gaya hidup, makan di restoran.
-  * **Tabungan & Investasi (Savings - 20%):** Tabungan masa depan, dana darurat, cicilan.
-* Batas anggaran per kategori dengan indikator visual dan peringatan dini saat mendekati limit.
+### 3. Detail & Manajemen Transaksi (Transactions)
+* **Filter Cepat:** Navigasi antara tab *Semua*, *Pengeluaran*, dan *Pemasukan*.
+* **Pencarian Instan:** Temukan riwayat transaksi berdasarkan catatan maupun nama kategori.
+* **Modal Detail Transaksi Bebas Bug:** Tampilan pop-up detail transaksi responsif yang dilengkapi mekanisme `useScrollLock` (mencegah scroll pada latar belakang saat modal aktif) serta rendering portal body anti-terpotong di mobile.
+* **Aksi Edit & Hapus dengan Fitur Undo:** Fleksibilitas mengubah rincian transaksi atau membatalkan penghapusan secara instan.
 
-### 4. Analisis & Visualisasi Arus Kas
-* Grafik visual interaktif berbasis Recharts:
-  * Perbandingan pemasukan vs pengeluaran.
-  * Distribusi pos pengeluaran per kategori.
-  * Filter rentang waktu fleksibel (Mingguan, Bulanan, Tahunan).
-* Perhitungan saldo bersih (*Net Cash Flow*) secara otomatis.
+### 4. Statistik & Analisis Finansial (Analytics)
+* **Peralihan Rentang Waktu Fleksibel:** Tombol switcher di pojok kanan atas untuk melihat statistik berbasis **Mingguan**, **Bulanan**, atau **Tahunan**.
+* **Visualisasi Arus Kas (Cash Flow Chart):** Diagram batang interaktif perbandingan arus kas pemasukan vs pengeluaran berbasis Recharts.
+* **Evaluasi Alokasi 50/30/20:**
+  * **Kebutuhan (Needs - 50%):** Makanan pokok, tagihan listrik/air, transportasi, kesehatan.
+  * **Keinginan (Wants - 30%):** Hiburan, belanja hobi, kuliner kafe, rekreasi.
+  * **Tabungan & Investasi (Savings - 20%):** Tabungan masa depan, dana darurat, cicilan produktif.
+* **Distribusi Pengeluaran:** Diagram donat persentase pengeluaran berdasarkan kategori.
 
-### 5. Multi-Dompet, Target Tabungan & Manajemen Utang
-* **Multi-Wallet:** Pisahkan pencatatan saldo Tunai (*Cash*), Rekening Bank, dan E-Wallet (*GoPay, OVO, Dana, ShopeePay*).
-* **Target Impian (Financial Goals):** Tentukan target nominal dan batas waktu, pantau progres tabungan secara berkala.
-* **Buku Utang & Piutang:** Catat siapa yang meminjam dana atau kepada siapa Anda berutang, lengkap dengan status pelunasan.
+### 5. Asisten Keuangan AI (FinAI Assistant)
+* Konsultan keuangan pribadi interaktif berbasis Google Gemini dengan *Local Financial Reasoning Engine* sebagai fallback.
+* Input percakapan dapat dilakukan melalui ketikan teks maupun rekaman suara langsung di ruang obrolan.
+* Dilengkapi *Interactive Cards* untuk menampilkan daftar transaksi yang baru dicatat, peringatan batas anggaran, dan kalkulasi simulasi.
+* **AI Memory Engine:** Secara adaptif mengingat preferensi pengguna, target tabungan, dan kebiasaan pengeluaran untuk memberikan rekomendasi yang semakin personal seiring waktu.
 
-### 6. Desain Antarmuka Glassmorphism "Titanium & Ember"
-* Bahasa desain visual bersih, berkelas, dan minimalis.
-* Palet warna *Titanium & Ember Copper*: perpaduan nuansa baja gelap modern dengan aksen tembaga hangat.
-* **Nir-Emoji (Zero-Emoji Policy):** Menggunakan ikon vektor garis tipis (SVG) murni untuk menghadirkan kesan aplikasi profesional setara platform perbankan premium.
-* Responsif penuh pada perangkat ponsel (iOS / Android), tablet, hingga monitor desktop.
-* Dukungan tema gelap (*Dark Titanium*) dan tema terang (*Porcelain Mist*).
+### 6. Anggaran, Target Tabungan & Buku Utang (Budget & Goals)
+* **Batas Anggaran Bulanan:** Tetapkan batas pengeluaran per kategori lengkap dengan indikator persentase pemakaian visual (Aman / Peringatan / Jebol).
+* **Target Impian (Financial Goals):** Pantau progres pencapaian target tabungan beserta estimasi waktu pencapaian (*deadline*).
+* **Buku Utang & Piutang:** Catat dana yang Anda pinjamkan kepada orang lain atau dana yang harus Anda bayarkan, lengkap dengan tanggal jatuh tempo dan penanda status lunas.
+
+### 7. Pengaturan & Akun (Settings)
+* **Profil Finansial:** Konfigurasi nama, email, mata uang, tanggal gajian, dan rata-rata penghasilan bulanan.
+* **Preferensi Gaya AI:** Pilihan gaya komunikasi santai atau formal.
+* **Manajemen Gemini API Key:** Input kunci API Gemini pribadi yang tersimpan aman di penyimpanan privat peramban.
+* **Pusat Memori AI:** Kelola, tinjau, atau hapus memori kebiasaan yang disimpan oleh asisten AI.
+* **Ekspor & Reset Data:** Unduh cadangan riwayat transaksi atau bersihkan seluruh data akun kapan saja.
+
+### 8. Desain "Titanium & Ember" & Progressive Web App (PWA)
+* **Estetika Glassmorphism Premium:** Kombinasi baja gelap (*ink titanium*) dengan aksen tembaga hangat (*ember copper*).
+* **Nir-Emoji (Zero-Emoji Policy):** Menggunakan ikon vektor garis tipis (SVG) Lucide murni untuk tampilan profesional setara platform finansial institusional.
+* **Dua Tema:** Tema gelap (*Dark Titanium*) sebagai tampilan bawaan dan tema terang (*Porcelain Mist*).
+* **PWA Ready:** Dapat diinstal langsung ke layar utama (*Add to Home Screen*) pada perangkat iPhone (iOS Safari) maupun Android (Chrome).
+
+---
+
+## Alur Voice-to-Transaction & Pemfilteran DSP
+
+Sistem pencatatan suara Monetra dirancang tangguh untuk penggunaan di luar ruangan atau lingkungan ramai:
+
+```
+[ Mikrofon Ponsel / Laptop ]
+              │
+              ▼
+┌──────────────────────────────────────────────┐
+│       Web Audio Vocal DSP Filter Chain       │
+│  ├─ 85 Hz High-Pass (potong gemuruh/angin)   │
+│  ├─ 2.400 Hz Peaking (+5 dB formant vokal)   │
+│  ├─ 7.500 Hz Low-Pass (potong desis/AC)      │
+│  └─ Dynamics Compressor (-32 dB threshold)   │
+└──────────────────────────────────────────────┘
+              │
+      Audio Bersih & Ternormalisasi
+              │
+              ▼
+┌──────────────────────────────────────────────┐
+│         Gemini Multimodal Neural AI          │
+│  ├─ Isolasi vokal manusia di latar bising    │
+│  ├─ Ekstraksi multi-transaksi otomatis       │
+│  └─ Pengenalan istilah gaul rupiah           │
+└──────────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────┐
+│        Struktur Transaksi Terverifikasi      │
+│  ├─ Nominal & Tipe (Pengeluaran/Pemasukan)   │
+│  ├─ Auto-Kategori (Makanan, Bensin, dsb.)    │
+│  └─ Klasifikasi 50/30/20 (Need/Want/Saving)  │
+└──────────────────────────────────────────────┘
+```
 
 ---
 
 ## Arsitektur & Teknologi
 
 ```mermaid
-flowchart TD
-    subgraph Client ["Frontend (Client - React 19 + Vite)"]
+flowchart LR
+    subgraph Frontend ["Client (React 19 + TypeScript + Vite)"]
         UI["Antarmuka Pengguna & Navigasi"]
-        DSP["Web Audio DSP Filter Chain"]
-        Speech["Web Speech Recognition API"]
-        Store["Zustand Global State Engine"]
+        DSP["Web Audio DSP Filter"]
+        Speech["Web Speech Streaming"]
+        Store["Zustand Global State"]
     end
 
-    subgraph AudioEngine ["Voice Processing Pipeline"]
-        DSP -->|Audio Ternormalisasi| GeminiAudio["Gemini Multimodal Audio AI"]
-        Speech -->|Transkrip Streaming| GeminiText["Gemini Text Structured Parser"]
-        GeminiAudio --> Extractor["Transaction Extractor (JSON)"]
-        GeminiText --> Extractor
+    subgraph Intelligence ["AI Engine"]
+        GeminiAudio["Gemini Multimodal Audio"]
+        GeminiText["Gemini Text Structured Parser"]
+        LocalBrain["Local Financial Reasoning Engine"]
     end
 
-    subgraph Backend ["Backend & Data (Supabase Cloud)"]
+    subgraph Cloud ["Supabase Cloud Backend"]
         Auth["Supabase Auth (Google OAuth)"]
-        DB[("PostgreSQL Database")]
-        RLS["Row Level Security (Isolasi auth.uid)"]
-        Storage["Private Storage (Struk & Audio)"]
+        Postgres[("PostgreSQL Database")]
+        RLS["Row Level Security (auth.uid)"]
     end
 
     UI --> DSP
     UI --> Speech
-    Extractor --> Store
+    DSP --> GeminiAudio
+    Speech --> GeminiText
+    GeminiAudio --> Store
+    GeminiText --> Store
+    Store -.-> LocalBrain
     Store --> RLS
-    RLS --> DB
     Auth --> RLS
-    UI --> Storage
+    RLS --> Postgres
 ```
 
-### Rincian Pustaka & Komponen Utama
+### Rincian Pustaka Utama
 
-| Komponen | Pustaka / Layanan | Fungsi & Kegunaan |
+| Komponen | Pustaka / Layanan | Fungsi & Keunggulan |
 | :--- | :--- | :--- |
 | **Framework** | [React 19](https://react.dev/) | Library UI berbasis komponen modern |
-| **Bahasa** | [TypeScript](https://www.typescriptlang.org/) | Type-safety mutlak, refactoring aman, dan autocompletion |
-| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | Utilitas CSS modern dan performan tinggi |
-| **Bundler** | [Vite 8](https://vitejs.dev/) | Server dev berkecepatan tinggi dan build produksi efisien |
-| **State Manager** | [Zustand](https://github.com/pmndrs/zustand) | Manajemen state global ringan dengan persistensi lokal |
-| **Grafik Data** | [Recharts](https://recharts.org/) | Visualisasi diagram batang, garis, dan donat interaktif |
-| **Animasi** | [Framer Motion](https://www.framer.com/motion/) | Transisi halaman, modal pop-up, dan indikator mikrofon halus |
-| **Ikonografi** | [Lucide React](https://lucide.dev/) | Set ikon SVG garis tipis yang bersih dan konsisten |
-| **Database & Auth** | [Supabase](https://supabase.com/) | PostgreSQL dengan RLS, Auth terintegrasi, dan REST/Realtime API |
-| **Model AI** | [Google Gemini 2.5 Flash](https://ai.google.dev/) | Transkripsi multimodal, ekstraksi entitas JSON, dan chatbot penasihat |
-
----
-
-## Cara Kerja Voice-to-Transaction
-
-Sistem pencatatan suara Monetra dirancang khusus agar andal digunakan di kondisi nyata (seperti saat berjalan di jalan raya, berada di kafe yang bising, atau menggunakan mikrofon ponsel):
-
-```
-+------------------+      +---------------------------+      +--------------------------+
-|  Input Mikrofon  | ---> |   Web Audio DSP Filter    | ---> |  Gemini Multimodal AI    |
-| (Vokal Pengguna) |      | - High-Pass Filter (85 Hz)|      | - Isolasi Vokal Depan    |
-+------------------+      | - Vocal Boost (2.400 Hz)  |      | - Pemahaman Slang Rupiah |
-                          | - Low-Pass Filter (7.5 kHz|      +--------------------------+
-                          | - Dynamics Compressor     |                   |
-                          +---------------------------+                   v
-                                                             +--------------------------+
-                                                             |   JSON Multi-Transaksi   |
-                                                             | - Jumlah & Kategori      |
-                                                             | - Tipe (Expense/Income)  |
-                                                             | - Alokasi 50/30/20       |
-                                                             +--------------------------+
-```
-
-1. **Acoustic Conditioning:** Mikrofon menangkap suara dan melewati rangkaian Web Audio Node:
-   * **85 Hz High-Pass:** Mengeliminasi getaran tangan pada bodi ponsel dan hembusan angin mikrofon.
-   * **2.400 Hz Peaking (+5 dB):** Mengangkat frekuensi artikulasi konsonan bahasa Indonesia agar jelas terdengar.
-   * **7.500 Hz Low-Pass:** Memotong derau statis, gesekan pakaian, dan suara kipas/AC.
-   * **Dynamics Compressor:** Mengangkat suara pelan tanpa membuat suara keras menjadi terdistorsi.
-2. **Neural Understanding:** Gemini Multimodal memisahkan suara pengguna dari latar belakang, mengenali konteks belanja, dan mengekstrak entitas finansial dalam format JSON terstruktur.
-3. **Konfirmasi Instan:** Pengguna melihat kartu tinjauan transaksi dengan tombol simpan satu ketukan.
+| **Bahasa** | [TypeScript](https://www.typescriptlang.org/) | Keamanan tipe statis penuh di seluruh alur data |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | Utilitas CSS modern berperforma tinggi |
+| **Bundler** | [Vite 8](https://vitejs.dev/) | Waktu dev server instan dan kompilasi produksi cepat |
+| **State Manager** | [Zustand](https://github.com/pmndrs/zustand) | State management ringan dengan sinkronisasi penyimpanan lokal |
+| **Grafik Data** | [Recharts](https://recharts.org/) | Diagram arus kas batang dan donat kategori responsif |
+| **Animasi** | [Framer Motion](https://www.framer.com/motion/) | Transisi layar, modal dialog, dan animasi gelombang audio |
+| **Ikon** | [Lucide React](https://lucide.dev/) | Ikon SVG garis tipis profesional |
+| **Database & Auth** | [Supabase](https://supabase.com/) | PostgreSQL dengan Row Level Security & Google OAuth |
+| **Model AI** | [Google Gemini 2.5 Flash](https://ai.google.dev/) | Transkripsi multimodal dan inferensi keuangan cerdas |
 
 ---
 
@@ -163,51 +196,49 @@ Sistem pencatatan suara Monetra dirancang khusus agar andal digunakan di kondisi
 * Akun [Supabase](https://supabase.com/) (tersedia tier gratis).
 * *(Opsional)* Google Gemini API Key dari [Google AI Studio](https://aistudio.google.com/).
 
-### Langkah 1: Kloning Repositori
+### 1. Kloning Repositori
 ```bash
 git clone https://github.com/RendyGH7/Monetra-Apps.git
 cd Monetra-Apps
 ```
 
-### Langkah 2: Pasang Dependensi
+### 2. Pasang Dependensi
 ```bash
 npm install
 ```
 
-### Langkah 3: Konfigurasi Environment Variables
-Salin berkas konfigurasi contoh ke `.env.local`:
+### 3. Konfigurasi Environment Variables
+Salin berkas template lingkungan ke `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
 
-Buka `.env.local` dan lengkapi variabel berikut:
+Buka berkas `.env.local` dan isi nilainya:
 ```env
 # Konfigurasi Supabase
 VITE_SUPABASE_URL=https://proyek-anda.supabase.co
 VITE_SUPABASE_ANON_KEY=kunci-anon-proyek-anda
 
-# Kunci API Google Gemini (Opsional jika ingin menggunakan AI bawaan cloud)
+# Kunci API Google Gemini (Opsional, dapat juga diatur via menu Pengaturan)
 VITE_GEMINI_API_KEY=kunci-gemini-anda
 ```
 
-> **Catatan:** Jika `VITE_GEMINI_API_KEY` tidak diisi di berkas `.env.local`, pengguna tetap dapat memasukkan API Key secara mandiri melalui menu **Pengaturan** di dalam aplikasi, atau menggunakan *Local Reasoning Engine* bawaan.
+### 4. Eksekusi Skema Database Supabase
+Jalankan berkas migrasi SQL yang tersedia di folder `supabase/migrations/` pada **SQL Editor** di dasbor Supabase Anda:
+1. `supabase/migrations/20261028_init_finai_schema.sql` (Tabel profil, transaksi, kategori, dompet, budget, goal, memori).
+2. `supabase/migrations/20261030_create_monetra_user_data.sql` (Aturan keamanan RLS dan indeks performa).
 
-### Langkah 4: Setup Database Supabase
-Jalankan berkas migrasi SQL yang tersedia di direktori `supabase/migrations/` pada SQL Editor dasbor Supabase Anda:
-1. `supabase/migrations/20261028_init_finai_schema.sql` (Inisialisasi tabel dasar: profil, transaksi, kategori, dompet, budget, goal, memori).
-2. `supabase/migrations/20261030_create_monetra_user_data.sql` (Optimasi indeks dan kebijakan RLS).
-
-### Langkah 5: Jalankan Server Pengembangan
+### 5. Jalankan Server Pengembangan
 ```bash
 npm run dev
 ```
-Buka peramban Anda di `http://localhost:5173`.
+Buka peramban di `http://localhost:5173`.
 
-### Langkah 6: Kompilasi untuk Produksi
+### 6. Kompilasi untuk Produksi
 ```bash
 npm run build
 ```
-Hasil build siap disajikan di folder `dist/` dan siap dideploy ke Vercel, Netlify, atau Cloudflare Pages.
+Hasil berkas siap rilis berada di direktori `dist/` dan siap di-deploy ke Vercel, Netlify, atau Cloudflare Pages.
 
 ---
 
@@ -215,66 +246,53 @@ Hasil build siap disajikan di folder `dist/` dan siap dideploy ke Vercel, Netlif
 
 ```
 Monetra-App/
-├── public/                 # Favicon, ikon PWA, dan aset statis
+├── public/                 # Favicon resmi (favicon.svg), manifest PWA, & aset logo
 ├── src/
-│   ├── components/         # Komponen UI modular
-│   │   ├── common/         # Komponen bersama (Toast, Modal, Markdown Renderer)
-│   │   ├── layout/         # Navigasi bawah (BottomNav), Sidebar, Mascot
-│   │   └── voice/          # Modal perekaman suara, visualizer audio, & filter DSP
-│   ├── data/               # Nilai awal kategori standar dan template profil
+│   ├── components/         # Komponen antarmuka modular
+│   │   ├── common/         # Toast notification, Markdown message renderer, Quick manual modal
+│   │   ├── layout/         # Navigasi bawah (BottomNav), Sidebar navigasi, Maskot
+│   │   └── voice/          # Modal perekaman suara, visualizer audio, & filter Web Audio DSP
+│   ├── data/               # Data inisial kategori, profil default, dan data awal
 │   ├── features/           # Halaman utama aplikasi
-│   │   ├── analytics/      # Grafik arus kas & analisis konsumsi
-│   │   ├── assistant/      # Antarmuka chat asisten finansial AI
-│   │   ├── auth/           # Halaman otentikasi & masuk Google
-│   │   ├── budget/         # Manajemen alokasi anggaran 50/30/20
-│   │   ├── dashboard/      # Ringkasan saldo, statistik cepat, dan aksi instan
-│   │   ├── settings/       # Pengaturan profil, preferensi tema, & konfigurasi AI
-│   │   └── transactions/   # Riwayat lengkap, filter transaksi, & form manual
+│   │   ├── analytics/      # Grafik arus kas & alokasi 50/30/20 (Mingguan, Bulanan, Tahunan)
+│   │   ├── assistant/      # Chat interaktif asisten finansial AI bertenaga Gemini
+│   │   ├── auth/           # Layar masuk Google OAuth & email
+│   │   ├── budget/         # Anggaran bulanan, target impian (goals), & buku utang-piutang
+│   │   ├── dashboard/      # Ringkasan saldo, statistik kilat, dan aksi cepat
+│   │   ├── settings/       # Profil, gaya bahasa AI, kunci API, memori, & ganti tema
+│   │   └── transactions/   # Riwayat transaksi, pencarian, dan modal detail transaksi
 │   ├── lib/                # Konfigurasi klien Supabase
-│   ├── services/           # Logika integrasi AI (Gemini Multimodal & Reasoning)
-│   ├── store/              # Global state management (Zustand)
-│   ├── types/              # Deklarasi tipe data TypeScript
-│   └── utils/              # Pemformat mata uang (IDR), waktu WIB, parser teks
+│   ├── services/           # Integrasi AI Gemini Multimodal, Parser Suara, & Local Brain
+│   ├── store/              # Global state management berbasis Zustand
+│   ├── types/              # Definisi tipe TypeScript
+│   └── utils/              # Pemformat rupiah, waktu WIB, useScrollLock, & kalkulasi
 ├── supabase/
-│   └── migrations/         # Skrip skema database PostgreSQL & aturan RLS
-├── package.json            # Daftar pustaka dan script proyek
-├── tailwind.config.js      # Konfigurasi tema dan token visual
+│   └── migrations/         # Skrip SQL skema tabel database dan kebijakan RLS
+├── package.json            # Daftar dependensi dan script npm
 ├── vite.config.ts          # Konfigurasi bundler Vite
-└── README.md               # Dokumentasi utama proyek
+├── LICENSE                 # Lisensi open-source MIT
+└── README.md               # Dokumentasi resmi proyek
 ```
 
 ---
 
 ## Keamanan & Perlindungan Privasi
 
-* **Row Level Security (RLS):** Setiap tabel di PostgreSQL dilindungi aturan ketat `auth.uid() = user_id`. Pengguna tidak akan pernah bisa mengakses atau membaca data finansial pengguna lain.
-* **Pemrosesan Audio Tanpa Jejak:** Rekaman audio diproses langsung dalam memori sesi untuk dianalisis oleh AI dan tidak disimpan secara permanen di server publik.
-* **Kunci API Terlindungi:** Kunci API Gemini disimpan secara lokal di penyimpanan privat peramban pengguna atau diakses aman melalui backend proxy.
-* **Penghapusan Data Penuh:** Pengguna memiliki hak privasi mutlak untuk mereset seluruh data transaksi dan memori AI kapan saja melalui menu pengaturan.
-
----
-
-## Kontribusi & Pengembangan
-
-Kami menyambut kontribusi dari komunitas pengembang! Jika Anda menemukan bug atau memiliki ide perbaikan fitur:
-
-1. Lakukan **Fork** pada repositori ini.
-2. Buat branch fitur baru (`git checkout -b fitur/nama-fitur-baru`).
-3. Lakukan commit perubahan Anda (`git commit -m 'feat: tambahkan fitur baru'`).
-4. Pastikan typecheck dan build berjalan sukses (`npm run build`).
-5. Push branch Anda (`git push origin fitur/nama-fitur-baru`).
-6. Ajukan **Pull Request**.
+* **Row Level Security (RLS):** Seluruh baris data pada PostgreSQL dilindungi oleh aturan ketat `auth.uid() = user_id`. Tidak ada pengguna yang dapat melihat atau mengakses data finansial pengguna lain.
+* **Pemrosesan Audio Tanpa Jejak:** Rekaman audio hanya diproses di memori sesi untuk dianalisis oleh AI dan tidak disimpan secara permanen di server publik.
+* **Kunci API Mandiri & Privat:** Kunci API Gemini disimpan secara lokal di peramban pengguna atau melalui proxy aman.
+* **Kontrol Penuh atas Data:** Pengguna memiliki hak penuh untuk mengekspor atau menghapus seluruh riwayat transaksi dan memori AI kapan saja.
 
 ---
 
 ## Lisensi
 
-Proyek ini didistribusikan di bawah lisensi **MIT**. Silakan tinjau berkas [LICENSE](LICENSE) untuk informasi selengkapnya.
+Proyek ini didistribusikan di bawah ketentuan lisensi **MIT**. Rincian lengkap dapat dilihat pada berkas [LICENSE](LICENSE).
 
 <div align="center">
 
-Dibangun dengan dedikasi untuk membantu semua orang mengelola keuangan secara lebih cerdas, tertib, dan bebas stres.
+Dibangun untuk membantu setiap orang mencapai ketertiban finansial dengan cepat, akurat, dan tanpa stres.
 
-**[Monetra Team](https://github.com/RendyGH7/Monetra-Apps)**
+**[Tim Pengembang Monetra](https://github.com/RendyGH7/Monetra-Apps)**
 
 </div>
