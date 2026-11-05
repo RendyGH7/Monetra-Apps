@@ -254,9 +254,7 @@ export default function App() {
               : 'flex-1 min-w-0 w-full h-full overflow-y-auto custom-scrollbar mobile-content-safe pt-2 md:pt-8 md:pb-14 px-4 sm:px-6 md:px-8 lg:px-12'
           }
         >
-          <div className="w-full max-w-7xl mx-auto">
-            {renderActiveView()}
-          </div>
+          {renderActiveView()}
         </main>
       </div>
 
