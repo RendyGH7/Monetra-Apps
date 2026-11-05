@@ -356,7 +356,9 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
-          <NotificationBell />
+          <div className="hidden md:block">
+            <NotificationBell />
+          </div>
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
