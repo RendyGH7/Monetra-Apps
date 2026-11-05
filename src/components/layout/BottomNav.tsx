@@ -5,6 +5,11 @@ import { useAppStore } from '../../store';
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab, setVoiceModalOpen } = useAppStore();
 
+  // Hide bottom nav when in assistant tab for full-screen immersive chat
+  if (activeTab === 'asisten') {
+    return null;
+  }
+
   type NavTabKey = 'beranda' | 'transaksi' | 'budget' | 'statistik' | 'asisten' | 'pengaturan';
 
   const navItems: Array<{

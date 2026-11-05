@@ -7,6 +7,7 @@
   --glass-fill-strong: rgba(190, 212, 238, 0.095);
   --glass-border: rgba(205, 225, 245, 0.13);
   --glass-highlight: rgba(235, 245, 255, 0.24);
+  --border-subtle: rgba(205, 225, 245, 0.08);
   --text-primary: #EEF2F6;
   --text-secondary: #A3AFBC;
   --text-tertiary: #74808E;
@@ -44,6 +45,7 @@
   --glass-fill-strong: #FFFFFF;
   --glass-border: rgba(203, 213, 225, 0.9);
   --glass-highlight: rgba(255, 255, 255, 1);
+  --border-subtle: rgba(203, 213, 225, 0.65);
   --text-primary: #0F172A;
   --text-secondary: #334155;
   --text-tertiary: #64748B;

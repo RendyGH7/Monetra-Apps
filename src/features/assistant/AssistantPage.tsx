@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Mic, MicOff, Loader2, MessageSquare, Trash2, User, Copy, Check, Radio } from 'lucide-react';
+import { Bot, Send, Mic, MicOff, Loader2, MessageSquare, Trash2, User, Copy, Check, Radio, ArrowLeft } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { stripEmoji, formatTimeShort, formatCompact } from '../../utils/format';
 import { askMonetra, parseVoiceAudioWithAI } from '../../services/aiService';
@@ -27,6 +27,7 @@ export const AssistantPage: React.FC = () => {
     showToast,
     assistantInitialPrompt,
     setAssistantInitialPrompt,
+    setActiveTab,
   } = useAppStore();
 
   const [input, setInput] = useState('');
@@ -423,11 +424,22 @@ export const AssistantPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto assistant-container-safe flex flex-col glass-2 rounded-2xl border border-[var(--glass-border)] shadow-xl p-3 sm:p-5 relative overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-transparent relative overflow-hidden">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(205,225,245,0.1)] gap-2 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[#E39A5E]/40 shadow-md shadow-[#E39A5E]/20 shrink-0 glass-2 p-1">
+      <div className="w-full flex items-center justify-between pt-[max(var(--safe-top),0.75rem)] px-4 sm:px-8 lg:px-12 py-3 bg-[var(--bg-base)]/80 backdrop-blur-md gap-2 shrink-0 z-20">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Mobile Back Button - Navigasi kembali ke Beranda */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('beranda')}
+            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.08] active:scale-95 transition-all cursor-pointer -ml-1 shrink-0"
+            aria-label="Kembali ke Beranda"
+            title="Kembali ke Beranda"
+          >
+            <ArrowLeft size={20} strokeWidth={2.2} />
+          </button>
+
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border border-[#E39A5E]/40 shadow-md shadow-[#E39A5E]/20 shrink-0 glass-2 p-1">
             <img
               src="/finai-mascot.png"
               alt="Maskot Monetra"
@@ -435,15 +447,12 @@ export const AssistantPage: React.FC = () => {
             />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-semibold text-[var(--text-primary)] truncate">
-                Asisten Monetra
-              </h1>
-              <span className="px-2 py-0.5 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/35 text-[#4FD3A4] text-[10px] font-semibold flex items-center gap-1.5 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4] animate-pulse" />
-                <span>Online</span>
-              </span>
-            </div>
+            <h1 className="text-sm sm:text-base font-semibold text-[var(--text-primary)] truncate font-display">
+              Asisten Monetra
+            </h1>
+            <p className="text-[10px] text-[var(--text-muted)] truncate hidden sm:block">
+              Penalaran finansial cerdas & evaluasi riil pengeluaranmu
+            </p>
           </div>
         </div>
 
@@ -451,17 +460,21 @@ export const AssistantPage: React.FC = () => {
           <button
             type="button"
             onClick={clearChat}
-            className="btn-danger p-2 rounded-xl border border-transparent hover:border-[#EE5D6C]/30 text-[var(--text-tertiary)] hover:text-[#EE5D6C] text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="btn-danger h-8 px-2.5 sm:px-3 rounded-xl border border-transparent hover:border-[#EE5D6C]/30 text-[var(--text-tertiary)] hover:text-[#EE5D6C] text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
             title="Bersihkan Percakapan"
           >
             <Trash2 size={14} />
-            <span className="hidden sm:inline">Bersihkan</span>
+            <span className="hidden sm:inline font-medium">Bersihkan</span>
           </button>
         </div>
       </div>
 
       {/* Messages Scroll Area with Global Themed Scrollbar */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto py-3 space-y-4 pr-1.5 sm:pr-2">
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6 custom-scrollbar"
+      >
+        <div className="max-w-6xl mx-auto w-full space-y-4 sm:space-y-6">
         {chatMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 my-auto select-none">
             <div className="relative mb-4 group">
@@ -472,9 +485,6 @@ export const AssistantPage: React.FC = () => {
                   className="w-full h-full object-contain drop-shadow-md"
                 />
               </div>
-              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-[#4FD3A4]/20 border border-[#4FD3A4]/40 text-[#4FD3A4] text-[10px] font-bold">
-                Online
-              </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
               Halo! Saya Monetra
@@ -517,8 +527,8 @@ export const AssistantPage: React.FC = () => {
                 <div
                   className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm transition-all ${
                     isUser
-                      ? 'max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-[#E39A5E]/20 to-[#CF8143]/10 border border-[#E39A5E]/30 text-[#EEF2F6] rounded-tr-none'
-                      : 'max-w-[92%] sm:max-w-[88%] glass-1 border border-[var(--glass-border)] text-[var(--text-primary)] rounded-tl-none space-y-2'
+                      ? 'max-w-[88%] sm:max-w-[72%] bg-gradient-to-br from-[#E39A5E]/20 to-[#CF8143]/10 border border-[#E39A5E]/30 text-[#EEF2F6] rounded-tr-none'
+                      : 'max-w-[95%] sm:max-w-[92%] glass-1 border border-[var(--glass-border)] text-[var(--text-primary)] rounded-tl-none space-y-2'
                   }`}
                 >
                   {isUser ? (
@@ -567,90 +577,96 @@ export const AssistantPage: React.FC = () => {
             <span className="font-medium">Monetra sedang menganalisis data keuanganmu...</span>
           </div>
         )}
-      </div>
-
-      {/* Quick Suggestion Chips */}
-      <div className="py-2 overflow-x-auto no-scrollbar flex items-center gap-2 shrink-0 border-t border-[rgba(205,225,245,0.08)]">
-        {quickQuestions.map((q, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => handleSend(q)}
-            className="chip-press group px-3.5 py-1.5 rounded-xl glass-1 border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/50 whitespace-nowrap cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
-            title={`Tanyakan: ${q}`}
-          >
-            <MessageSquare size={12} className="text-[#E39A5E] shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
-            <span>{q}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Listening Status Bar */}
-      {isListening && (
-        <div className="mt-2 px-3.5 py-2 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/40 flex items-center justify-between text-xs text-[#EEF2F6] animate-pulse">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#EE5D6C] animate-ping shrink-0" />
-            <span className="font-semibold text-[#E39A5E] shrink-0">Sedang mendengarkan...</span>
-            <span className="text-[11px] text-[#A3AFBC] truncate hidden sm:inline">
-              Bicara bebas topik apapun (curhat, info pribadi, pertanyaan, dsb)
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => stopVoicePrompt(true)}
-            disabled={!input.trim()}
-            className="px-2.5 py-1 rounded-lg bg-[#E39A5E] hover:bg-[#CF8143] text-[#1C0E04] text-[11px] font-bold cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
-          >
-            Selesai & Kirim
-          </button>
         </div>
-      )}
+      </div>
 
-      {/* Input Bar */}
-      <div className="pt-2 flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          onClick={toggleVoicePrompt}
-          className={`btn-press p-2.5 rounded-xl border cursor-pointer shrink-0 shadow-xs transition-all duration-200 flex items-center justify-center ${
-            isListening
-              ? 'bg-[#EE5D6C]/25 border-[#EE5D6C] text-[#EE5D6C] shadow-lg shadow-[#EE5D6C]/30 animate-pulse'
-              : 'glass-2 border-[#E39A5E]/40 text-[#E39A5E] hover:bg-[#E39A5E]/15 hover:border-[#E39A5E]/60'
-          }`}
-          title={isListening ? 'Klik untuk berhenti merekam suara' : 'Voice Prompt: Bicara ke Monetra tanpa harus mengetik'}
-        >
-          {isListening ? (
-            <MicOff size={18} strokeWidth={2.3} />
-          ) : (
-            <Mic size={18} strokeWidth={2.2} />
+      {/* Bottom Input & Suggestions Area */}
+      <div className="w-full bg-[var(--bg-base)]/80 backdrop-blur-lg px-4 sm:px-8 lg:px-12 pt-3 pb-[max(calc(var(--safe-bottom)+14px),1.75rem)] sm:pb-4 shrink-0 z-20">
+        <div className="max-w-6xl mx-auto w-full space-y-2.5">
+          {/* Quick Suggestion Chips */}
+          <div className="overflow-x-auto no-scrollbar flex items-center gap-2 pb-0.5">
+            {quickQuestions.map((q, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSend(q)}
+                className="chip-press group px-3.5 py-1.5 rounded-xl glass-1 border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/50 whitespace-nowrap cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0 transition-all"
+                title={`Tanyakan: ${q}`}
+              >
+                <MessageSquare size={12} className="text-[#E39A5E] shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
+                <span>{q}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Listening Status Bar */}
+          {isListening && (
+            <div className="px-3.5 py-2 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/40 flex items-center justify-between text-xs text-[#EEF2F6] animate-pulse">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#EE5D6C] animate-ping shrink-0" />
+                <span className="font-semibold text-[#E39A5E] shrink-0">Sedang mendengarkan...</span>
+                <span className="text-[11px] text-[#A3AFBC] truncate hidden sm:inline">
+                  Bicara bebas topik apapun (curhat, info pribadi, pertanyaan, dsb)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => stopVoicePrompt(true)}
+                disabled={!input.trim()}
+                className="px-2.5 py-1 rounded-lg bg-[#E39A5E] hover:bg-[#CF8143] text-[#1C0E04] text-[11px] font-bold cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
+              >
+                Selesai & Kirim
+              </button>
+            </div>
           )}
-        </button>
 
-        <input
-          type="text"
-          placeholder={
-            isListening
-              ? 'Mendengarkan suaramu... silakan bicara bebas...'
-              : "Tanya apapun, curhat, cerita profilmu, atau ketik 'catat makan 20rb'..."
-          }
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !isTyping) handleSend(input);
-          }}
-          className={`input-glow flex-1 h-11 px-4 rounded-xl glass-1 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] border outline-none shadow-xs transition-colors duration-200 ${
-            isListening ? 'border-[#EE5D6C]/60 bg-[#EE5D6C]/5' : 'border-[var(--glass-border)] focus:border-[#E39A5E]'
-          }`}
-        />
+          {/* Input Bar */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleVoicePrompt}
+              className={`btn-press p-2.5 sm:p-3 rounded-xl border cursor-pointer shrink-0 shadow-xs transition-all duration-200 flex items-center justify-center ${
+                isListening
+                  ? 'bg-[#EE5D6C]/25 border-[#EE5D6C] text-[#EE5D6C] shadow-lg shadow-[#EE5D6C]/30 animate-pulse'
+                  : 'glass-2 border-[#E39A5E]/40 text-[#E39A5E] hover:bg-[#E39A5E]/15 hover:border-[#E39A5E]/60'
+              }`}
+              title={isListening ? 'Klik untuk berhenti merekam suara' : 'Voice Prompt: Bicara ke Monetra tanpa harus mengetik'}
+            >
+              {isListening ? (
+                <MicOff size={18} strokeWidth={2.3} />
+              ) : (
+                <Mic size={18} strokeWidth={2.2} />
+              )}
+            </button>
 
-        <button
-          type="button"
-          onClick={() => handleSend(input)}
-          disabled={!input.trim() || isTyping}
-          className="btn-primary p-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-md shrink-0 flex items-center justify-center"
-          title="Kirim Pesan"
-        >
-          <Send size={18} strokeWidth={2.2} />
-        </button>
+            <input
+              type="text"
+              placeholder={
+                isListening
+                  ? 'Mendengarkan suaramu... silakan bicara bebas...'
+                  : "Tanya apapun, curhat, cerita profilmu, atau ketik 'catat makan 20rb'..."
+              }
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isTyping) handleSend(input);
+              }}
+              className={`input-glow flex-1 h-11 sm:h-12 px-4 rounded-xl glass-1 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] border outline-none shadow-xs transition-colors duration-200 ${
+                isListening ? 'border-[#EE5D6C]/60 bg-[#EE5D6C]/5' : 'border-[var(--glass-border)] focus:border-[#E39A5E]'
+              }`}
+            />
+
+            <button
+              type="button"
+              onClick={() => handleSend(input)}
+              disabled={!input.trim() || isTyping}
+              className="btn-primary p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-md shrink-0 flex items-center justify-center"
+              title="Kirim Pesan"
+            >
+              <Send size={18} strokeWidth={2.2} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

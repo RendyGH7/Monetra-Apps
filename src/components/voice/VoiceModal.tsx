@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Mic, X, Check, Trash2, Volume2, AlertCircle, RefreshCw, Send, Radio } from 'lucide-react';
+import {
+  Mic,
+  X,
+  Check,
+  Trash2,
+  Volume2,
+  AlertCircle,
+  RefreshCw,
+  Send,
+  Radio,
+  Keyboard,
+} from 'lucide-react';
 import { useAppStore } from '../../store';
 import { parseVoiceInput, deduplicateSpokenPhrases } from '../../utils/voiceParser';
 import { parseVoiceInputWithAI, parseVoiceAudioWithAI } from '../../services/aiService';
@@ -33,13 +44,19 @@ export const VoiceModal: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [liveTranscript, setLiveTranscript] = useState('');
   const [manualText, setManualText] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [parsedItems, setParsedItems] = useState<ParsedVoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Real-time audio reactive visualizer state
+  // Real-time audio reactive visualizer state (36-bar acoustic frequency waveform)
   const [audioLevel, setAudioLevel] = useState(0); // 0 - 100
-  const [barHeights, setBarHeights] = useState<number[]>([15, 20, 15, 25, 20, 30, 20, 25, 15, 20, 15, 25, 20, 15]);
+  const [barHeights, setBarHeights] = useState<number[]>(() =>
+    Array.from({ length: 36 }, (_, i) => {
+      const envelope = Math.sin(((i + 1) / 37) * Math.PI);
+      return Math.max(8, Math.round(envelope * 22));
+    })
+  );
   const [hasDetectedVoice, setHasDetectedVoice] = useState(false);
 
   // References for audio hardware and streaming
@@ -233,19 +250,21 @@ export const VoiceModal: React.FC = () => {
     if (SpeechRecognition) {
       let speechActive = false;
 
-      // Dynamic audio visualizer driven by real-time speech events
+      // Dynamic audio visualizer driven by real-time speech events (36-bar acoustic waveform)
       const updateSpeechMeter = () => {
         if (!isRecordingRef.current) return;
         const now = Date.now();
+        const totalBars = 36;
         const bars: number[] = [];
-        for (let b = 0; b < 14; b++) {
+        for (let b = 0; b < totalBars; b++) {
+          const envelope = Math.sin(((b + 1) / (totalBars + 1)) * Math.PI);
           let height: number;
           if (speechActive || hasDetectedVoiceRef.current) {
-            const wave = Math.sin(now / 150 + b * 0.5) * 28 + (Math.random() * 28 + 35);
-            height = Math.min(100, Math.max(20, Math.round(wave)));
+            const wave = Math.sin(now / 140 + b * 0.45) * 35 + (Math.random() * 25 + 40);
+            height = Math.max(8, Math.min(100, Math.round(wave * envelope * 1.25)));
           } else {
-            const wave = Math.sin(now / 350 + b * 0.45) * 8 + 14;
-            height = Math.round(wave);
+            const wave = Math.sin(now / 350 + b * 0.35) * 8 + 14;
+            height = Math.max(6, Math.round(wave * envelope));
           }
           bars.push(height);
         }
@@ -517,17 +536,20 @@ export const VoiceModal: React.FC = () => {
             hasDetectedVoiceRef.current = true;
           }
 
-          const step = Math.max(1, Math.floor(dataArray.length / 14));
+          const totalBars = 36;
+          const step = Math.max(1, Math.floor(dataArray.length / totalBars));
           const bars: number[] = [];
           const now = Date.now();
-          for (let b = 0; b < 14; b++) {
+          for (let b = 0; b < totalBars; b++) {
+            const envelope = Math.sin(((b + 1) / (totalBars + 1)) * Math.PI);
             const val = dataArray[b * step] || 0;
             let height: number;
             if (val > 0) {
-              height = Math.min(100, Math.max(22, Math.round((val / 100) * 100)));
+              const active = Math.min(100, Math.max(18, Math.round((val / 100) * 100 * envelope * 1.3)));
+              height = Math.max(8, active);
             } else {
-              const wave = Math.sin(now / 300 + b * 0.45) * 8 + 14;
-              height = Math.round(wave);
+              const wave = Math.sin(now / 300 + b * 0.35) * 8 + 14;
+              height = Math.max(6, Math.round(wave * envelope));
             }
             bars.push(height);
           }
@@ -803,217 +825,214 @@ export const VoiceModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="voice-modal-title"
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in touch-none select-none"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-      onTouchMove={(e) => {
-        if (e.target === e.currentTarget) {
-          e.preventDefault();
-        }
-      }}
+      className="fixed inset-0 z-[120] w-screen h-dvh bg-[#070A0F] text-[#EEF2F6] flex flex-col justify-between overflow-hidden animate-fade-in select-none"
     >
-      <div
-        className="animate-slide-up sm:animate-scale-in glass-3 w-full max-w-lg border border-[var(--glass-border)] max-h-[92dvh] flex flex-col rounded-t-[28px] sm:rounded-2xl shadow-2xl touch-auto overscroll-contain select-text overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Mobile Sheet Drag Handle Indicator */}
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
+      {/* Luxury Atmospheric Background Ambient Glow (Inspired by Reference Visual) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Warm Ember-Copper Radial Glow from Top/Center */}
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] sm:w-[1100px] h-[550px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(227,154,94,0.26)_0%,rgba(207,129,67,0.12)_45%,transparent_75%)] blur-3xl pointer-events-none" />
+        {/* Subtle Base Ember Reflection */}
+        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[450px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(227,154,94,0.1)_0%,transparent_70%)] blur-3xl pointer-events-none" />
+      </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(205,225,245,0.1)] shrink-0">
-          <div className="flex items-center gap-2">
-            <Volume2 size={18} className="text-[#E39A5E]" />
-            <h2 id="voice-modal-title" className="text-base font-semibold text-[#EEF2F6]">
-              {recordState === 'confirm' ? 'Konfirmasi Transaksi Suara' : 'Bicara ke Monetra'}
-            </h2>
+      {/* Top Header Bar */}
+      <div className="relative z-20 w-full pt-[max(var(--safe-top),1rem)] px-5 sm:px-8 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#E39A5E]/20 to-[#CF8143]/10 border border-[#E39A5E]/40 p-1 flex items-center justify-center shadow-md shadow-[#E39A5E]/20">
+            <img src="/finai-mascot.png" alt="Monetra" className="w-full h-full object-contain drop-shadow-sm" />
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Tutup"
-            className="btn-ghost p-1.5 rounded-lg text-[#A3AFBC] hover:text-[#EEF2F6] cursor-pointer"
-          >
-            <X size={20} />
-          </button>
+          <div>
+            <h1 id="voice-modal-title" className="font-display font-bold text-sm sm:text-base tracking-tight text-[#EEF2F6] leading-none">
+              Monetra
+            </h1>
+            <span className="text-[10px] text-[#E39A5E] font-medium tracking-wider uppercase mt-0.5 block">
+              {recordState === 'recording'
+                ? hasDetectedVoice
+                  ? 'Suara Terdeteksi · DSP Aktif'
+                  : 'Mendengarkan...'
+                : recordState === 'processing'
+                ? 'AI Processing'
+                : recordState === 'confirm'
+                ? 'Konfirmasi Transaksi'
+                : 'Voice Intelligence'}
+            </span>
+          </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
-          {/* Error Banner */}
-          {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-xs text-[#EE5D6C] flex items-start gap-2.5">
-              <AlertCircle size={16} className="shrink-0 mt-0.5" />
-              <div className="flex-1 leading-relaxed">
-                <p className="font-semibold">Perhatian</p>
-                <p className="mt-0.5 text-[#EEF2F6]/90">{errorMessage}</p>
-              </div>
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full glass-2 border border-white/[0.12] hover:border-[#E39A5E]/50 text-[#A3AFBC] hover:text-[#EEF2F6] flex items-center justify-center transition-all cursor-pointer active:scale-90 shadow-md"
+          aria-label="Tutup Voice AI"
+          title="Tutup (Esc)"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Middle Interactive Zone */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-between px-4 sm:px-6 py-2 overflow-y-auto custom-scrollbar">
+        {/* Error Banner if any */}
+        {errorMessage && (
+          <div className="w-full max-w-lg mb-2 p-3.5 rounded-xl bg-[#EE5D6C]/15 border border-[#EE5D6C]/30 text-xs text-[#EE5D6C] flex items-start gap-2.5 shrink-0">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <div className="flex-1 leading-relaxed">
+              <p className="font-semibold">Perhatian</p>
+              <p className="mt-0.5 text-[#EEF2F6]/90">{errorMessage}</p>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* Central Audio Soundwave ("Asset Nada Suara") - Stays prominent across recording, idle & processing */}
+        {recordState !== 'confirm' && (
+          <div className="w-full flex-1 flex flex-col items-center justify-center py-4">
+            {/* Visualizer Wave Bars */}
+            <div
+              className="w-full max-w-sm sm:max-w-lg md:max-w-2xl flex items-center justify-center gap-[3px] sm:gap-[4px] md:gap-[6px] h-24 sm:h-32 md:h-40 px-2"
+              aria-label="Visualisasi nada suara pengguna"
+            >
+              {barHeights.map((h, i) => (
+                <div
+                  key={i}
+                  className="w-1.5 sm:w-2 md:w-2.5 rounded-full transition-all duration-75 ease-out"
+                  style={{
+                    height: `${Math.max(6, Math.min(100, h))}%`,
+                    background:
+                      recordState === 'recording' && (hasDetectedVoice || audioLevel > 5)
+                        ? 'linear-gradient(180deg, #FFE0B2 0%, #E39A5E 45%, #CF8143 100%)'
+                        : recordState === 'recording'
+                        ? 'linear-gradient(180deg, #E39A5E 0%, #B5603A 100%)'
+                        : recordState === 'processing'
+                        ? 'linear-gradient(180deg, #4FD3A4 0%, #20A577 100%)'
+                        : 'linear-gradient(180deg, rgba(227,154,94,0.7) 0%, rgba(207,129,67,0.3) 100%)',
+                    boxShadow:
+                      recordState === 'recording' && (hasDetectedVoice || audioLevel > 5)
+                        ? '0 0 16px rgba(227, 154, 94, 0.75), 0 0 4px rgba(255, 224, 178, 0.9)'
+                        : '0 0 8px rgba(227, 154, 94, 0.3)',
+                    opacity: Math.max(0.35, h / 100),
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Live Status Indicators under the soundwave */}
+            <div className="mt-4 flex items-center gap-2">
+              {recordState === 'recording' && (
+                <>
+                  <span className="px-3 py-1 rounded-full bg-[#EE5D6C]/20 border border-[#EE5D6C]/40 text-[#EE5D6C] text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-[#EE5D6C] animate-ping" />
+                    <span>00:{seconds < 10 ? `0${seconds}` : seconds}</span>
+                  </span>
+                  {hasDetectedVoice ? (
+                    <span className="px-3 py-1 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/35 text-[#4FD3A4] text-xs font-semibold flex items-center gap-1.5 animate-pulse shadow-sm">
+                      <Radio size={12} />
+                      <span>Suara Terdeteksi</span>
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.1] text-[#A3AFBC] text-xs font-medium">
+                      Mendengarkan...
+                    </span>
+                  )}
+                </>
+              )}
+              {recordState === 'idle' && (
+                <span className="px-3.5 py-1 rounded-full bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] text-xs font-medium tracking-wide">
+                  Siap Mendengarkan Suara
+                </span>
+              )}
+              {recordState === 'processing' && (
+                <span className="px-3.5 py-1 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/35 text-[#4FD3A4] text-xs font-semibold flex items-center gap-1.5 animate-pulse">
+                  <RefreshCw size={12} className="animate-spin" />
+                  <span>Memproses Analisis AI...</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Lower Floating Cockpit Card ("Bicara ke Monetra") */}
+        <div className="w-full max-w-lg sm:max-w-xl my-auto">
           {recordState === 'idle' && (
-            <div className="text-center space-y-6 py-2">
-              <div className="space-y-1.5">
-                <p className="text-lg font-semibold text-[#EEF2F6]">
-                  Ceritakan pengeluaran atau pemasukanmu
-                </p>
-                <p className="text-xs text-[#A3AFBC] max-w-sm mx-auto leading-relaxed">
-                  Bicara santai menggunakan Bahasa Indonesia. AI Monetra akan memecah ucapanmu menjadi nominal dan kategori otomatis.
-                </p>
-              </div>
-
-              {/* Big Interactive Mic Button */}
-              <div className="flex flex-col items-center justify-center gap-3">
+            <div className="p-4 sm:p-5 rounded-2xl glass-2 border border-[rgba(205,225,245,0.12)] shadow-xl space-y-2.5 text-left backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#EEF2F6]">Bicara ke Monetra</h3>
                 <button
                   type="button"
-                  onClick={handleStartRecording}
-                  aria-label="Mulai Merekam"
-                  className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-xl shadow-black/50 border-4 border-[rgba(235,245,255,0.3)] cursor-pointer hover:scale-105 active:scale-95 transition-all touch-manipulation focus:outline-none focus:ring-4 focus:ring-[#E39A5E]/40"
+                  onClick={() => setShowManualInput((prev) => !prev)}
+                  className="text-[11px] text-[#A3AFBC] hover:text-[#EEF2F6] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Mic size={40} strokeWidth={2.2} />
+                  <Keyboard size={13} />
+                  <span>{showManualInput ? 'Tutup Teks' : 'Ketik Manual'}</span>
                 </button>
-                <p className="text-xs text-[#E39A5E] font-medium animate-pulse">
-                  Ketuk mikrofon untuk mulai bicara
-                </p>
               </div>
+              <p className="text-xs sm:text-sm text-[#A3AFBC] leading-relaxed">
+                Sebutkan transaksi pengeluaran atau pemasukan Anda secara langsung. Monetra akan mencatat dan mengalokasikannya secara otomatis.
+              </p>
 
-              {/* Manual input fallback option */}
-              <form onSubmit={handleManualSubmit} className="pt-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={manualText}
-                    onChange={(e) => setManualText(e.target.value)}
-                    placeholder="Atau ketik: makan warteg 15rb dan bensin 25rb..."
-                    className="flex-1 h-11 px-3.5 rounded-xl glass-1 border border-white/[0.08] text-xs text-[#EEF2F6] placeholder:text-[#74808E] outline-none focus:border-[#E39A5E]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!manualText.trim()}
-                    className="btn-primary px-4 h-11 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-md"
-                  >
-                    <span>Proses</span>
-                    <Send size={13} />
-                  </button>
-                </div>
-              </form>
+              {/* Optional Manual Fallback Input */}
+              {showManualInput && (
+                <form onSubmit={handleManualSubmit} className="pt-2 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={manualText}
+                      onChange={(e) => setManualText(e.target.value)}
+                      placeholder="Ketik transaksi di sini..."
+                      className="flex-1 h-9 px-3.5 rounded-xl glass-1 border border-white/[0.1] text-xs text-[#EEF2F6] placeholder:text-[#74808E] outline-none focus:border-[#E39A5E]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!manualText.trim()}
+                      className="btn-primary px-3.5 h-9 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold flex items-center gap-1 disabled:opacity-40 cursor-pointer shadow-md"
+                    >
+                      <span>Kirim</span>
+                      <Send size={11} />
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
 
           {recordState === 'recording' && (
-            <div className="text-center space-y-6 py-6">
-              {/* Header Status & Live Indicators */}
-              <div className="flex items-center justify-center gap-2">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EE5D6C]/20 border border-[#EE5D6C]/40 text-[#EE5D6C] text-xs font-mono">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#EE5D6C] animate-ping" />
-                  <span>Merekam: 00:{seconds < 10 ? `0${seconds}` : seconds}</span>
-                </div>
-
-                {hasDetectedVoice ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4] text-xs font-medium">
-                    <Radio size={12} className="animate-pulse" />
-                    <span>Suara Terdeteksi</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-[#A3AFBC] text-xs">
-                    <span>Mendengarkan...</span>
-                  </span>
-                )}
+            <div className="p-4 sm:p-5 rounded-2xl glass-2 border border-[rgba(205,225,245,0.14)] shadow-xl space-y-2.5 text-left backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#EEF2F6]">Bicara ke Monetra</h3>
+                <span className="text-[11px] text-[#E39A5E] font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EE5D6C] animate-ping" />
+                  <span>Mendengarkan</span>
+                </span>
               </div>
 
-              {/* Dynamic Real-time Audio Reactive Waveform */}
-              <div
-                className="flex items-center justify-center gap-1.5 h-16 px-4"
-                aria-label="Indikator suara langsung"
-              >
-                {barHeights.map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-1.5 rounded-full transition-all duration-75 ease-out"
-                    style={{
-                      height: `${h}%`,
-                      backgroundColor: audioLevel > 2 ? '#E39A5E' : '#EE5D6C',
-                      opacity: Math.max(0.4, h / 100),
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Live speech transcription text box with dynamic real-time feedback */}
-              <div
-                className={`p-4 rounded-xl min-h-[80px] flex flex-col items-center justify-center text-center transition-all duration-200 ${
-                  liveTranscript
-                    ? 'bg-[#E39A5E]/10 border-2 border-[#E39A5E] shadow-lg shadow-[#E39A5E]/15'
-                    : hasDetectedVoice
-                    ? 'glass-2 border border-[#4FD3A4]/40 shadow-sm shadow-[#4FD3A4]/10'
-                    : 'glass-1 border border-white/[0.1]'
-                }`}
-              >
-                {liveTranscript ? (
-                  <div className="space-y-1 w-full">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#E39A5E]/20 text-[#E39A5E] text-[10px] font-bold tracking-wider uppercase">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E] animate-ping" />
-                      <span>Terdeteksi Langsung</span>
-                    </span>
-                    <p className="text-sm sm:text-base font-bold text-[#EEF2F6] leading-snug break-words">
-                      &quot;{liveTranscript}&quot;
-                    </p>
-                  </div>
-                ) : hasDetectedVoice ? (
-                  <div className="space-y-1.5 w-full">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#4FD3A4]/20 border border-[#4FD3A4]/40 text-[#4FD3A4] text-xs font-semibold animate-pulse">
-                      <Radio size={13} />
-                      <span>Mikrofon Aktif & Suara Terdeteksi</span>
-                    </span>
-                    <p className="text-sm font-medium text-[#EEF2F6]">
-                      Suaramu terdengar jelas! Teruskan bicara...
-                    </p>
-                    <p className="text-[11px] text-[#A3AFBC]">
-                      Tekan tombol <strong className="text-white">Selesai Bicara</strong> jika sudah selesai
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="text-xs text-[#EEF2F6] font-medium">
-                      Silakan bicara sekarang...
-                    </p>
-                    <p className="text-[11px] text-[#A3AFBC] italic">
-                      Contoh: &quot;Dapat uang 70 ribu&quot; atau &quot;Makan siang 20 ribu&quot;
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={handleStopRecording}
-                  className="btn-press px-8 py-3.5 rounded-xl bg-[#EE5D6C] hover:bg-[#E0343F] text-white font-semibold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-[#EE5D6C]/30 transition-all touch-manipulation min-h-[48px]"
-                >
-                  <Check size={18} strokeWidth={2.4} />
-                  <span>Selesai Bicara</span>
-                </button>
-              </div>
+              {liveTranscript ? (
+                <p className="text-sm sm:text-base font-semibold text-[#EEF2F6] leading-relaxed break-words">
+                  &quot;{liveTranscript}&quot;
+                </p>
+              ) : hasDetectedVoice ? (
+                <p className="text-xs sm:text-sm text-[#4FD3A4] font-medium leading-relaxed">
+                  Suara terdeteksi, silakan lanjutkan...
+                </p>
+              ) : (
+                <p className="text-xs sm:text-sm text-[#A3AFBC] leading-relaxed">
+                  Silakan sebutkan transaksi Anda...
+                </p>
+              )}
             </div>
           )}
 
           {recordState === 'processing' && (
-            <div className="text-center space-y-4 py-12">
-              <div className="w-12 h-12 rounded-full border-2 border-[#E39A5E] border-t-transparent animate-spin mx-auto" />
-              <p className="text-sm font-semibold text-[#EEF2F6]">
-                Memproses rekaman suara dengan AI Monetra...
-              </p>
-              <p className="text-xs text-[#A3AFBC]">
-                Menganalisis kalimat, mengelompokkan kategori, dan menghitung nominal
-              </p>
+            <div className="p-6 rounded-2xl glass-2 border border-[rgba(205,225,245,0.16)] shadow-2xl text-center space-y-3">
+              <div className="w-10 h-10 rounded-full border-2 border-[#E39A5E] border-t-transparent animate-spin mx-auto" />
+              <p className="text-sm font-semibold text-[#EEF2F6]">Memproses rekaman suara dengan AI Monetra...</p>
+              <p className="text-xs text-[#A3AFBC]">Menganalisis kalimat, mengelompokkan kategori, dan menghitung nominal</p>
             </div>
           )}
 
           {recordState === 'confirm' && (
-            <div className="space-y-4">
-              {/* Transcript */}
-              <div className="p-3.5 rounded-xl glass-1 border-[rgba(205,225,245,0.1)] space-y-1">
+            <div className="w-full max-w-xl mx-auto space-y-3.5 text-left">
+              {/* Transcript Preview */}
+              <div className="p-3.5 rounded-xl glass-1 border-[rgba(205,225,245,0.12)] space-y-1">
                 <div className="flex items-center justify-between text-[10px] uppercase font-semibold text-[#74808E] tracking-wider">
                   <span>Hasil Suara yang Didengar:</span>
                   <button
@@ -1022,27 +1041,26 @@ export const VoiceModal: React.FC = () => {
                     className="text-[#E39A5E] normal-case font-medium hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw size={11} />
-                    <span>Ulangi</span>
+                    <span>Ulangi Bicara</span>
                   </button>
                 </div>
-                <p className="text-xs text-[#EEF2F6] italic leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#EEF2F6] italic leading-relaxed font-medium">
                   &quot;{transcript}&quot;
                 </p>
               </div>
 
-              {/* Parsed Transactions List */}
-              <div className="space-y-2">
+              {/* Transactions List */}
+              <div className="space-y-2 max-h-[45dvh] overflow-y-auto custom-scrollbar pr-1">
                 <div className="flex items-center justify-between text-xs text-[#A3AFBC]">
                   <span>{parsedItems.length} Transaksi Terdeteksi</span>
                 </div>
-
                 {parsedItems.length === 0 ? (
                   <div className="p-6 text-center text-xs text-[#A3AFBC] glass-1 rounded-xl space-y-2">
                     <p>Tidak ada nominal transaksi yang terdeteksi dari ucapan tersebut.</p>
                     <button
                       type="button"
                       onClick={handleResetToIdle}
-                      className="btn-ghost px-3 py-1.5 rounded-lg border border-[var(--glass-border)] text-xs text-[#E39A5E] font-medium"
+                      className="btn-ghost px-3 py-1.5 rounded-lg border border-[var(--glass-border)] text-xs text-[#E39A5E] font-medium cursor-pointer"
                     >
                       Bicara Lagi atau Ketik Ulang
                     </button>
@@ -1051,20 +1069,16 @@ export const VoiceModal: React.FC = () => {
                   parsedItems.map((item) => (
                     <div
                       key={item.id}
-                      className="glass-2 p-3.5 rounded-xl flex items-center justify-between gap-3 border-[var(--glass-border)]"
+                      className="glass-2 p-3.5 rounded-xl flex items-center justify-between gap-3 border-[rgba(205,225,245,0.16)]"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
                           <CategoryIcon name={item.category} size={18} color="#E39A5E" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-[#EEF2F6] truncate">
-                            {item.note}
-                          </p>
+                          <p className="text-sm font-medium text-[#EEF2F6] truncate">{item.note}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] text-[#A3AFBC]">
-                              {item.category}
-                            </span>
+                            <span className="text-[11px] text-[#A3AFBC]">{item.category}</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/[0.06] text-[#74808E] uppercase">
                               {item.need_want}
                             </span>
@@ -1085,7 +1099,7 @@ export const VoiceModal: React.FC = () => {
                           type="button"
                           onClick={() => handleRemoveItem(item.id)}
                           aria-label="Hapus item ini"
-                          className="btn-danger p-1.5 rounded-lg text-[#74808E] cursor-pointer"
+                          className="btn-danger p-1.5 rounded-lg text-[#74808E] hover:text-[#EE5D6C] cursor-pointer"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1107,14 +1121,45 @@ export const VoiceModal: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Footer Actions */}
+      {/* Bottom Action Controls */}
+      <div className="relative z-20 w-full px-5 pb-[max(var(--safe-bottom),1.5rem)] pt-3 flex flex-col items-center justify-center shrink-0">
+        {recordState === 'idle' && (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={handleStartRecording}
+              aria-label="Mulai Merekam Suara"
+              className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-[#E39A5E] to-[#CF8143] text-[#1C0E04] flex items-center justify-center shadow-2xl shadow-[#E39A5E]/40 border-2 border-[rgba(255,255,255,0.4)] ring-8 ring-[#E39A5E]/15 hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation focus:outline-none"
+            >
+              <Mic size={34} strokeWidth={2.3} />
+            </button>
+            <span className="text-xs text-[#E39A5E] font-medium tracking-wide mt-1">
+              Ketuk untuk Bicara
+            </span>
+          </div>
+        )}
+
+        {recordState === 'recording' && (
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={handleStopRecording}
+              className="btn-primary h-13 px-8 rounded-2xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] font-bold text-sm sm:text-base flex items-center gap-2 shadow-2xl shadow-[#E39A5E]/35 hover:brightness-105 active:scale-95 cursor-pointer touch-manipulation transition-all"
+            >
+              <Check size={20} strokeWidth={2.4} />
+              <span>Selesai Bicara</span>
+            </button>
+          </div>
+        )}
+
         {recordState === 'confirm' && (
-          <div className="p-4 border-t border-[rgba(205,225,245,0.1)] flex items-center justify-end gap-3 bg-[var(--bg-base)]/60">
+          <div className="w-full max-w-xl flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={handleResetToIdle}
-              className="btn-ghost px-4 py-2.5 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] cursor-pointer"
+              className="btn-ghost px-4 py-2.5 rounded-xl border border-[rgba(205,225,245,0.2)] text-xs font-medium text-[#EEF2F6] hover:bg-white/[0.06] cursor-pointer"
             >
               Bicara Lagi
             </button>
@@ -1122,7 +1167,7 @@ export const VoiceModal: React.FC = () => {
               type="button"
               onClick={handleSaveAll}
               disabled={isSaving || parsedItems.length === 0}
-              className="btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold disabled:opacity-50 cursor-pointer shadow-md shadow-black/40"
+              className="btn-primary px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-semibold disabled:opacity-50 cursor-pointer shadow-lg shadow-black/40"
             >
               {isSaving ? 'Menyimpan...' : `Simpan Semua (${parsedItems.length})`}
             </button>

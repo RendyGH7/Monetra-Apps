@@ -324,10 +324,10 @@ export const DashboardPage: React.FC = () => {
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-3 text-[#A3AFBC]">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#E39A5E]" />
+                <span className="w-2 h-2 rounded-full bg-[#EE5D6C]" />
                 Pengeluaran
               </span>
-              <span className="font-semibold text-[#EEF2F6] num-tabular">
+              <span className="font-semibold text-[#EE5D6C] num-tabular">
                 {formatCurrency(data.expense || 0)}
               </span>
             </div>
@@ -501,11 +501,11 @@ export const DashboardPage: React.FC = () => {
                 onClick={() => setChartMetric('expense')}
                 className={`chip-press px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   chartMetric === 'expense'
-                    ? 'bg-[#E39A5E]/20 text-[#E39A5E] font-semibold border border-[#E39A5E]/40 shadow-xs'
-                    : 'text-[var(--text-tertiary)] hover:text-[#E39A5E]'
+                    ? 'bg-[#EE5D6C]/20 text-[#EE5D6C] font-semibold border border-[#EE5D6C]/40 shadow-xs'
+                    : 'text-[var(--text-tertiary)] hover:text-[#EE5D6C]'
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E39A5E]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EE5D6C]" />
                 Pengeluaran
               </button>
               <button
@@ -528,8 +528,8 @@ export const DashboardPage: React.FC = () => {
               <AreaChart data={periodStats.chartData} margin={{ top: 8, right: 12, left: -2, bottom: 0 }}>
                 <defs>
                   <linearGradient id="dashExpGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#E39A5E" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="#E39A5E" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#EE5D6C" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="#EE5D6C" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="dashIncGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#4FD3A4" stopOpacity={0.2} />
@@ -557,11 +557,11 @@ export const DashboardPage: React.FC = () => {
                     type="monotone"
                     dataKey="expense"
                     name="Pengeluaran"
-                    stroke="#E39A5E"
+                    stroke="#EE5D6C"
                     strokeWidth={2.2}
                     fill="url(#dashExpGrad)"
-                    dot={statPeriod === 'month' ? false : { r: 3, fill: '#E39A5E', strokeWidth: 1.5, stroke: '#1C0E04' }}
-                    activeDot={{ r: 5, fill: '#E39A5E', stroke: '#EEF2F6', strokeWidth: 2 }}
+                    dot={statPeriod === 'month' ? false : { r: 3, fill: '#EE5D6C', strokeWidth: 1.5, stroke: '#1C0E04' }}
+                    activeDot={{ r: 5, fill: '#EE5D6C', stroke: '#EEF2F6', strokeWidth: 2 }}
                   />
                 )}
                 {(chartMetric === 'all' || chartMetric === 'income') && (
