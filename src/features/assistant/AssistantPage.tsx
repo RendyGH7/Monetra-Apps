@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Mic, MicOff, Sparkles, Trash2, User, Copy, Check, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
-import { stripEmoji, formatTimeShort } from '../../utils/format';
+import { stripEmoji, formatTimeShort, formatCompact } from '../../utils/format';
 import { askMonetra, parseVoiceAudioWithAI } from '../../services/aiService';
 import { deduplicateSpokenPhrases } from '../../utils/voiceParser';
 import { MarkdownMessage } from '../../components/common/MarkdownMessage';
@@ -34,7 +34,10 @@ export const AssistantPage: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
+  const isInitialMountRef = useRef<boolean>(true);
+  const prevMsgCountRef = useRef<number>(chatMessages.length);
   const recognitionRef = useRef<any>(null);
   const restartTimerRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -72,8 +75,42 @@ export const AssistantPage: React.FC = () => {
     }
   }, [assistantInitialPrompt, setAssistantInitialPrompt]);
 
+  // Intelligent viewport fitting on page open & new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      // When user opens the chatbot page:
+      // Ensure the top of the newest message is completely visible, never cut off!
+      requestAnimationFrame(() => {
+        if (!container) return;
+        if (chatMessages.length <= 1) {
+          container.scrollTop = 0;
+        } else if (lastMessageRef.current) {
+          // Align cleanly to the top of the latest message with comfortable padding
+          const targetTop = lastMessageRef.current.offsetTop - 16;
+          container.scrollTop = Math.max(0, targetTop);
+        } else {
+          container.scrollTop = 0;
+        }
+      });
+      prevMsgCountRef.current = chatMessages.length;
+      return;
+    }
+
+    // Only scroll when a new message is appended or while typing:
+    if (chatMessages.length > prevMsgCountRef.current || isTyping) {
+      prevMsgCountRef.current = chatMessages.length;
+      requestAnimationFrame(() => {
+        if (!container) return;
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth',
+        });
+      });
+    }
   }, [chatMessages, isTyping]);
 
   // Clean up speech recognition on unmount
@@ -114,53 +151,7 @@ export const AssistantPage: React.FC = () => {
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     );
 
-    // On mobile devices (iOS / Android): Use MediaRecorder + Gemini Multimodal for 100% reliable hardware audio capture
-    if (isMobile) {
-      try {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((t) => t.stop());
-          streamRef.current = null;
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: { ideal: true },
-            noiseSuppression: { ideal: true },
-            autoGainControl: { ideal: true },
-            channelCount: { ideal: 1 },
-            sampleRate: { ideal: 48000 },
-          },
-        });
-        streamRef.current = stream;
-
-        let mimeType = '';
-        if (typeof MediaRecorder !== 'undefined') {
-          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-          else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
-        }
-
-        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-        audioChunksRef.current = [];
-
-        recorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
-        };
-
-        recorder.start(150);
-        mediaRecorderRef.current = recorder;
-        isListeningRef.current = true;
-        setIsListening(true);
-        return;
-      } catch (err: any) {
-        console.warn('Microphone access error:', err);
-        showToast('Izin akses mikrofon ditolak oleh browser.');
-        setIsListening(false);
-        isListeningRef.current = false;
-        return;
-      }
-    }
-
-    // On Desktop (Laptop): Web Speech API for streaming words
+    // 1. Primary: Streaming Web Speech API for real-time word-by-word streaming
     const SpeechRecognition = getSpeechRecognition();
 
     if (SpeechRecognition) {
@@ -356,14 +347,17 @@ export const AssistantPage: React.FC = () => {
     }
   };
 
+  const userIncome = profile.monthly_income > 0 ? profile.monthly_income : 1500000;
+  const incomeLabel = formatCompact(userIncome);
+
   const quickQuestions = [
     'Siapakah aku dan apa saja data yang kamu ketahui?',
-    'Analisis alokasi gaji magang 50/30/20',
+    'Analisis alokasi gaji 50/30/20',
     'Berapa sisa aman belanja hari ini?',
     'Rincian saldo di semua dompet dan target tabunganku',
     'Prediksi cashflow akhir bulan (surplus atau defisit?)',
-    'Tips kencan hemat agar gaji magang cukup',
-    'Investasi apa yang cocok untuk gaji magang 1.5 juta?',
+    'Tips kencan hemat agar anggaran cukup',
+    `Investasi apa yang cocok untuk gaji ${incomeLabel}?`,
     'Catat makan siang 20 ribu di dompet tunai',
   ];
 
@@ -467,7 +461,7 @@ export const AssistantPage: React.FC = () => {
       </div>
 
       {/* Messages Scroll Area with Global Themed Scrollbar */}
-      <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1.5 sm:pr-2">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto py-3 space-y-4 pr-1.5 sm:pr-2">
         {chatMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 my-auto select-none">
             <div className="relative mb-4 group">
@@ -490,12 +484,14 @@ export const AssistantPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          chatMessages.map((msg) => {
+          chatMessages.map((msg, idx) => {
             const isUser = msg.role === 'user';
+            const isLast = idx === chatMessages.length - 1;
 
             return (
               <div
                 key={msg.id}
+                ref={isLast ? lastMessageRef : undefined}
                 className={`flex items-start gap-2.5 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 {/* User / Bot Avatar */}
@@ -571,8 +567,6 @@ export const AssistantPage: React.FC = () => {
             <span className="font-medium">Monetra sedang menganalisis data keuanganmu...</span>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Quick Suggestion Chips */}

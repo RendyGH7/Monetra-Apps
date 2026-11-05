@@ -805,10 +805,11 @@ input[type="number"] {
 }
 
 .assistant-container-safe {
-  height: calc(100dvh - max(var(--safe-top), 14px) - max(var(--safe-bottom), 14px) - 8rem);
+  height: calc(100dvh - max(var(--safe-top), 14px) - max(var(--safe-bottom), 14px) - 6.5rem);
 }
 @media (min-width: 768px) {
   .assistant-container-safe {
-    height: calc(100dvh - 4.5rem);
+    height: calc(100dvh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
   }
 }

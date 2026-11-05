@@ -247,7 +247,13 @@ export default function App() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 mobile-content-safe pt-2 md:pt-8 md:pb-12 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
+        <main
+          className={`flex-1 min-w-0 mobile-content-safe max-w-6xl mx-auto w-full ${
+            activeTab === 'asisten'
+              ? 'pt-2 md:pt-3 md:pb-3 px-2 sm:px-4 md:px-6 overflow-hidden'
+              : 'pt-2 md:pt-8 md:pb-12 md:px-6 lg:px-8'
+          }`}
+        >
           {renderActiveView()}
         </main>
       </div>

@@ -254,14 +254,14 @@ Setiap kali pengguna menanyakan waktu, jam, tanggal, atau hari, selalu jawab per
 PROFIL PENGGUNA:
 - Nama: ${profile.nama}
 - Email Akun: ${profile.email || 'Lokal / Terisolasi'}
-- Status: ${profile.internship_status || 'Anak Magang'}
+- Status: ${profile.internship_status || 'Pengguna'}
 - Gaji/Pemasukan Bulanan: ${formatCurrency(monthlyIncome)} per bulan
 - Siklus Gajian: Tiap tanggal ${payDay} (${daysLeft} hari lagi menuju gajian)
 - Sisa Saldo Bulan Ini: ${formatCurrency(netBalance)}
 - Batas Aman Belanja Harian: ${formatCurrency(safeDailySpend)}/hari
 - Total Pengeluaran Bulan Ini: ${formatCurrency(totalExpense)}
 - Pos Pengeluaran Terbesar: ${topSpentSummary}
-- Pengeluaran Kencan Bulan Ini: ${formatCurrency(datingExpense)} (Budget estimasi: ${formatCurrency(profile.dating_budget_est || 600000)})
+- Pengeluaran Kencan Bulan Ini: ${formatCurrency(datingExpense)} (Budget estimasi: ${formatCurrency(profile.dating_budget_est || Math.round(monthlyIncome * 0.15))})
 - Bisnis Sampingan: ${profile.side_hustle_status || 'Belum aktif'}
 
 ANALISIS ALOKASI 50/30/20 REAL-TIME:
@@ -306,6 +306,12 @@ PRINSIP & STANDAR ANALISIS WAJIB (SANGAT PENTING):
    - Gunakan format teks tebal (**bold**), bullet point, atau penomoran agar sangat mudah dibaca.
    - Buat bagian yang jelas: Analisis Situasi -> Rincian Data/Kalkulasi -> Dampak Finansial -> Rekomendasi Langkah Nyata.
 5. ZERO-EMOJI POLICY MUTLAK: Sesuai aturan desain Monetra, DILARANG KERAS menggunakan emoji apa pun dalam respon. Gunakan ketegasan kata dan struktur tipografi yang elegan.
+6. SENSITIVITAS TINGKAT PENGHASILAN & PENYESUAIAN KENAIKAN GAJI:
+   - Aplikasi ini dipakai oleh berbagai pengguna dengan rentang gaji yang fleksibel (${formatCurrency(monthlyIncome)} per bulan).
+   - Jangan pernah mengasumsikan pengguna bergaji kecil atau magang jika gaji di profil sudah diubah.
+   - Jika pengguna berpenghasilan tinggi (misal di atas Rp 10.000.000 - Rp 20.000.000+): Pandu ke instrumen diversifikasi kekayaan (SBN/Sukuk, Reksadana Indeks, Saham dividen, Dana Darurat 6 bulan pengeluaran), pencegahan inflasi gaya hidup, dan investasi masa depan.
+   - Jika pengguna berpenghasilan awal/menengah: Pandu ke efisiensi kebutuhan harian, promo transportasi, dan pembentukan dana darurat dasar.
+   - Jika pengguna mengubah gaji di pengaturan, seluruh perhitungan alokasi dan rekomendasi finansialmu langsung mengacu pada angka gaji terbaru tersebut.
 `;
 
   // Format past messages for Gemini ensuring strict turn alternation and valid structure
@@ -348,12 +354,10 @@ PRINSIP & STANDAR ANALISIS WAJIB (SANGAT PENTING):
     contentsPayload.push({ role: 'user', parts: [{ text: userPrompt.trim() }] });
   }
 
-  // Prioritize reliable, active Gemini 3.8 / latest models with fallback
+  // Prioritize active, ultra-fast Gemini Flash-Lite model with fast fallback
   const modelsToTry = [
-    'gemini-3.8-flash',
-    'gemini-flash-latest',
-    'gemini-3.5-flash',
     'gemini-flash-lite-latest',
+    'gemini-flash-latest',
   ];
   let lastError: any = null;
 
@@ -550,7 +554,7 @@ function smartLocalFinancialReasoning(
       ? memories.map((m) => `- ${m.content}`).join('\n')
       : '- Memori otomatis akan bertambah saat kita sering berinteraksi.';
 
-    return `Tentu saja saya mengenalmu sangat baik, ${profile.nama}! Saya Monetra, pusat kecerdasan finansialmu yang terhubung langsung ke akun Google kamu (${profile.email || 'Akun Terverifikasi'}).\n\nIdentitas & Profil:\n- Nama: ${profile.nama}\n- Akun Google: ${profile.email || 'Terisolasi Aman'}\n- Status: ${profile.internship_status || 'Anak Magang'} (Gaji ${formatCurrency(profile.monthly_income || 1500000)}/bulan)\n- Tanggal Gajian: Tiap tanggal ${payDay} (${daysLeft} hari lagi)\n\nRincian Dompet & Sumber Dana:\n${walletList}\n\nTarget Tabungan Aktif:\n${goalList}\n\nMemori Pribadi yang Saya Ingat:\n${memoryList}\n\nKondisi Keuangan Saat Ini:\n- Sisa aman belanja harian: ${formatCurrency(safeDaily)}/hari\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)} dari batas ${formatCurrency(profile.dating_budget_est || 600000)}\n\nSemua data ini tersimpan eksklusif untuk akun Google kamu. Ada yang ingin kita evaluasi hari ini?`;
+    return `Tentu saja saya mengenalmu sangat baik, ${profile.nama}! Saya Monetra, pusat kecerdasan finansialmu yang terhubung langsung ke akun Google kamu (${profile.email || 'Akun Terverifikasi'}).\n\nIdentitas & Profil:\n- Nama: ${profile.nama}\n- Akun Google: ${profile.email || 'Terisolasi Aman'}\n- Status: ${profile.internship_status || 'Pengguna'} (Penghasilan ${formatCurrency(monthlyIncome)}/bulan)\n- Tanggal Gajian: Tiap tanggal ${payDay} (${daysLeft} hari lagi)\n\nRincian Dompet & Sumber Dana:\n${walletList}\n\nTarget Tabungan Aktif:\n${goalList}\n\nMemori Pribadi yang Saya Ingat:\n${memoryList}\n\nKondisi Keuangan Saat Ini:\n- Sisa aman belanja harian: ${formatCurrency(safeDaily)}/hari\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)} dari batas ${formatCurrency(profile.dating_budget_est || Math.round(monthlyIncome * 0.15))}\n\nSemua data ini tersimpan eksklusif untuk akun Google kamu. Ada yang ingin kita evaluasi hari ini?`;
   }
 
   // 2. Sapaan Kasual & Formal (hi, hai, hello, halo, pagi, dsb)
@@ -581,7 +585,7 @@ function smartLocalFinancialReasoning(
       const gList = goals
         .map((g) => `- ${g.name}: ${formatCurrency(g.current_amount)} dari target ${formatCurrency(g.target_amount)} (${Math.round((g.current_amount / Math.max(1, g.target_amount)) * 100)}%)`)
         .join('\n');
-      return `Berikut progres target tabungan aktifmu:\n${gList}\n\nSaran Monetra: Sisihkan setidaknya 20% dari gaji magang tiap tanggal gajian (${payDay}) untuk mempercepat pencapaian targetmu!`;
+      return `Berikut progres target tabungan aktifmu:\n${gList}\n\nSaran Monetra: Sisihkan setidaknya 20% (${formatCurrency(Math.round(monthlyIncome * 0.2))}) dari penghasilanmu tiap tanggal gajian (${payDay}) untuk mempercepat pencapaian targetmu!`;
     }
   }
 
@@ -597,7 +601,7 @@ function smartLocalFinancialReasoning(
 
   // 7. Afirmasi & Respon Singkat
   if (/^(ok|oke|siap|sip|mantap|keren|yoi|baiklah|oke deh)\b/i.test(lower)) {
-    return `Siap, ${firstName}! Tetap semangat magang dan bijak dalam mengelola pengeluaran ya. Kalau butuh saran atau mau catat sesuatu, saya selalu ada di sini!`;
+    return `Siap, ${firstName}! Tetap semangat dan bijak dalam mengelola pengeluaran ya. Kalau butuh saran atau mau catat sesuatu, saya selalu ada di sini!`;
   }
 
   // 8. Alokasi 50/30/20 & Evaluasi Budget
@@ -644,44 +648,49 @@ function smartLocalFinancialReasoning(
 
   // 11. Tips Hemat Makan / Warteg / Kuliner
   if (lower.includes('tips hemat') || lower.includes('makan hemat') || lower.includes('warteg') || lower.includes('kuliner') || lower.includes('masak')) {
-    return `Strategi Makan Hemat ala Monetra untuk Anak Magang:\n1. Menu Warteg Juara: Nasi + sayur matang + orek tempe + telur dadar/ceplok biasanya hanya Rp 12.000 - Rp 15.000, sudah padat gizi dan kenyang.\n2. Bawa Tumbler Air Putih: Menghemat pengeluaran air mineral botolan atau es teh manis Rp 5.000 - Rp 10.000 setiap hari (hemat Rp 150.000 - Rp 300.000 per bulan!).\n3. Masak Nasi Sendiri di Kos: Beli beras 5kg (sekitar Rp 75.000), di kos tinggal beli lauk pauk matang di luar.\n4. Kopi Saset Berkualitas: Ganti es kopi susu kafe (Rp 20.000 - Rp 28.000) dengan seduh kopi saset favorit di kantor/kos (hanya Rp 2.000 per cangkir).`;
+    return `Strategi Efisiensi Anggaran Konsumsi ala Monetra:\n1. Menu Harian Bergizi Seimbang: Utamakan menu padat protein seperti nasi + sayur hijau + tahu/tempe + telur/ayam yang higienis dan terjangkau.\n2. Bawa Tumbler Air Putih: Menghemat pengeluaran air mineral botolan atau es teh manis Rp 5.000 - Rp 10.000 setiap hari (hemat hingga Rp 300.000 per bulan!).\n3. Meal Prep Mingguan: Belanja bahan masakan segar mingguan di pasar tradisional atau supermarket grosir untuk menekan biaya makan harian.\n4. Kopi & Minuman Kafe: Batasi frekuensi ngopi kafe komersial (Rp 30.000 - Rp 50.000/gelas) dan beralih ke seduh biji kopi pilihan mandiri.`;
   }
 
   // 12. Side Hustle / Ide Tambahan Penghasilan
   if (lower.includes('side hustle') || lower.includes('penghasilan tambahan') || lower.includes('sampingan') || lower.includes('cari uang tambahan') || lower.includes('cuan tambahan')) {
-    return `Rekomendasi Side Hustle Realistis untuk Anak Magang:\n1. Jual/Trade Item Game (Roblox / MLBB): Menjual item virtual, joki harian, atau trading skin digital yang minim modal.\n2. Jasa Desain Canva & Template Medsos: Membantu UMKM sekitar membuat banner promosi atau feed Instagram (tarif Rp 25.000 - Rp 50.000 per desain).\n3. Admin Olshop / Freelance Data Entry: Tugas fleksibel yang bisa dikerjakan di malam hari setelah jam kantor.\n4. Menulis / Copywriting Pendek: Bantuan caption atau artikel blog SEO pemula.\nHasil sampingan Rp 300.000 - Rp 500.000 per bulan akan langsung mendongkrak saldo tabunganmu!`;
+    return `Rekomendasi Tambahan Penghasilan (Side Hustle) ala Monetra:\n1. Jasa Konsultasi / Freelance Berbasis Skill: Menawarkan keahlian utama (desain UI/UX, software development, translation, copywriter, atau digital marketing) di platform freelance.\n2. Jual Aset Digital / Template: Membuat template Notion, desain Canva premium, atau preset foto/video yang bisa mendatangkan recurring income.\n3. Content Creation & Affiliate: Membangun audiens di ceruk tertentu dan membagikan tautan afiliasi produk yang relevan.\n4. Jasa Optimasi Bisnis UMKM: Membantu usaha lokal mengelola media sosial, Google Maps, atau pembukuan digital.\nHasil sampingan akan langsung mempercepat pembentukan dana darurat dan portofolio investasimu!`;
   }
 
   // 13. Bokek / Boros / Khawatir Uang Menipis
   if (lower.includes('bokek') || lower.includes('boros') || lower.includes('uang abis') || lower.includes('duit abis') || lower.includes('habis uang') || lower.includes('pusing')) {
-    return `Tenang ${firstName}, jangan panik. Mari kita evaluasi bersama:\n- Sisa saldo aktifmu saat ini: ${formatCurrency(netBalance)}\n- Jarak gajian tanggal ${payDay}: ${daysLeft} hari lagi\n- Batas aman bertahan per hari: ${formatCurrency(safeDaily)}\n\nLangkah penyelamatan ala Monetra:\n1. Tahan dulu pengeluaran hiburan dan jajan kafe di luar rencana.\n2. Maksimalkan makan warteg atau menu hemat (budget Rp 15.000 - Rp 20.000 per hari).\n3. Untuk agenda kencan, pilih aktivitas hemat seperti jalan sore di taman atau nonton film di kos.\nKamu pasti bisa melewatinya sampai tanggal gajian tiba!`;
+    return `Tenang ${firstName}, jangan panik. Mari kita evaluasi bersama:\n- Sisa saldo aktifmu saat ini: ${formatCurrency(netBalance)}\n- Jarak gajian tanggal ${payDay}: ${daysLeft} hari lagi\n- Batas aman bertahan per hari: ${formatCurrency(safeDaily)}\n\nLangkah penyelamatan ala Monetra:\n1. Tahan dulu pengeluaran hiburan dan jajan kafe di luar rencana.\n2. Maksimalkan makan warteg atau menu hemat (budget Rp 15.000 - Rp 25.000 per sesi).\n3. Untuk agenda kencan, pilih aktivitas hemat seperti jalan sore di taman atau nonton film bersama di rumah.\nKamu pasti bisa melewatinya sampai tanggal gajian tiba!`;
   }
 
   // 9. Dana Darurat
   if (lower.includes('darurat') || lower.includes('emergency')) {
-    return `Panduan Dana Darurat untuk anak magang (gaji ${formatCurrency(profile.monthly_income)}):\n- Target awal yang realistis: Rp 500.000 - Rp 1.000.000.\n- Tempat penyimpanan: Simpan di rekening bank digital terpisah atau Reksadana Pasar Uang yang likuid (bisa ditarik kapan saja dan bebas biaya admin bulanan).\n- Aturan pakai: Hanya boleh dipakai untuk situasi darurat riil (misal motor mogok, berobat mendadak, atau kebutuhan keluarga mendesak), bukan untuk belanja diskon atau nongkrong.`;
+    const targetDaruratMin = monthlyIncome >= 10000000 ? Math.round(monthlyIncome * 3) : Math.max(500000, Math.round(monthlyIncome * 0.5));
+    const targetDaruratMax = monthlyIncome >= 10000000 ? Math.round(monthlyIncome * 6) : Math.max(1000000, Math.round(monthlyIncome * 1.5));
+    return `Panduan Dana Darurat (Penghasilan ${formatCurrency(monthlyIncome)}):\n- Target ideal: ${formatCurrency(targetDaruratMin)} - ${formatCurrency(targetDaruratMax)} (setara 3-6 bulan pengeluaran).\n- Tempat penyimpanan: Simpan di rekening bank digital terpisah atau Reksadana Pasar Uang (RPU) yang likuid, bebas biaya admin bulanan, dan bebas risiko fluktuasi modal.\n- Aturan pakai: Hanya boleh dicairkan untuk situasi darurat riil (medis mendadak, musibah keluarga, atau transisi karir), bukan untuk belanja diskon atau gaya hidup.`;
   }
 
   // 10. Batas Aman Belanja & Sisa Saldo
   if (lower.includes('aman') || lower.includes('hari ini') || lower.includes('sisa saldo') || lower.includes('saldo') || lower.includes('uangku') || lower.includes('sisa uang') || lower.includes('berapa duit')) {
-    return `Berdasarkan kalkulasi terkini:\n- Sisa saldo aktif bulan ini: ${formatCurrency(netBalance)}\n- Jarak ke gajian berikutnya: ${daysLeft} hari (tanggal ${payDay})\n- Batas aman belanja harian: ${formatCurrency(safeDaily)} per hari\n\nMengingat kebiasaan makan siang harianmu hemat di kisaran Rp 10.000 hingga Rp 20.000, cashflow harianmu masih dalam zona aman.`;
+    return `Berdasarkan kalkulasi terkini:\n- Sisa saldo aktif bulan ini: ${formatCurrency(netBalance)}\n- Jarak ke gajian berikutnya: ${daysLeft} hari (tanggal ${payDay})\n- Batas aman belanja harian: ${formatCurrency(safeDaily)} per hari\n\nMenjaga belanja harian di bawah ${formatCurrency(safeDaily)} akan menjamin cashflow surplus hingga gajian tiba.`;
   }
 
   // 11. Analisis Pacaran & Kencan
   if (lower.includes('kencan') || lower.includes('pacar') || lower.includes('date') || lower.includes('doi') || lower.includes('ngedate') || lower.includes('nonton')) {
-    const dateBudget = profile.dating_budget_est || 600000;
+    const dateBudget = profile.dating_budget_est || Math.round(monthlyIncome * 0.15);
     const isOver = datingExpense > dateBudget;
-    return `Evaluasi pos kencan untuk ${firstName}:\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)}\n- Target batas bulanan: ${formatCurrency(dateBudget)}\n- Status: ${isOver ? 'Melebihi target awal' : 'Masih dalam batas aman'}\n\nSaran Monetra:\nKarena kamu rutin bertemu 3-4 kali seminggu, variasikan jadwal kencan dengan aktivitas hemat seperti jalan santai di taman kota, memasak menu favorit berdua di kos, atau movie marathon via streaming. Cara ini menjaga hubungan tetap hangat tanpa membuat dompet magang kempis.`;
+    return `Evaluasi pos kencan untuk ${firstName}:\n- Pengeluaran kencan bulan ini: ${formatCurrency(datingExpense)}\n- Target batas bulanan: ${formatCurrency(dateBudget)}\n- Status: ${isOver ? 'Melebihi target awal' : 'Masih dalam batas aman'}\n\nSaran Monetra:\nVariasikan jadwal kencan dengan aktivitas hemat seperti jalan santai di ruang terbuka hijau, memasak menu favorit berdua, atau movie marathon via streaming. Cara ini menjaga hubungan tetap hangat tanpa membuat dompet kempis.`;
   }
 
   // 12. Investasi, Reksadana, Saham, Emas, Kripto
   if (lower.includes('investasi') || lower.includes('reksadana') || lower.includes('saham') || lower.includes('crypto') || lower.includes('kripto') || lower.includes('emas') || lower.includes('bibit') || lower.includes('bareksa')) {
-    return `Rekomendasi investasi untuk anak magang (gaji ${formatCurrency(profile.monthly_income)}):\n1. Prioritas Pertama: Amankan dana darurat minimal Rp 500.000 - Rp 1.000.000 di rekening terpisah atau e-wallet likuid.\n2. Reksadana Pasar Uang (RPU): Pilihan terbaik untuk pemula (bisa mulai dari Rp 10.000 di platform resmi seperti Bibit/Bareksa). Risikonya sangat rendah dan imbal hasilnya stabil 4-6% per tahun di atas bunga tabungan biasa.\n3. Emas Digital: Cocok untuk tabungan jangka menengah (1-3 tahun) sebagai pelindung inflasi.\n4. Saham & Kripto: Pelajari fundamentalnya terlebih dahulu dan hanya gunakan uang dingin (maksimal 5% dari tabungan) karena volatilitasnya tinggi.`;
+    if (monthlyIncome >= 10000000) {
+      return `Rekomendasi Alokasi Investasi & Diversifikasi Aset (Gaji ${formatCurrency(monthlyIncome)}):\n1. Dana Darurat Kokoh: Pastikan 3-6 bulan pengeluaran tersimpan di instrumen likuid (Reksadana Pasar Uang / Tabungan Yield Tinggi).\n2. Surat Berharga Negara (SBN / Sukuk Ritel): Kupon bulanan tetap (fixed coupon 6-7%) yang dijamin 100% oleh negara.\n3. Reksadana Indeks / Saham Blue Chip: Alokasikan 30-40% dari porsi investasi bulanan untuk pertumbuhan modal jangka panjang (5-10 tahun).\n4. Emas Logam Mulia: Simpan 10% sebagai instrumen lindung nilai (hedging) terhadap inflasi rupiah.\n5. Hindari Lifestyle Inflation: Pertahankan rasio tabungan & investasi minimal 30-40% dari total gaji bulanan.`;
+    }
+    return `Rekomendasi Investasi Terukur (Gaji ${formatCurrency(monthlyIncome)}):\n1. Prioritas Pertama: Amankan dana darurat minimal Rp 500.000 - Rp 1.000.000 di rekening terpisah atau Reksadana Pasar Uang (RPU) likuid.\n2. Reksadana Pasar Uang (RPU): Pilihan terbaik untuk pemula (bisa mulai dari Rp 10.000 di platform resmi berizin OJK). Risikonya sangat rendah dan imbal hasilnya stabil 4-6% per tahun bebas pajak.\n3. Emas Digital: Cocok untuk tabungan jangka menengah (1-3 tahun) sebagai pelindung inflasi.\n4. Saham & Kripto: Pelajari fundamentalnya terlebih dahulu dan hanya gunakan uang dingin (maksimal 5% dari tabungan) karena volatilitasnya tinggi.`;
   }
 
   // 13. Pinjol, Paylater, Utang
   if (lower.includes('pinjol') || lower.includes('paylater') || lower.includes('utang') || lower.includes('kredit') || lower.includes('cicilan')) {
-    return `Peringatan penting seputar Paylater & Pinjol untuk ${firstName}:\n- Bunga paylater berkisar 2% - 4% per bulan (bisa mencapai 30% - 50% per tahun). Dengan gaji magang Rp 1.500.000, cicilan sekecil apapun akan langsung membebani cashflow bulanan.\n- Risiko BI Checking / SLIK OJK: Keterlambatan bayar walau hanya Rp 50.000 dapat merusak reputasi kreditmu saat nanti ingin mengajukan KPR atau bekerja di sektor perbankan.\n- Prinsip Monetra: Hindari paylater untuk konsumsi harian atau nongkrong. Jika uang tunai belum cukup, tunda pembelian sampai tabungan terkumpul.`;
+    return `Peringatan penting seputar Paylater & Pinjol untuk ${firstName}:\n- Bunga paylater berkisar 2% - 4% per bulan (bisa mencapai 30% - 50% per tahun). Dengan penghasilan ${formatCurrency(monthlyIncome)}, cicilan konsumtif sekecil apapun akan langsung membebani cashflow bulanan dan mengurangi porsi tabungan.\n- Risiko BI Checking / SLIK OJK: Keterlambatan bayar walau hanya nominal kecil dapat merusak skor kreditmu saat nanti ingin mengajukan KPR atau pinjaman produktif.\n- Prinsip Monetra: Hindari paylater untuk konsumsi harian atau gaya hidup. Jika uang tunai belum cukup, tunda pembelian sampai tabungan terkumpul.`;
   }
 
   // 14. Evaluasi Rencana Belanja / Affordability Simulation
@@ -764,10 +773,8 @@ Format JSON array:
 Kalimat yang diucapkan: "${spokenText}"`;
 
       const modelsToTry = [
-        'gemini-3.8-flash',
-        'gemini-flash-latest',
-        'gemini-3.5-flash',
         'gemini-flash-lite-latest',
+        'gemini-flash-latest',
       ];
       let parsed: any = null;
 
@@ -785,7 +792,7 @@ Kalimat yang diucapkan: "${spokenText}"`;
                   responseMimeType: 'application/json',
                 },
               }),
-              signal: AbortSignal.timeout(6000), // Max 6s timeout
+              signal: AbortSignal.timeout(3000), // Fast 3s timeout
             }
           );
 
@@ -928,10 +935,8 @@ FORMAT OUTPUT JSON MURNI (tanpa markdown, tanpa code block, tanpa teks pengantar
 }`;
 
   const modelsToTry = [
-    'gemini-3.8-flash',
-    'gemini-flash-latest',
-    'gemini-3.5-flash',
     'gemini-flash-lite-latest',
+    'gemini-flash-latest',
   ];
 
   let rawMime = audioBlob.type || 'audio/webm';
@@ -970,7 +975,7 @@ FORMAT OUTPUT JSON MURNI (tanpa markdown, tanpa code block, tanpa teks pengantar
             responseMimeType: 'application/json',
           },
         }),
-        signal: AbortSignal.timeout(12000), // Max 12s timeout for audio processing
+        signal: AbortSignal.timeout(4500), // Max 4.5s timeout for fast response
       });
 
       if (res.ok) {

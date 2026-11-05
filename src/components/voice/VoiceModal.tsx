@@ -446,36 +446,36 @@ export const VoiceModal: React.FC = () => {
 
         const source = audioCtx.createMediaStreamSource(stream);
 
-        // ── Human Vocal DSP Enhancement Chain ──
-        // 1. High-Pass Filter: Strips ambient sub-bass rumble, wind, phone vibrations (< 85 Hz)
+        // ── Human Vocal DSP Enhancement Chain (Ultra-High Sensitivity) ──
+        // 1. High-Pass Filter: Strips ambient sub-bass rumble, wind, phone vibrations (< 70 Hz)
         const highPass = audioCtx.createBiquadFilter();
         highPass.type = 'highpass';
-        highPass.frequency.value = 85;
+        highPass.frequency.value = 70;
 
-        // 2. Vocal Formant Peaking Filter: Boosts speech intelligibility band (2000Hz - 3500Hz)
+        // 2. Vocal Formant Peaking Filter: Boosts speech intelligibility band (1800Hz - 3400Hz) by +7.5dB
         const vocalBoost = audioCtx.createBiquadFilter();
         vocalBoost.type = 'peaking';
-        vocalBoost.frequency.value = 2400;
-        vocalBoost.Q.value = 1.1;
-        vocalBoost.gain.value = 5.0; // +5dB human voice boost
+        vocalBoost.frequency.value = 2200;
+        vocalBoost.Q.value = 1.0;
+        vocalBoost.gain.value = 7.5; // +7.5dB human voice boost for high sensitivity
 
         // 3. Low-Pass Filter: Cuts off high-frequency hiss, fan noise, screech (> 7500 Hz)
         const lowPass = audioCtx.createBiquadFilter();
         lowPass.type = 'lowpass';
         lowPass.frequency.value = 7500;
 
-        // 4. Dynamics Compressor: Elevates soft speech/whispers, prevents loud clipping
+        // 4. Dynamics Compressor: Elevates soft speech & whispers to high clarity
         const compressor = audioCtx.createDynamicsCompressor();
-        compressor.threshold.value = -32;
-        compressor.knee.value = 20;
-        compressor.ratio.value = 4.5;
-        compressor.attack.value = 0.003;
-        compressor.release.value = 0.25;
+        compressor.threshold.value = -38;
+        compressor.knee.value = 25;
+        compressor.ratio.value = 6.0;
+        compressor.attack.value = 0.001;
+        compressor.release.value = 0.2;
 
         // 5. Analyser for speech visualization
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.8;
+        analyser.smoothingTimeConstant = 0.75;
         analyserRef.current = analyser;
 
         // Connect the vocal DSP chain
@@ -509,10 +509,10 @@ export const VoiceModal: React.FC = () => {
           }
           const vocalAvg = vocalBins > 0 ? vocalSum / vocalBins : 0;
           // Ultra-high sensitivity scaling: picks up normal speech and whispers effortlessly
-          const normalized = Math.min(100, Math.round((vocalAvg / 18) * 100));
+          const normalized = Math.min(100, Math.round((vocalAvg / 10) * 100));
 
           setAudioLevel(normalized);
-          if (normalized > 1 || vocalAvg > 0.6) {
+          if (normalized > 0.5 || vocalAvg > 0.25) {
             setHasDetectedVoice(true);
             hasDetectedVoiceRef.current = true;
           }
@@ -631,8 +631,15 @@ export const VoiceModal: React.FC = () => {
     ).trim();
     const recognizedText = deduplicateSpokenPhrases(rawRecognizedText);
 
-    // Path A: High-Sensitivity Multimodal AI on Vocal-DSP Filtered Audio
-    // Isolates foreground human speaker from background noise, traffic, and room chatter
+    // ── FAST-TRACK PATH: Real-Time Web Speech Recognition (0 second wait!) ──
+    // If the browser already captured the words in real-time, process immediately without uploading raw audio!
+    if (recognizedText && recognizedText.length >= 2) {
+      await processTranscription(recognizedText);
+      return;
+    }
+
+    // ── FALLBACK PATH: Multimodal AI Audio Parsing ──
+    // Only used if browser real-time speech didn't catch text (e.g. mobile Safari)
     let multimodalErrorMsg: string | null = null;
     if (audioBlob && audioBlob.size > 200) {
       try {
@@ -663,13 +670,7 @@ export const VoiceModal: React.FC = () => {
       }
     }
 
-    // Path B: Transcribed text from Web Speech API / Streaming Recognition
-    if (recognizedText) {
-      await processTranscription(recognizedText);
-      return;
-    }
-
-    // Path C: Zero audio or speech detected
+    // Zero audio or speech detected
     handleResetToIdle();
     setErrorMessage(
       multimodalErrorMsg
@@ -703,16 +704,27 @@ export const VoiceModal: React.FC = () => {
     await handleStartRecording();
   };
 
-  // ── Parse Text (Gemini AI or Smart Local Parser) ───────────────────────────
+  // ── Fast-Track Parse Text (Instant Local + Rapid AI Race) ───────────────────
   const processTranscription = async (text: string) => {
     setTranscript(text);
     setRecordState('processing');
+
+    // 1. Instant local NLP parsing (0ms execution)
+    const localItems = parseVoiceInput(text);
+
     try {
-      const items = await parseVoiceInputWithAI(text, categories);
-      // Deduplicate items
+      // 2. Race Gemini Flash-Lite with a tight 2200ms timeout
+      const aiPromise = parseVoiceInputWithAI(text, categories);
+      const timeoutPromise = new Promise<ParsedVoiceItem[]>((_, reject) =>
+        setTimeout(() => reject(new Error('AI parsing timeout')), localItems.length > 0 ? 2200 : 4000)
+      );
+
+      const items = await Promise.race([aiPromise, timeoutPromise]);
+      const finalItems = items && items.length > 0 ? items : localItems;
+
       const uniqueItems: ParsedVoiceItem[] = [];
       const seen = new Set<string>();
-      for (const it of items) {
+      for (const it of finalItems) {
         const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
         if (!seen.has(k)) {
           seen.add(k);
@@ -720,12 +732,11 @@ export const VoiceModal: React.FC = () => {
         }
       }
       setParsedItems(uniqueItems);
-    } catch (err) {
-      console.warn('Voice AI parse error, using smart fallback:', err);
-      const items = parseVoiceInput(text);
+    } catch {
+      // Fast fallback to instant local extraction
       const uniqueItems: ParsedVoiceItem[] = [];
       const seen = new Set<string>();
-      for (const it of items) {
+      for (const it of localItems) {
         const k = `${it.type}-${it.amount}-${it.note.toLowerCase().trim()}`;
         if (!seen.has(k)) {
           seen.add(k);

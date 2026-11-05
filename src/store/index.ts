@@ -517,19 +517,11 @@ export const useAppStore = create<AppState>((set, get) => {
 
     clearChat: () => {
       set((state) => {
-        const initial = [
-          {
-            id: 'msg-init-cleared',
-            user_id: state.profile.id,
-            role: 'assistant' as const,
-            content: 'Percakapan telah dibersihkan. Ada yang ingin kamu tanyakan atau catat sekarang?',
-            created_at: new Date().toISOString(),
-          },
-        ];
         const uid = state.authUser?.id || state.profile.id;
-        saveUserData(uid, { ...state, chatMessages: initial });
-        return { chatMessages: initial };
+        saveUserData(uid, { ...state, chatMessages: [] });
+        return { chatMessages: [] };
       });
+      get().showToast('Percakapan telah dibersihkan');
     },
 
     resetAllData: () => {

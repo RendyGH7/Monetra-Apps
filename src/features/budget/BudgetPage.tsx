@@ -16,26 +16,31 @@ export const BudgetPage: React.FC = () => {
   // Lock background scroll when modal is active
   useScrollLock(addGoalModal);
 
+  const userIncome = profile.monthly_income > 0 ? profile.monthly_income : 1500000;
+  const dailyFoodTarget = Math.round((userIncome * 0.25) / 30);
+  const datingBudgetAmount = profile.dating_budget_est || Math.round(userIncome * 0.15);
+  const weeklyDatingTarget = Math.round(datingBudgetAmount / 4);
+
   const budgetAllocations = [
     {
       categoryName: 'Makanan & Minuman',
-      budgetAmount: 450000,
-      note: 'Target harian Rp 15.000 untuk makan siang magang',
+      budgetAmount: Math.round(userIncome * 0.25),
+      note: `Target harian ${formatCurrency(dailyFoodTarget)} untuk makan & nutrisi`,
     },
     {
       categoryName: 'Kencan & Pacaran',
-      budgetAmount: profile.dating_budget_est || 600000,
-      note: '3 - 4 kali kencan per minggu (target max Rp 150.000 / minggu)',
+      budgetAmount: datingBudgetAmount,
+      note: `Target sekitar ${formatCurrency(weeklyDatingTarget)} per minggu`,
     },
     {
       categoryName: 'Transportasi',
-      budgetAmount: 200000,
-      note: 'Bensin motor & operasional bolak-balik magang',
+      budgetAmount: Math.round(userIncome * 0.10),
+      note: 'Bahan bakar, transportasi & mobilitas operasional',
     },
     {
       categoryName: 'Tagihan & Pulsa',
-      budgetAmount: 100000,
-      note: 'Paket data & komunikasi',
+      budgetAmount: Math.round(userIncome * 0.08),
+      note: 'Paket data, internet & utilitas bulanan',
     },
   ];
 
@@ -80,7 +85,7 @@ export const BudgetPage: React.FC = () => {
       {/* Monthly Budget Allocations */}
       <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] space-y-4">
         <h2 className="text-sm font-semibold text-[#EEF2F6]">
-          Batas Anggaran Kategori (Gaji Magang Rp 1.500.000)
+          Batas Anggaran Kategori (Gaji: {formatCurrency(userIncome)})
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -376,6 +376,7 @@ export const AnalyticsPage: React.FC = () => {
     .map(([name, value], i) => ({ name, value, color: chartPalette[i % chartPalette.length] }));
 
   // ── 50/30/20 ─────────────────────────────────────────────────────────────
+  const effectiveIncome = profile.monthly_income > 0 ? profile.monthly_income : Math.max(totalExpense, 1500000);
   let needsSum = 0, wantsSum = 0, savingsSum = 0;
   currentExpense.forEach((t) => {
     const c = categories.find((cat) => cat.id === t.category_id);
@@ -384,17 +385,28 @@ export const AnalyticsPage: React.FC = () => {
     else if (c?.need_want === 'saving') savingsSum += t.amount;
     else needsSum += t.amount;
   });
-  const needsPct = totalExpense > 0 ? Math.round((needsSum / totalExpense) * 100) : 0;
-  const wantsPct = totalExpense > 0 ? Math.round((wantsSum / totalExpense) * 100) : 0;
-  const savingsPct = totalExpense > 0 ? Math.round((savingsSum / totalExpense) * 100) : 0;
+  const needsPct = Math.round((needsSum / effectiveIncome) * 100);
+  const wantsPct = Math.round((wantsSum / effectiveIncome) * 100);
+  const savingsPct = Math.round((savingsSum / effectiveIncome) * 100);
 
   // ── Health score ─────────────────────────────────────────────────────────
   const datingSum = catSums['Kencan & Pacaran'] || 0;
-  const datingPct = profile.monthly_income > 0 ? Math.round((datingSum / profile.monthly_income) * 100) : 0;
-  let score = 75;
-  if (datingPct > 50) score -= 20;
-  else if (datingPct > 35) score -= 10;
-  if (totalExpense > profile.monthly_income) score -= 25;
+  const datingPct = Math.round((datingSum / effectiveIncome) * 100);
+  let score = 85;
+  if (totalExpense > effectiveIncome) score -= 30;
+  else if (totalExpense <= effectiveIncome * 0.5) score += 10;
+  else if (totalExpense <= effectiveIncome * 0.75) score += 5;
+
+  if (wantsPct > 35) score -= 15;
+  else if (wantsPct > 30) score -= 5;
+  else if (wantsPct <= 20) score += 5;
+
+  if (savingsPct >= 20) score += 10;
+  else if (savingsPct >= 10) score += 5;
+
+  if (datingPct > 40) score -= 15;
+  else if (datingPct > 30) score -= 5;
+
   score = Math.max(20, Math.min(100, score));
 
   // ── Top expenses ─────────────────────────────────────────────────────────
@@ -412,19 +424,19 @@ export const AnalyticsPage: React.FC = () => {
         prompt: 'Monetra, bagaimana panduan awal menerapkan aturan keuangan 50/30/20 yang tepat untuk saya?',
       };
     }
-    if (savingsPct === 0) {
+    if (totalExpense > effectiveIncome) {
       return {
-        badge: 'Tabungan Perlu Ditambah',
+        badge: 'Defisit Anggaran',
         badgeColor: 'text-[#EE5D6C] bg-[#EE5D6C]/15 border-[#EE5D6C]/30',
-        text: 'Belum ada dana dialokasikan ke tabungan/investasi. Sisihkan minimal 20% agar skor naik ke 85+.',
-        prompt: `Monetra, pengeluaran saya saat ini Rp ${formatCurrency(totalExpense)} dan belum ada tabungan disisihkan. Berikan langkah praktis menyisihkan 20% tabungan!`,
+        text: `Total belanja (${formatCurrency(totalExpense)}) melampaui penghasilan bulanan (${formatCurrency(effectiveIncome)}). Rem pengeluaran sekunder segera.`,
+        prompt: `Monetra, pengeluaran saya bulan ini melampaui pemasukan. Berikan langkah cepat memulihkan cashflow!`,
       };
     }
-    if (wantsPct > 35) {
+    if (wantsPct > 30) {
       return {
-        badge: 'Pos Keinginan Tinggi',
-        badgeColor: 'text-[#E39A5E] bg-[#E39A5E]/15 border-[#E39A5E]/30',
-        text: `Pengeluaran gaya hidup mencapai ${wantsPct}% (di atas batas 30%). Tekan jajan/hiburan untuk memperkuat tabungan darurat.`,
+        badge: 'Pos Keinginan Melebihi Plafon',
+        badgeColor: 'text-[#EE5D6C] bg-[#EE5D6C]/15 border-[#EE5D6C]/30',
+        text: `Pengeluaran gaya hidup mencapai ${wantsPct}% dari gaji (melebihi batas aman 30%). Tekan jajan/hiburan untuk memperkuat tabungan.`,
         prompt: `Monetra, porsi keinginan saya mencapai ${wantsPct}%. Bagaimana tips memangkas pos hiburan tanpa merasa terlalu ketat?`,
       };
     }
@@ -432,17 +444,25 @@ export const AnalyticsPage: React.FC = () => {
       return {
         badge: 'Kebutuhan Mendominasi',
         badgeColor: 'text-[#6FA8D6] bg-[#6FA8D6]/15 border-[#6FA8D6]/30',
-        text: `Kebutuhan pokok menyerap ${needsPct}% pengeluaran. Cek kembali tagihan rutin untuk efisiensi belanja esensial.`,
+        text: `Kebutuhan pokok menyerap ${needsPct}% penghasilan. Cek kembali tagihan rutin untuk efisiensi belanja esensial.`,
         prompt: `Monetra, kebutuhan esensial saya ${needsPct}%. Bagaimana cara mengefisiensikan belanja bulanan?`,
       };
     }
+    if (savingsPct >= 20 || (effectiveIncome - totalExpense) >= effectiveIncome * 0.4) {
+      return {
+        badge: 'Keuangan Sangat Sehat',
+        badgeColor: 'text-[#4FD3A4] bg-[#4FD3A4]/15 border-[#4FD3A4]/30',
+        text: `Distribusi keuanganmu sangat prima! Belanja terkontrol di bawah batas gaji ${formatCurrency(effectiveIncome)} dengan surplus aman.`,
+        prompt: `Monetra, posisi keuangan saya sangat sehat dengan surplus dari gaji ${formatCurrency(effectiveIncome)}. Instrumen investasi apa yang paling cocok untuk memaksimalkan surplus ini?`,
+      };
+    }
     return {
-      badge: 'Alokasi Sangat Sehat',
+      badge: 'Arus Kas Stabil',
       badgeColor: 'text-[#4FD3A4] bg-[#4FD3A4]/15 border-[#4FD3A4]/30',
-      text: 'Distribusi keuanganmu sangat seimbang dan disiplin sesuai kaidah 50/30/20. Terus pertahankan pola ini!',
-      prompt: 'Monetra, keuangan saya saat ini sangat sehat. Berikan strategi investasi lanjutan untuk meningkatkan aset!',
+      text: `Pengeluaranmu aman di dalam batas penghasilan ${formatCurrency(effectiveIncome)}. Pertahankan ritme belanja harian ini!`,
+      prompt: `Monetra, dengan penghasilan ${formatCurrency(effectiveIncome)}, bagaimana alokasi terbaik untuk tabungan dan investasi lanjutan?`,
     };
-  }, [totalExpense, savingsPct, wantsPct, needsPct]);
+  }, [totalExpense, effectiveIncome, savingsPct, wantsPct, needsPct]);
 
   // ── Period labels ─────────────────────────────────────────────────────────
   const periodLabel = period === 'week' ? 'Minggu Ini' : period === 'month' ? 'Bulan Ini' : 'Tahun Ini';
@@ -958,15 +978,15 @@ export const AnalyticsPage: React.FC = () => {
                   actual: needsPct,
                   amount: needsSum,
                   color: '#6FA8D6',
-                  status: needsPct > 60 ? 'Over' : needsPct > 45 ? 'Optimal' : 'Aman',
+                  status: needsPct > 50 ? 'Over' : needsPct > 35 ? 'Optimal' : 'Aman',
                 },
                 {
                   label: 'Keinginan & Lifestyle',
                   target: 30,
                   actual: wantsPct,
                   amount: wantsSum,
-                  color: wantsPct > 35 ? '#EE5D6C' : '#E39A5E',
-                  status: wantsPct > 35 ? 'Over' : 'Terkontrol',
+                  color: wantsPct > 30 ? '#EE5D6C' : '#E39A5E',
+                  status: wantsPct > 30 ? 'Over' : 'Terkontrol',
                 },
                 {
                   label: 'Tabungan & Darurat',
@@ -1064,10 +1084,19 @@ export const AnalyticsPage: React.FC = () => {
                 {datingPct}%
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[#A3AFBC]">Batas ideal per minggu</span>
-              <span className="font-semibold text-[#4FD3A4]">Rp 150.000 - 200.000</span>
-            </div>
+            {(() => {
+              const datingMonthlyBudget = profile.dating_budget_est || Math.round(effectiveIncome * 0.12);
+              const weeklyMin = Math.round((datingMonthlyBudget * 0.8) / 4);
+              const weeklyMax = Math.round((datingMonthlyBudget * 1.2) / 4);
+              return (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#A3AFBC]">Batas ideal per minggu</span>
+                  <span className="font-semibold text-[#4FD3A4] num-tabular">
+                    {formatCurrency(weeklyMin)} - {formatCurrency(weeklyMax)}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="pt-2 border-t border-[rgba(205,225,245,0.08)]">
