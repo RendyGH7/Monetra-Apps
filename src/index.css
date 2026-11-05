@@ -222,13 +222,13 @@ button.glass-3 {
 /* ─── Global Themed Scrollbars for the Entire App ────────────────── */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(205, 225, 245, 0.22) transparent;
+  scrollbar-color: rgba(227, 154, 94, 0.4) transparent;
 }
 
 ::-webkit-scrollbar,
 *::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 ::-webkit-scrollbar-button,
@@ -260,27 +260,35 @@ button.glass-3 {
 *::-webkit-scrollbar-thumb {
   background: rgba(205, 225, 245, 0.22) !important;
   border-radius: 9999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
   transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover,
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(227, 154, 94, 0.75) !important;
+  background: rgba(227, 154, 94, 0.85) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
 }
 
 /* Light Mode Global Scrollbars */
 [data-theme="light"] * {
-  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+  scrollbar-color: rgba(194, 120, 56, 0.45) transparent;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb,
 [data-theme="light"] *::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.45) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover,
 [data-theme="light"] *::-webkit-scrollbar-thumb:hover {
   background: rgba(194, 120, 56, 0.85) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
 }
 
 /* ─── Keyframes ─────────────────────────────────────────────────── */

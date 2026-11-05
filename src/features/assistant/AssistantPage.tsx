@@ -474,7 +474,7 @@ export const AssistantPage: React.FC = () => {
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6 custom-scrollbar"
       >
-        <div className="max-w-6xl mx-auto w-full space-y-4 sm:space-y-6">
+        <div className="max-w-7xl mx-auto w-full space-y-4 sm:space-y-6">
         {chatMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 my-auto select-none">
             <div className="relative mb-4 group">
@@ -582,7 +582,7 @@ export const AssistantPage: React.FC = () => {
 
       {/* Bottom Input & Suggestions Area */}
       <div className="w-full bg-[var(--bg-base)]/80 backdrop-blur-lg px-4 sm:px-8 lg:px-12 pt-3 pb-[max(calc(var(--safe-bottom)+14px),1.75rem)] sm:pb-4 shrink-0 z-20">
-        <div className="max-w-6xl mx-auto w-full space-y-2.5">
+        <div className="max-w-7xl mx-auto w-full space-y-2.5">
           {/* Quick Suggestion Chips */}
           <div className="overflow-x-auto no-scrollbar flex items-center gap-2 pb-0.5">
             {quickQuestions.map((q, idx) => (

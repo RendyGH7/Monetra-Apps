@@ -348,7 +348,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-4 md:pb-8">
+    <div className="space-y-6 w-full max-w-5xl mx-auto pb-4 md:pb-8">
       {/* Top Greeting and Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

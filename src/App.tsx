@@ -20,7 +20,7 @@ const SettingsPage = React.lazy(() => import('./features/settings/SettingsPage')
 const AuthScreen = React.lazy(() => import('./features/auth/AuthScreen').then((m) => ({ default: m.AuthScreen })));
 
 const PageSkeleton = () => (
-  <div className="space-y-4 max-w-5xl mx-auto py-4 animate-pulse">
+  <div className="space-y-4 w-full max-w-7xl mx-auto py-4 animate-pulse">
     <div className="h-8 w-44 rounded-xl bg-white/[0.04]" />
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="h-28 rounded-2xl bg-white/[0.03] md:col-span-2" />
@@ -251,10 +251,12 @@ export default function App() {
           className={
             activeTab === 'asisten'
               ? 'flex-1 min-w-0 w-full h-full overflow-hidden p-0'
-              : 'flex-1 min-w-0 mobile-content-safe max-w-6xl mx-auto w-full overflow-y-auto pt-2 md:pt-8 md:pb-12 md:px-6 lg:px-8'
+              : 'flex-1 min-w-0 w-full h-full overflow-y-auto custom-scrollbar mobile-content-safe pt-2 md:pt-8 md:pb-14 px-4 sm:px-6 md:px-8 lg:px-12'
           }
         >
-          {renderActiveView()}
+          <div className="w-full max-w-7xl mx-auto">
+            {renderActiveView()}
+          </div>
         </main>
       </div>
 

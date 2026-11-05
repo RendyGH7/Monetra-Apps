@@ -114,7 +114,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-4 md:pb-8">
+    <div className="space-y-6 w-full max-w-5xl mx-auto pb-4 md:pb-8">
       {/* Header */}
       <div>
         <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">

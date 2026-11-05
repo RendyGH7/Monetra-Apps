@@ -63,7 +63,7 @@ export const BudgetPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-4 md:pb-8">
+    <div className="space-y-6 w-full max-w-5xl mx-auto pb-4 md:pb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -88,7 +88,7 @@ export const BudgetPage: React.FC = () => {
           Batas Anggaran Kategori (Gaji: {formatCurrency(userIncome)})
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {budgetAllocations.map((b, idx) => {
             const cat = categories.find((c) => c.name === b.categoryName);
             const spent = transactions
@@ -167,7 +167,7 @@ export const BudgetPage: React.FC = () => {
             <p className="text-[11px]">Gunakan tombol Tambah Target di atas untuk membuat target keuangan pertamamu</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {goals.map((g) => {
               const pct = Math.min(100, Math.round((g.current_amount / g.target_amount) * 100));
 
