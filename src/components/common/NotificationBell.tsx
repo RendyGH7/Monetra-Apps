@@ -199,179 +199,177 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
 
       {/* Dropdown Flyout Panel */}
       {isOpen && (
-        <div
-          ref={dropdownRef}
-          role="dialog"
-          aria-label="Pusat Notifikasi AI Monetra"
-          className={`absolute top-12 z-50 w-[340px] sm:w-[400px] max-w-[calc(100vw-2rem)] glass-1 rounded-2xl border border-[rgba(205,225,245,0.18)] shadow-2xl shadow-black/60 p-4 animate-fade-in backdrop-blur-xl ${
-            align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'
-          }`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
-                <Sparkles size={14} />
-              </div>
-              <div>
-                <h3 className="text-xs sm:text-sm font-semibold text-[#EEF2F6] leading-tight">
-                  Notifikasi Monetra AI
-                </h3>
-                <p className="text-[10px] text-[#A3AFBC]">
-                  Evaluasi riil berbasis catatan transaksimu
-                </p>
-              </div>
-            </div>
+        <>
+          {/* Mobile Backdrop Overlay to dismiss comfortably */}
+          <div
+            className="fixed inset-0 z-40 bg-black/65 backdrop-blur-xs sm:hidden animate-fade-in"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
 
-            <div className="flex items-center gap-1.5">
-              {unreadCount > 0 && (
+          <div
+            ref={dropdownRef}
+            role="dialog"
+            aria-label="Pusat Notifikasi AI Monetra"
+            className={`fixed inset-x-3 top-[calc(max(var(--safe-top),12px)+3.75rem)] max-h-[calc(100dvh-max(var(--safe-top),12px)-5.5rem)] sm:max-h-[600px] sm:absolute sm:inset-auto sm:top-12 sm:w-[410px] z-50 rounded-2xl notification-panel p-4 animate-fade-in flex flex-col ${
+              align === 'right' ? 'sm:right-0 sm:origin-top-right' : 'sm:left-0 sm:origin-top-left'
+            }`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
+                  <Sparkles size={14} />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] leading-tight">
+                    Notifikasi Monetra AI
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllAsRead}
+                    className="px-2 py-1 rounded-lg notification-subtle-btn text-[10px] flex items-center gap-1 transition-all cursor-pointer font-medium"
+                    title="Tandai semua sudah dibaca"
+                  >
+                    <CheckCheck size={12} className="text-[#4FD3A4]" />
+                    <span>Baca Semua</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={markAllAsRead}
-                  className="px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-[#A3AFBC] hover:text-[#EEF2F6] border border-white/[0.06] flex items-center gap-1 transition-all cursor-pointer"
-                  title="Tandai semua sudah dibaca"
+                  onClick={() => setIsOpen(false)}
+                  className="w-7 h-7 rounded-lg notification-subtle-btn flex items-center justify-center transition-colors cursor-pointer"
+                  title="Tutup"
                 >
-                  <CheckCheck size={12} className="text-[#4FD3A4]" />
-                  <span>Baca Semua</span>
+                  <X size={15} />
                 </button>
-              )}
+              </div>
+            </div>
+
+            {/* Filter Chips */}
+            <div className="flex items-center gap-1.5 pt-2.5 pb-2 shrink-0 overflow-x-auto">
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
-                className="w-7 h-7 rounded-lg hover:bg-white/[0.08] text-[#A3AFBC] hover:text-[#EEF2F6] flex items-center justify-center transition-colors cursor-pointer"
-                title="Tutup"
+                onClick={() => setActiveFilter('all')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  activeFilter === 'all'
+                    ? 'bg-[#E39A5E]/20 text-[#E39A5E] border border-[#E39A5E]/40 font-semibold'
+                    : 'notification-subtle-btn'
+                }`}
               >
-                <X size={15} />
+                Semua ({notifications.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFilter('warning')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  activeFilter === 'warning'
+                    ? 'bg-[#EE5D6C]/20 text-[#EE5D6C] border border-[#EE5D6C]/40 font-semibold'
+                    : 'notification-subtle-btn'
+                }`}
+              >
+                Peringatan ({notifications.filter((n) => n.severity === 'warning' || n.severity === 'danger').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFilter('tip')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  activeFilter === 'tip'
+                    ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] border border-[#4FD3A4]/40 font-semibold'
+                    : 'notification-subtle-btn'
+                }`}
+              >
+                Saran & Progres ({notifications.filter((n) => n.severity === 'info' || n.severity === 'success').length})
               </button>
             </div>
-          </div>
 
-          {/* Filter Chips */}
-          <div className="flex items-center gap-1.5 pt-2.5 pb-2">
-            <button
-              type="button"
-              onClick={() => setActiveFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                activeFilter === 'all'
-                  ? 'bg-[#E39A5E]/20 text-[#E39A5E] border border-[#E39A5E]/40 font-semibold'
-                  : 'bg-white/[0.03] text-[#A3AFBC] hover:text-[#EEF2F6] border border-transparent'
-              }`}
-            >
-              Semua ({notifications.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveFilter('warning')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                activeFilter === 'warning'
-                  ? 'bg-[#EE5D6C]/20 text-[#EE5D6C] border border-[#EE5D6C]/40 font-semibold'
-                  : 'bg-white/[0.03] text-[#A3AFBC] hover:text-[#EEF2F6] border border-transparent'
-              }`}
-            >
-              Peringatan ({notifications.filter((n) => n.severity === 'warning' || n.severity === 'danger').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveFilter('tip')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                activeFilter === 'tip'
-                  ? 'bg-[#4FD3A4]/20 text-[#4FD3A4] border border-[#4FD3A4]/40 font-semibold'
-                  : 'bg-white/[0.03] text-[#A3AFBC] hover:text-[#EEF2F6] border border-transparent'
-              }`}
-            >
-              Saran & Progres ({notifications.filter((n) => n.severity === 'info' || n.severity === 'success').length})
-            </button>
-          </div>
-
-          {/* Notification List */}
-          <div className="space-y-2 mt-1 max-h-[380px] overflow-y-auto pr-0.5 custom-scrollbar">
-            {filteredNotifications.length === 0 ? (
-              <div className="py-8 text-center px-4">
-                <div className="w-10 h-10 rounded-full bg-white/[0.04] text-[#A3AFBC] flex items-center justify-center mx-auto mb-2 border border-white/[0.06]">
-                  <Check size={18} />
+            {/* Notification List */}
+            <div className="space-y-2 mt-1 flex-1 overflow-y-auto pr-0.5 custom-scrollbar min-h-0">
+              {filteredNotifications.length === 0 ? (
+                <div className="py-8 text-center px-4">
+                  <div className="w-10 h-10 rounded-full bg-white/[0.04] text-[var(--text-secondary)] flex items-center justify-center mx-auto mb-2 border border-[var(--border-subtle)]">
+                    <Check size={18} />
+                  </div>
+                  <p className="text-xs font-semibold text-[var(--text-primary)]">Semua Terkendali</p>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    Tidak ada pemberitahuan atau peringatan pada filter ini.
+                  </p>
                 </div>
-                <p className="text-xs font-semibold text-[#EEF2F6]">Semua Terkendali</p>
-                <p className="text-[11px] text-[#74808E] mt-0.5">
-                  Tidak ada pemberitahuan atau peringatan pada filter ini.
-                </p>
-              </div>
-            ) : (
-              filteredNotifications.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => markAsRead(item.id)}
-                  className={`p-3 rounded-xl transition-all cursor-pointer border relative group ${
-                    item.read
-                      ? 'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04] opacity-80 hover:opacity-100'
-                      : 'glass-2 border-[rgba(205,225,245,0.12)] hover:border-[#E39A5E]/40 shadow-xs'
-                  }`}
-                >
-                  {/* Top Badge & Unread Dot */}
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border flex items-center gap-1.5 ${getSeverityBadgeClass(
-                        item.severity
-                      )}`}
-                    >
-                      {getSeverityIcon(item.severity)}
-                      <span>{getSeverityLabel(item.severity)}</span>
-                    </span>
+              ) : (
+                filteredNotifications.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => markAsRead(item.id)}
+                    className={`p-3 rounded-xl transition-all cursor-pointer relative group ${
+                      item.read
+                        ? 'notification-card-read'
+                        : 'notification-card'
+                    }`}
+                  >
+                    {/* Top Badge & Unread Dot */}
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border flex items-center gap-1.5 ${getSeverityBadgeClass(
+                          item.severity
+                        )}`}
+                      >
+                        {getSeverityIcon(item.severity)}
+                        <span>{getSeverityLabel(item.severity)}</span>
+                      </span>
 
-                    <div className="flex items-center gap-1.5">
                       {!item.read && (
                         <span
-                          className="w-2 h-2 rounded-full bg-[#E39A5E] shadow-xs shadow-[#E39A5E]/50"
+                          className="w-2 h-2 rounded-full bg-[#E39A5E] shadow-xs shadow-[#E39A5E]/50 shrink-0"
                           title="Belum dibaca"
                         />
                       )}
                     </div>
+
+                    {/* Title & Message */}
+                    <h4 className="text-xs font-semibold text-[var(--text-primary)] leading-snug">
+                      {item.title}
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-1 leading-relaxed">
+                      {item.message}
+                    </p>
+
+                    {/* Action Link Button */}
+                    {(item.actionTab || item.actionPrompt) && (
+                      <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] flex items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleActionClick(item);
+                          }}
+                          className="text-[11px] font-medium text-[#E39A5E] hover:text-[#CF8143] flex items-center gap-1 transition-colors cursor-pointer group-hover:translate-x-0.5"
+                        >
+                          <span>
+                            {item.actionPrompt
+                              ? 'Tanya AI'
+                              : item.actionTab === 'statistik'
+                              ? 'Lihat Analisis'
+                              : item.actionTab === 'budget'
+                              ? 'Buka Budget'
+                              : item.actionTab === 'transaksi'
+                              ? 'Lihat Transaksi'
+                              : 'Lihat Detail'}
+                          </span>
+                          <ArrowRight size={12} strokeWidth={2.2} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Title & Message */}
-                  <h4 className="text-xs font-semibold text-[#EEF2F6] leading-snug">
-                    {item.title}
-                  </h4>
-                  <p className="text-[11px] text-[#A3AFBC] mt-1 leading-relaxed">
-                    {item.message}
-                  </p>
-
-                  {/* Action Link Button */}
-                  {(item.actionTab || item.actionPrompt) && (
-                    <div className="mt-2.5 pt-2 border-t border-white/[0.04] flex items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleActionClick(item);
-                        }}
-                        className="text-[11px] font-medium text-[#E39A5E] hover:text-[#CF8143] flex items-center gap-1 transition-colors cursor-pointer group-hover:translate-x-0.5"
-                      >
-                        <span>
-                          {item.actionPrompt
-                            ? 'Tanya AI'
-                            : item.actionTab === 'statistik'
-                            ? 'Lihat Analisis'
-                            : item.actionTab === 'budget'
-                            ? 'Buka Budget'
-                            : item.actionTab === 'transaksi'
-                            ? 'Lihat Transaksi'
-                            : 'Lihat Detail'}
-                        </span>
-                        <ArrowRight size={12} strokeWidth={2.2} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-
-          {/* Footer Note */}
-          <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-[#74808E]">
-            <span>Monetra Intelligence Engine</span>
-            <span>Aturan 50/30/20 & DSP</span>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

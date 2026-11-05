@@ -813,3 +813,70 @@ input[type="number"] {
     max-height: calc(100vh - 3.5rem);
   }
 }
+
+/* High-Contrast Notification Flyout Panel & Cards */
+.notification-panel {
+  background-color: #0E141E !important;
+  border: 1px solid rgba(205, 225, 245, 0.22) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+[data-theme="light"] .notification-panel {
+  background-color: #FFFFFF !important;
+  border: 1px solid rgba(203, 213, 225, 0.95) !important;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18), 0 0 1px rgba(15, 23, 42, 0.1) !important;
+}
+
+.notification-card {
+  background-color: #141B26 !important;
+  border: 1px solid rgba(205, 225, 245, 0.14) !important;
+}
+.notification-card:hover {
+  background-color: #1A2332 !important;
+  border-color: rgba(227, 154, 94, 0.45) !important;
+}
+[data-theme="light"] .notification-card {
+  background-color: #F8FAFC !important;
+  border: 1px solid rgba(226, 232, 240, 1) !important;
+}
+[data-theme="light"] .notification-card:hover {
+  background-color: #F1F5F9 !important;
+  border-color: rgba(194, 120, 56, 0.45) !important;
+}
+
+.notification-card-read {
+  background-color: #101620 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  opacity: 0.85;
+}
+.notification-card-read:hover {
+  background-color: #141B26 !important;
+  opacity: 1;
+}
+[data-theme="light"] .notification-card-read {
+  background-color: #FFFFFF !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  opacity: 0.85;
+}
+[data-theme="light"] .notification-card-read:hover {
+  background-color: #F8FAFC !important;
+  opacity: 1;
+}
+
+.notification-subtle-btn {
+  background-color: #161D28;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #A3AFBC;
+}
+.notification-subtle-btn:hover {
+  background-color: #1E2635;
+  color: #EEF2F6;
+}
+[data-theme="light"] .notification-subtle-btn {
+  background-color: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+}
+[data-theme="light"] .notification-subtle-btn:hover {
+  background-color: #E2E8F0;
+  color: #0F172A;
+}
