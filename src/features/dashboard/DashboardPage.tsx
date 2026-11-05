@@ -558,7 +558,7 @@ export const DashboardPage: React.FC = () => {
                     dataKey="expense"
                     name="Pengeluaran"
                     stroke="#EE5D6C"
-                    strokeWidth={2.2}
+                    strokeWidth={2}
                     fill="url(#dashExpGrad)"
                     dot={statPeriod === 'month' ? false : { r: 3, fill: '#EE5D6C', strokeWidth: 1.5, stroke: '#1C0E04' }}
                     activeDot={{ r: 5, fill: '#EE5D6C', stroke: '#EEF2F6', strokeWidth: 2 }}
@@ -570,11 +570,11 @@ export const DashboardPage: React.FC = () => {
                     dataKey="income"
                     name="Pemasukan"
                     stroke="#4FD3A4"
-                    strokeWidth={1.8}
-                    strokeDasharray={statPeriod === 'month' ? undefined : '2 2'}
+                    strokeWidth={2.4}
+                    strokeDasharray="3 3"
                     fill="url(#dashIncGrad)"
                     dot={statPeriod === 'month' ? false : { r: 2.5, fill: '#4FD3A4', strokeWidth: 1, stroke: '#071F17' }}
-                    activeDot={{ r: 4.5, fill: '#4FD3A4', stroke: '#EEF2F6', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: '#4FD3A4', stroke: '#EEF2F6', strokeWidth: 2 }}
                   />
                 )}
               </AreaChart>

@@ -188,7 +188,7 @@ export const VoiceModal: React.FC = () => {
 
   if (!voiceModalOpen) return null;
 
-  // ── Start Recording (Native Web Speech Recognition + Fallback MediaRecorder) ──
+  // ── Start Recording (Native Web Speech Recognition + Hardware Audio Engine) ──
   const handleStartRecording = async () => {
     // 1. Ensure any lingering audio / recognition hardware locks are completely dismantled
     cleanupAudio();
@@ -210,71 +210,15 @@ export const VoiceModal: React.FC = () => {
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     );
 
-    // On mobile devices (iOS iPhone / Android):
-    // Dedicated High-Sensitivity Hardware Audio Engine with Vocal DSP & Multimodal AI!
-    // Ensures 100% reliable microphone detection, dancing waveform bars, and infinite repeated recordings!
-    if (isMobile) {
-      await startMediaRecorderFallback();
-      // Concurrently attempt live speech recognition for real-time visual text streaming
-      const SpeechRecognition = getSpeechRecognition();
-      if (SpeechRecognition) {
-        try {
-          const rec = new SpeechRecognition();
-          rec.lang = 'id-ID';
-          rec.continuous = true;
-          rec.interimResults = true;
-          rec.onresult = (event: any) => {
-            let sessionText = '';
-            for (let i = 0; i < event.results.length; ++i) {
-              sessionText += (event.results[i][0]?.transcript || '') + ' ';
-            }
-            if (sessionText.trim()) {
-              setLiveTranscript(sessionText.trim());
-              setHasDetectedVoice(true);
-              hasDetectedVoiceRef.current = true;
-            }
-          };
-          rec.onerror = () => {};
-          rec.start();
-          recognitionRef.current = rec;
-        } catch {
-          // Safe to ignore if concurrent recognition is restricted by mobile OS
-        }
-      }
-      return;
-    }
+    // 1. Start High-Sensitivity Hardware Audio Engine with Vocal DSP & AnalyserNode
+    // Operates on BOTH Desktop and Mobile so the acoustic soundwave reacts dynamically in real-time to vocal input!
+    await startMediaRecorderFallback();
 
-    // On Desktop (Laptop Chrome/Edge): Web Speech API for direct real-time word-by-word streaming
+    // 2. Concurrently spawn Web Speech Recognition for live real-time text streaming
     const SpeechRecognition = getSpeechRecognition();
-
     if (SpeechRecognition) {
-      let speechActive = false;
-
-      // Dynamic audio visualizer driven by real-time speech events (36-bar acoustic waveform)
-      const updateSpeechMeter = () => {
-        if (!isRecordingRef.current) return;
-        const now = Date.now();
-        const totalBars = 36;
-        const bars: number[] = [];
-        for (let b = 0; b < totalBars; b++) {
-          const envelope = Math.sin(((b + 1) / (totalBars + 1)) * Math.PI);
-          let height: number;
-          if (speechActive || hasDetectedVoiceRef.current) {
-            const wave = Math.sin(now / 140 + b * 0.45) * 35 + (Math.random() * 25 + 40);
-            height = Math.max(8, Math.min(100, Math.round(wave * envelope * 1.25)));
-          } else {
-            const wave = Math.sin(now / 350 + b * 0.35) * 8 + 14;
-            height = Math.max(6, Math.round(wave * envelope));
-          }
-          bars.push(height);
-        }
-        setBarHeights(bars);
-        animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
-      };
-      animFrameRef.current = requestAnimationFrame(updateSpeechMeter);
-
       // Function to spawn a fresh, clean SpeechRecognition cycle
-      // Ensures that on mobile (iPhone iOS 15 Pro Max / Android), speech streams word-by-word in real time!
+      // Ensures real-time word-by-word streaming without interfering with the hardware audio analyser
       const spawnRecognitionCycle = (): any => {
         if (!isRecordingRef.current) return null;
 
@@ -286,38 +230,25 @@ export const VoiceModal: React.FC = () => {
           rec.interimResults = true;
           rec.maxAlternatives = 1;
 
-          rec.onstart = () => {
-            setAudioLevel(20);
-          };
+          rec.onstart = () => {};
 
           rec.onspeechstart = () => {
-            speechActive = true;
             hasDetectedVoiceRef.current = true;
             setHasDetectedVoice(true);
-            setAudioLevel(75);
           };
 
           rec.onsoundstart = () => {
-            speechActive = true;
             hasDetectedVoiceRef.current = true;
             setHasDetectedVoice(true);
-            setAudioLevel(65);
           };
 
-          rec.onspeechend = () => {
-            speechActive = false;
-          };
-
-          rec.onsoundend = () => {
-            speechActive = false;
-          };
+          rec.onspeechend = () => {};
+          rec.onsoundend = () => {};
 
           // Streams words live directly to screen as user speaks!
           rec.onresult = (event: any) => {
-            speechActive = true;
             hasDetectedVoiceRef.current = true;
             setHasDetectedVoice(true);
-            setAudioLevel(85);
 
             let sessionFinal = '';
             let sessionInterim = '';
@@ -352,7 +283,6 @@ export const VoiceModal: React.FC = () => {
           };
 
           rec.onend = () => {
-            speechActive = false;
             if (currentSessionFinalRef.current) {
               const finalChunk = currentSessionFinalRef.current.trim();
               if (finalChunk && !previousSessionsTextRef.current.toLowerCase().includes(finalChunk.toLowerCase())) {
@@ -363,8 +293,8 @@ export const VoiceModal: React.FC = () => {
               currentSessionFinalRef.current = '';
             }
 
-            // If user has not finished recording (e.g. natural pause on mobile):
-            // Gracefully spawn next clean cycle with a 250ms delay to keep listening seamlessly without InvalidStateError!
+            // If user has not finished recording:
+            // Gracefully spawn next clean cycle with a delay to keep listening seamlessly without InvalidStateError!
             if (isRecordingRef.current) {
               terminateRecognition(rec);
               if (restartTimerRef.current) {
@@ -394,12 +324,8 @@ export const VoiceModal: React.FC = () => {
       const initialRec = spawnRecognitionCycle();
       if (initialRec) {
         recognitionRef.current = initialRec;
-        return; // Success! Running with exclusive mic access!
       }
     }
-
-    // 2. Fallback Engine: MediaRecorder + Web Audio API (For browsers without Web Speech API)
-    await startMediaRecorderFallback();
   };
 
   // ── High-Sensitivity Hardware Audio Engine (Mobile iOS / Android & Fallback) ──
@@ -493,8 +419,8 @@ export const VoiceModal: React.FC = () => {
 
         // 5. Analyser for speech visualization
         const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.75;
+        analyser.fftSize = 128;
+        analyser.smoothingTimeConstant = 0.65;
         analyserRef.current = analyser;
 
         // Connect the vocal DSP chain
@@ -519,37 +445,56 @@ export const VoiceModal: React.FC = () => {
           if (!isRecordingRef.current) return;
           analyser.getByteFrequencyData(dataArray);
 
-          // Focus energy measurement specifically on human speech frequencies (approx 120Hz - 3500Hz)
+          // Focus energy measurement specifically on human speech frequencies (approx 150Hz - 3800Hz, bins 1 to 16)
           let vocalSum = 0;
           let vocalBins = 0;
-          for (let i = 1; i < Math.min(22, dataArray.length); i++) {
+          for (let i = 1; i <= 16; i++) {
             vocalSum += dataArray[i];
             vocalBins++;
           }
           const vocalAvg = vocalBins > 0 ? vocalSum / vocalBins : 0;
           // Ultra-high sensitivity scaling: picks up normal speech and whispers effortlessly
-          const normalized = Math.min(100, Math.round((vocalAvg / 10) * 100));
+          const normalized = Math.min(100, Math.round((vocalAvg / 50) * 100));
 
           setAudioLevel(normalized);
-          if (normalized > 0.5 || vocalAvg > 0.25) {
+
+          // Dynamic speaking state: truly dynamic per frame so bars dance with every word & rest on pause
+          const isSpeakingNow = vocalAvg > 4.0;
+          if (isSpeakingNow) {
             setHasDetectedVoice(true);
             hasDetectedVoiceRef.current = true;
           }
 
           const totalBars = 36;
-          const step = Math.max(1, Math.floor(dataArray.length / totalBars));
           const bars: number[] = [];
           const now = Date.now();
+          const vocalEnergy = Math.min(1.0, Math.max(0, (vocalAvg - 3.5) / 55));
+
           for (let b = 0; b < totalBars; b++) {
+            // Symmetrical sinusoidal envelope (0 at tips, 1.0 at center)
             const envelope = Math.sin(((b + 1) / (totalBars + 1)) * Math.PI);
-            const val = dataArray[b * step] || 0;
+            // Distance from center (0 at middle, 1 at ends)
+            const distFromCenter = Math.abs(b - 17.5) / 17.5;
+
             let height: number;
-            if (val > 0) {
-              const active = Math.min(100, Math.max(18, Math.round((val / 100) * 100 * envelope * 1.3)));
-              height = Math.max(8, active);
+            if (isSpeakingNow) {
+              // Map frequency bins symmetrically from center outward
+              const binIndex = Math.min(26, Math.max(1, Math.round(2 + (1 - distFromCenter) * 14 + ((b % 2) * 2))));
+              const binAmp = (dataArray[binIndex] || 0) / 255;
+
+              // Combined vocal amplitude: responsive to frequency harmonics + overall vocal power
+              const vocalFactor = binAmp * 0.65 + vocalEnergy * 0.35;
+              // Organic micro-wave motion for fluid living aesthetics
+              const shimmer = Math.sin(now / 90 + b * 0.5) * 5;
+
+              // Height jumps dynamically with speech, shaped by the luxury symmetrical envelope
+              const dynamicHeight = 12 + (vocalFactor * 78 + shimmer) * envelope;
+              // Constrained between 8% and 92% (NEVER plateaus at a flat 100% block)
+              height = Math.max(8, Math.min(92, Math.round(dynamicHeight)));
             } else {
-              const wave = Math.sin(now / 300 + b * 0.35) * 8 + 14;
-              height = Math.max(6, Math.round(wave * envelope));
+              // Calm resting wave during silence or natural breath pauses between sentences
+              const idlePulse = Math.sin(now / 350 + b * 0.35) * 6 + 10;
+              height = Math.max(6, Math.min(22, Math.round(idlePulse * envelope)));
             }
             bars.push(height);
           }
@@ -939,12 +884,6 @@ export const VoiceModal: React.FC = () => {
               {recordState === 'idle' && (
                 <span className="px-3.5 py-1 rounded-full bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] text-xs font-medium tracking-wide">
                   Siap Mendengarkan Suara
-                </span>
-              )}
-              {recordState === 'processing' && (
-                <span className="px-3.5 py-1 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/35 text-[#4FD3A4] text-xs font-semibold flex items-center gap-1.5 animate-pulse">
-                  <RefreshCw size={12} className="animate-spin" />
-                  <span>Memproses Analisis AI...</span>
                 </span>
               )}
             </div>
