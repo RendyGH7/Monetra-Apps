@@ -18,7 +18,7 @@ import {
   TrendingUp,
   Trash2,
   X,
-  Sparkles,
+  Cpu,
   Key,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
@@ -365,7 +365,7 @@ export const SettingsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center">
-              <Sparkles size={16} />
+              <Cpu size={16} />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-[#EEF2F6]">Mesin Kecerdasan AI (Gemini 3.8 Flash)</h2>

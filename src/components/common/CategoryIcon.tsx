@@ -10,7 +10,7 @@ import {
   Wallet,
   Gamepad2,
   CircleEllipsis,
-  Sparkles,
+  Tag,
   ArrowUpRight,
   ArrowDownLeft,
 } from 'lucide-react';
@@ -69,7 +69,8 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
     case 'expense':
       return <ArrowUpRight {...iconProps} />;
     case 'sparkles':
-      return <Sparkles {...iconProps} />;
+    case 'tag':
+      return <Tag {...iconProps} />;
     default:
       return <CircleEllipsis {...iconProps} />;
   }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Mic, MicOff, Sparkles, Trash2, User, Copy, Check, Radio } from 'lucide-react';
+import { Bot, Send, Mic, MicOff, Loader2, MessageSquare, Trash2, User, Copy, Check, Radio } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { stripEmoji, formatTimeShort, formatCompact } from '../../utils/format';
 import { askMonetra, parseVoiceAudioWithAI } from '../../services/aiService';
@@ -563,7 +563,7 @@ export const AssistantPage: React.FC = () => {
 
         {isTyping && (
           <div className="flex items-center gap-2.5 text-xs text-[var(--accent)] py-2 pl-11 animate-pulse">
-            <Sparkles size={14} className="animate-spin text-[#E39A5E]" />
+            <Loader2 size={14} className="animate-spin text-[#E39A5E]" />
             <span className="font-medium">Monetra sedang menganalisis data keuanganmu...</span>
           </div>
         )}
@@ -579,7 +579,7 @@ export const AssistantPage: React.FC = () => {
             className="chip-press group px-3.5 py-1.5 rounded-xl glass-1 border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#E39A5E]/50 whitespace-nowrap cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
             title={`Tanyakan: ${q}`}
           >
-            <Sparkles size={12} className="text-[#E39A5E] shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <MessageSquare size={12} className="text-[#E39A5E] shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
             <span>{q}</span>
           </button>
         ))}

@@ -27,7 +27,8 @@ import {
   BarChart3,
   ArrowRight,
   PieChart as DonutIcon,
-  Sparkles,
+  Bot,
+  Lightbulb,
   ShieldCheck,
   AlertCircle,
   ChevronRight,
@@ -1039,7 +1040,7 @@ export const AnalyticsPage: React.FC = () => {
           <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-white/[0.03] to-white/[0.01] border border-white/[0.08] space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-[#EEF2F6]">
-                <Sparkles size={13} className="text-[#E39A5E]" />
+                <Lightbulb size={13} className="text-[#E39A5E]" />
                 <span>Rekomendasi AI</span>
               </div>
               <button
@@ -1254,7 +1255,7 @@ export const AnalyticsPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E39A5E] hover:text-[#f3b584] transition-colors cursor-pointer self-start sm:self-center"
                 title="Minta AI mengevaluasi dan memberikan tips penghematan untuk pengeluaran terbesar ini"
               >
-                <Sparkles size={13} />
+                <Bot size={13} />
                 <span>Analisis via AI</span>
                 <ArrowRight size={13} />
               </button>

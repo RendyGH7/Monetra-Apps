@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Bell,
-  Sparkles,
+  Bot,
+  Lightbulb,
   AlertTriangle,
   AlertCircle,
   TrendingUp,
@@ -139,7 +140,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
         return <Check size={15} className="text-[#4FD3A4]" />;
       case 'info':
       default:
-        return <Sparkles size={15} className="text-[#9DB2CE]" />;
+        return <Lightbulb size={15} className="text-[#9DB2CE]" />;
     }
   };
 
@@ -219,7 +220,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] gap-2 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center shrink-0">
-                  <Sparkles size={14} />
+                  <Bot size={14} />
                 </div>
                 <div>
                   <h3 className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] leading-tight">

@@ -2,7 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingDown,
   TrendingUp,
-  Sparkles,
+  Bot,
+  Lightbulb,
+  AlertTriangle,
   ArrowRight,
   ShieldCheck,
   Calendar,
@@ -621,7 +623,13 @@ export const DashboardPage: React.FC = () => {
               ? 'bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4]'
               : 'bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E]'
           }`}>
-            <Sparkles size={18} />
+            {dailyInsight.badgeType === 'warning' ? (
+              <AlertTriangle size={18} />
+            ) : dailyInsight.badgeType === 'celebration' ? (
+              <TrendingUp size={18} />
+            ) : (
+              <Lightbulb size={18} />
+            )}
           </div>
           <div className="space-y-1.5 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -647,7 +655,7 @@ export const DashboardPage: React.FC = () => {
           className="btn-primary group self-end sm:self-center shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E39A5E] to-[#CF8143] text-[#1C0E04] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-black/25 hover:brightness-105 active:scale-95 transition-all"
           title={`Tanyakan ini ke Monetra: "${dailyInsight.suggestedPrompt}"`}
         >
-          <Sparkles size={14} className="transition-transform duration-300 group-hover:rotate-12" />
+          <Bot size={15} className="transition-transform duration-300 group-hover:scale-110" />
           <span>Tanya Monetra</span>
           <ArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-1" />
         </button>
