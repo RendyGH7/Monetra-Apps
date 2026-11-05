@@ -213,69 +213,99 @@ async function queryGeminiAPI(
     ? goals.map((g) => `${g.name}: ${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)} (${Math.round((g.current_amount / Math.max(1, g.target_amount)) * 100)}%)`).join(' | ')
     : 'Belum ada target tabungan';
 
+  const categorySpendingList = (context.categories || [])
+    .map((c) => {
+      const txs = thisMonthTx.filter((t) => t.category_id === c.id && t.type === 'expense');
+      const sum = txs.reduce((acc, t) => acc + t.amount, 0);
+      return sum > 0 ? `${c.name}: ${formatCurrency(sum)} (${txs.length}x)` : null;
+    })
+    .filter(Boolean);
+  const categorySpendingSummary = categorySpendingList.length > 0 ? categorySpendingList.join(' | ') : 'Belum ada pengeluaran per kategori bulan ini';
+
+  const catTotals: Record<string, number> = {};
+  thisMonthTx.filter((t) => t.type === 'expense').forEach((t) => {
+    const c = catMap.get(t.category_id || '')?.name || 'Lainnya';
+    catTotals[c] = (catTotals[c] || 0) + t.amount;
+  });
+  const topSpentEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  const topSpentSummary = topSpentEntries.length > 0
+    ? topSpentEntries.slice(0, 3).map(([name, amt]) => `${name}: ${formatCurrency(amt)} (${Math.round((amt / Math.max(1, totalExpense)) * 100)}%)`).join(', ')
+    : 'Belum ada data pengeluaran';
+
   const recentTxSummary = transactions
-    .slice(0, 6)
-    .map((t) => `${t.note}: ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)} (${formatDateTimeWIB(t.occurred_at)})`)
-    .join(', ');
+    .slice(0, 15)
+    .map((t) => {
+      const cat = catMap.get(t.category_id || '')?.name || 'Umum';
+      const wName = (wallets || []).find((w) => w.id === t.wallet_id)?.name || 'Dompet';
+      return `- ${formatDateTimeWIB(t.occurred_at)} | ${t.note} | ${cat} | ${wName} | ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}`;
+    })
+    .join('\n');
 
   const systemInstructionText = `
-Kamu adalah Monetra, pusat kecerdasan finansial (Core Financial Brain) yang tersambung ke seluruh bagian proyek ini untuk akun pengguna saat ini.
-Kamu memiliki akses ke data profil, akun Google, rincian dompet dan saldo, target tabungan, histori transaksi, serta memori otomatis.
+Kamu adalah Monetra, pusat kecerdasan finansial (Core Financial Brain) berstandar Private Wealth & Financial Analyst untuk akun pengguna saat ini.
+Kamu memiliki akses menyeluruh ke profil pengguna, status saldo riil, rincian dompet, target tabungan, pengeluaran kategori, histori transaksi terperinci, dan memori jangka panjang.
 
 WAKTU & ZONA SAAT INI (INDONESIA WIB / UTC+7):
 - Hari & Tanggal: ${nowWIB.dayName}, ${nowWIB.date} ${nowWIB.monthName} ${nowWIB.year}
 - Jam & Menit: ${nowWIB.timeString} WIB (Waktu Indonesia Barat)
 - Tahun: ${nowWIB.year}, Bulan: ${nowWIB.monthName} (Bulan ke-${nowWIB.month + 1})
-Setiap kali pengguna menanyakan waktu, jam, menit, hari, tanggal, bulan, atau tahun, selalu jawab persis mengikuti Waktu Indonesia Barat (WIB) ini.
+Setiap kali pengguna menanyakan waktu, jam, tanggal, atau hari, selalu jawab persis mengikuti Waktu Indonesia Barat (WIB) ini.
 
 PROFIL PENGGUNA:
 - Nama: ${profile.nama}
-- Email Akun Google: ${profile.email || 'Lokal / Terisolasi'}
+- Email Akun: ${profile.email || 'Lokal / Terisolasi'}
 - Status: ${profile.internship_status || 'Anak Magang'}
-- Gaji Magang: ${formatCurrency(monthlyIncome)} per bulan
-- Gajian tiap tanggal: ${profile.pay_day || 25} (${daysLeft} hari lagi menuju gajian)
+- Gaji/Pemasukan Bulanan: ${formatCurrency(monthlyIncome)} per bulan
+- Siklus Gajian: Tiap tanggal ${payDay} (${daysLeft} hari lagi menuju gajian)
 - Sisa Saldo Bulan Ini: ${formatCurrency(netBalance)}
 - Batas Aman Belanja Harian: ${formatCurrency(safeDailySpend)}/hari
 - Total Pengeluaran Bulan Ini: ${formatCurrency(totalExpense)}
-- Pengeluaran Kencan Bulan Ini: ${formatCurrency(datingExpense)} (Budget: ${formatCurrency(profile.dating_budget_est || 600000)})
+- Pos Pengeluaran Terbesar: ${topSpentSummary}
+- Pengeluaran Kencan Bulan Ini: ${formatCurrency(datingExpense)} (Budget estimasi: ${formatCurrency(profile.dating_budget_est || 600000)})
 - Bisnis Sampingan: ${profile.side_hustle_status || 'Belum aktif'}
 
 ANALISIS ALOKASI 50/30/20 REAL-TIME:
-- Kebutuhan (Needs 50%): Aktual ${formatCurrency(needsExpense)} / Target ${formatCurrency(targetNeeds)} (${Math.round((needsExpense / Math.max(1, targetNeeds)) * 100)}%)
-- Keinginan (Wants 30%): Aktual ${formatCurrency(wantsExpense)} / Target ${formatCurrency(targetWants)} (${Math.round((wantsExpense / Math.max(1, targetWants)) * 100)}%)
-- Tabungan/Investasi (Savings 20%): Aktual ${formatCurrency(savingsExpense)} / Target ${formatCurrency(targetSavings)} (${Math.round((savingsExpense / Math.max(1, targetSavings)) * 100)}%)
+- Kebutuhan (Needs 50%): Aktual ${formatCurrency(needsExpense)} / Target ${formatCurrency(targetNeeds)} (${Math.round((needsExpense / Math.max(1, targetNeeds)) * 100)}%) -> Status: ${needsExpense > targetNeeds ? 'OVERBUDGET (Perlu Penghematan)' : 'TERKENDALI'}
+- Keinginan (Wants 30%): Aktual ${formatCurrency(wantsExpense)} / Target ${formatCurrency(targetWants)} (${Math.round((wantsExpense / Math.max(1, targetWants)) * 100)}%) -> Status: ${wantsExpense > targetWants ? 'OVERBUDGET (Rem Jajan Segera)' : 'TERKENDALI'}
+- Tabungan/Investasi (Savings 20%): Aktual ${formatCurrency(savingsExpense)} / Target ${formatCurrency(targetSavings)} (${Math.round((savingsExpense / Math.max(1, targetSavings)) * 100)}%) -> Status: ${savingsExpense >= targetSavings ? 'TARGET TERCAPAI' : 'BELUM TERCAPAI'}
 
-PROYEKSI CASHFLOW AKHIR BULAN:
-- Rata-rata belanja saat ini: ${formatCurrency(dailyBurnRate)}/hari
-- Proyeksi sisa saldo akhir bulan: ${formatCurrency(projectedMonthEndBalance)} (${projectedMonthEndBalance >= 0 ? 'Surplus Aman' : 'Potensi Defisit'})
+PROYEKSI CASHFLOW & KESEHATAN KEUANGAN:
+- Rata-rata laju belanja (Burn Rate): ${formatCurrency(dailyBurnRate)}/hari
+- Proyeksi sisa saldo akhir bulan: ${formatCurrency(projectedMonthEndBalance)} (${projectedMonthEndBalance >= 0 ? 'Surplus Sehat' : 'POTENSI DEFISIT / KRITIS'})
 
-DATA DOMPET & SALDO AKTIF:
-- ${walletsSummary} (Total saldo dompet: ${formatCurrency(totalWallets || netBalance)})
+DATA DOMPET & DISTRIBUSI SALDO:
+- ${walletsSummary} (Total likuiditas: ${formatCurrency(totalWallets || netBalance)})
 
-TARGET TABUNGAN AKTIF:
+PENGELUARAN PER KATEGORI (BULAN INI):
+- ${categorySpendingSummary}
+
+TARGET TABUNGAN & GOALS:
 - ${goalsSummary}
 
-MEMORI YANG TELAH DIINGAT AI:
+MEMORI & FAKTA PRIBADI YANG DIINGAT AI:
 ${memories.length > 0 ? memories.map((m) => `- ${m.content}`).join('\n') : '- Belum ada catatan khusus'}
 
-TRANSAKSI TERAKHIR:
+HISTORI TRANSAKSI TERAKHIR:
 ${recentTxSummary || 'Belum ada transaksi'}
 
 TUGAS BELAJAR MEMORI OTOMATIS:
-Pengguna dapat berbicara bebas menggunakan suara (Voice Prompt) mengenai topik apa saja, termasuk hal pribadi atau curhat yang tidak ada kaitannya dengan transaksi keuangan.
-Setiap kali pengguna membagikan informasi baru tentang dirinya (seperti pekerjaan, curhat, pacar/pasangan, kendaraan, tempat tinggal/kost, hobi, kebiasaan, laptop/gadget, atau target hidup), kamu WAJIB mencantumkan tag rahasia berikut di paling akhir responmu:
-[AUTO_LEARN: <fakta ringkas yang perlu diingat AI secara permanen>]
-Contoh: [AUTO_LEARN: Pengguna memiliki motor Honda Vario merah]
-Contoh: [AUTO_LEARN: Pacar pengguna bernama Sarah]
-Contoh: [AUTO_LEARN: Pengguna kost di daerah Kebon Jeruk dengan biaya 850rb per bulan]
-Fakta ini otomatis disimpan di memori eksklusif akun pengguna saat ini.
+Pengguna dapat berbicara atau curhat bebas mengenai hal apapun (pekerjaan, pasangan, keluarga, kendaraan, tempat tinggal, hobi, dsb).
+Setiap kali ada informasi atau fakta pribadi baru yang diungkapkan pengguna, WAJIB sertakan tag rahasia berikut di baris paling akhir responsmu:
+[AUTO_LEARN: <fakta ringkas yang dipelajari>]
+Contoh: [AUTO_LEARN: Pengguna kost di daerah Kebon Jeruk seharga 850rb/bulan]
+Fakta ini otomatis disimpan ke memori akun pengguna secara privat.
 
-PANDUAN MENJAWAB:
-1. Gunakan Bahasa Indonesia yang cerdas, ramah, luwes, dan solutif ala financial coach pribadi.
-2. Jika pengguna bertanya "siapakah aku?" atau menanyakan data dirinya, jawab dengan lengkap profilnya, akun Google-nya, saldo tiap dompetnya, target tabungannya, dan apa saja yang telah kamu pelajari tentangnya.
-3. Hubungkan setiap saran dengan situasi riil keuangan pengguna (saldo aktif, dompet, alokasi 50/30/20, target tabungan, dan hari gajian).
-4. Berikan tips konkret yang realistis untuk anak magang bergaji Rp 1.500.000 di Indonesia (menu makan warteg hemat Rp 10-15k, promo transportasi, kencan romantis hemat, anti pinjol/paylater).
-5. Hindari penggunaan tanda baca em dash.
+PRINSIP & STANDAR ANALISIS WAJIB (SANGAT PENTING):
+1. JANGAN PERNAH MENJAWAB MONOTON, PENDEK, ATAU DENGAN TEMPLATE KLISE! Berikan analisis cerdas, spesifik, dan komprehensif untuk SETIAP hal yang pengguna tanyakan atau katakan.
+2. SELALU LAKUKAN ANALISIS & BEDAH MASALAH:
+   - Jika pengguna bertanya tentang rencananya membeli sesuatu (misal barang, makanan, nongkrong, cicilan, ganti gadget): Hitung dampaknya secara matematis terhadap sisa saldo (${formatCurrency(netBalance)}), jatah belanja harian (${formatCurrency(safeDailySpend)}/hari), dan sisa hari ke gajian (${daysLeft} hari). Nyatakan dengan tegas apakah AMAN, BERISIKO, atau HARUS DITUNDA.
+   - Jika pengguna bertanya tentang kondisi keuangannya: Berikan diagnosa menyeluruh (alokasi 50/30/20, pos pengeluaran paling boros, dan proyeksi akhir bulan).
+   - Jika pengguna curhat atau bercerita: Berikan empati tulus lalu sambungkan dengan sudut pandang finansial taktis yang cerdas.
+3. SERTAKAN ANGKA-ANGKA KONKRET: Selalu sebutkan angka rupiah riil, persentase alokasi, saldo dompet terkait, dan estimasi hemat/rugi. Hindari kata-kata mengambang tanpa data.
+4. STRUKTUR FORMAT MARKDOWN YANG BERSIH & RAPI:
+   - Gunakan format teks tebal (**bold**), bullet point, atau penomoran agar sangat mudah dibaca.
+   - Buat bagian yang jelas: Analisis Situasi -> Rincian Data/Kalkulasi -> Dampak Finansial -> Rekomendasi Langkah Nyata.
+5. ZERO-EMOJI POLICY MUTLAK: Sesuai aturan desain Monetra, DILARANG KERAS menggunakan emoji apa pun dalam respon. Gunakan ketegasan kata dan struktur tipografi yang elegan.
 `;
 
   // Format past messages for Gemini ensuring strict turn alternation and valid structure
@@ -318,12 +348,12 @@ PANDUAN MENJAWAB:
     contentsPayload.push({ role: 'user', parts: [{ text: userPrompt.trim() }] });
   }
 
-  // Prioritize reliable, ultra-fast sub-second models with fallback
+  // Prioritize reliable, active Gemini 3.8 / latest models with fallback
   const modelsToTry = [
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-3.1-flash-lite',
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
+    'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
   ];
   let lastError: any = null;
 
@@ -654,8 +684,55 @@ function smartLocalFinancialReasoning(
     return `Peringatan penting seputar Paylater & Pinjol untuk ${firstName}:\n- Bunga paylater berkisar 2% - 4% per bulan (bisa mencapai 30% - 50% per tahun). Dengan gaji magang Rp 1.500.000, cicilan sekecil apapun akan langsung membebani cashflow bulanan.\n- Risiko BI Checking / SLIK OJK: Keterlambatan bayar walau hanya Rp 50.000 dapat merusak reputasi kreditmu saat nanti ingin mengajukan KPR atau bekerja di sektor perbankan.\n- Prinsip Monetra: Hindari paylater untuk konsumsi harian atau nongkrong. Jika uang tunai belum cukup, tunda pembelian sampai tabungan terkumpul.`;
   }
 
-  // 14. Pertanyaan Umum / Fallback Cerdas
-  return `Pertanyaan yang bagus, ${firstName}! Sebagai pusat kecerdasan finansialmu, saya tersambung ke seluruh dompet, target, dan transaksimu.\n\nRingkasan status dompetmu saat ini:\n- Saldo aktif: ${formatCurrency(netBalance)}\n- Batas aman belanja: ${formatCurrency(safeDaily)}/hari (menuju gajian tgl ${payDay})\n\nKamu bisa tanyakan hal seperti:\n- "Siapakah aku dan apa saja data yang kamu ketahui?"\n- "Berapa rincian saldo di semua dompetku?"\n- "Apa saja target tabungan saya saat ini?"\n- "Tips kencan hemat agar gaji magang cukup"\n- Atau ketik "catat makan siang 20rb di dompet tunai" untuk mencatat pengeluaran.`;
+  // 14. Evaluasi Rencana Belanja / Affordability Simulation
+  const buyWords = ['beli', 'checkout', 'belanja', 'ambil', 'ganti hp', 'ganti laptop', 'cicil'];
+  const hasBuyIntent = buyWords.some((w) => lower.includes(w));
+  if (hasBuyIntent) {
+    // Attempt to extract nominal if mentioned (e.g. 500rb, 1jt, 300000, 2 juta)
+    let amountFound = 0;
+    const jtMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:jt|juta)/);
+    const rbMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:rb|ribu|k)/);
+    const numMatch = lower.match(/(?:rp\.?|rp\s*)?(\d{4,9})/);
+
+    if (jtMatch) {
+      amountFound = Math.round(parseFloat(jtMatch[1].replace(',', '.')) * 1000000);
+    } else if (rbMatch) {
+      amountFound = Math.round(parseFloat(rbMatch[1].replace(',', '.')) * 1000);
+    } else if (numMatch) {
+      amountFound = parseInt(numMatch[1], 10);
+    }
+
+    if (amountFound > 0) {
+      const pctOfBalance = Math.round((amountFound / Math.max(1, netBalance)) * 100);
+      const remainingAfterBuy = netBalance - amountFound;
+      const newDailySpend = Math.max(0, Math.round(remainingAfterBuy / daysLeft));
+      const isAffordable = remainingAfterBuy >= (safeDaily * 5); // Must have at least 5 days buffer
+
+      return `Analisis Kelayakan Finansial Pembelian ${formatCurrency(amountFound)}:\n\n1. Evaluasi Likuiditas Dompet:\n- Sisa saldo aktif saat ini: ${formatCurrency(netBalance)}\n- Nominal rencana belanja: ${formatCurrency(amountFound)} (${pctOfBalance}% dari total saldomu)\n- Sisa saldo setelah pembelian: ${formatCurrency(remainingAfterBuy)}\n\n2. Dampak Terhadap Belanja Harian (${daysLeft} hari menuju gajian):\n- Batas aman belanja saat ini: ${formatCurrency(safeDaily)}/hari\n- Batas aman belanja baru jika dibeli: ${formatCurrency(newDailySpend)}/hari (berkurang ${formatCurrency(safeDaily - newDailySpend)}/hari)\n\n3. Keputusan & Rekomendasi Monetra:\n- Status: ${isAffordable ? 'Cukup Aman (Tetap Disiplin)' : 'BERISIKO TINGGI (Potensi Defisit Menjelang Gajian)'}\n${isAffordable
+        ? `- Jika barang ini sangat mendesak (Kebutuhan), kamu boleh membelinya asalkan membatasi jajan harian maksimal ${formatCurrency(newDailySpend)} per hari.\n- Pastikan dana darurat dan pos tabungan tidak ikut terpakai.`
+        : `- Jangan beli sekarang! Pembelian ini akan menguras ${pctOfBalance}% saldo aktifmu dan membuat jatah harianmu tersisa hanya ${formatCurrency(newDailySpend)}/hari.\n- Rekomendasi: Masukkan barang ini ke Target Impian (Goals) di Monetra dan sisihkan secara bertahap tiap tanggal gajian (${payDay}).`}`;
+    }
+  }
+
+  // 15. Evaluasi & Audit Keuangan Komprehensif
+  if (lower.includes('analisis') || lower.includes('evaluasi') || lower.includes('audit') || lower.includes('kondisi') || lower.includes('kesehatan') || lower.includes('keuangan saya')) {
+    const daysElapsed = Math.max(1, todayDate);
+    const burnRate = Math.round(totalExpense / daysElapsed);
+    const projectedEnd = netBalance - (burnRate * daysLeft);
+
+    const targetNeeds = Math.round(monthlyIncome * 0.5);
+    const targetWants = Math.round(monthlyIncome * 0.3);
+    const targetSavings = Math.round(monthlyIncome * 0.2);
+
+    return `Audit Komprehensif Kesehatan Finansial ${firstName}:\n\n1. Likuiditas & Posisi Saldo:\n- Total Saldo Bersih: ${formatCurrency(netBalance)}\n- Sisa Hari ke Gajian: ${daysLeft} hari (tanggal ${payDay})\n- Batas Aman Belanja Harian: ${formatCurrency(safeDaily)}/hari\n\n2. Rapor Alokasi 50/30/20:\n- Kebutuhan Pokok (50%): ${formatCurrency(needsExpense)} / ${formatCurrency(targetNeeds)} (${Math.round((needsExpense / Math.max(1, targetNeeds)) * 100)}%)\n- Keinginan & Gaya Hidup (30%): ${formatCurrency(wantsExpense)} / ${formatCurrency(targetWants)} (${Math.round((wantsExpense / Math.max(1, targetWants)) * 100)}%)\n- Tabungan & Investasi (20%): ${formatCurrency(savingsExpense)} / ${formatCurrency(targetSavings)} (${Math.round((savingsExpense / Math.max(1, targetSavings)) * 100)}%)\n\n3. Laju Belanja (Burn Rate) & Proyeksi:\n- Rata-rata belanja harian: ${formatCurrency(burnRate)}/hari\n- Estimasi sisa saldo akhir bulan: ${formatCurrency(projectedEnd)} (${projectedEnd >= 0 ? 'Surplus Terjaga' : 'Potensi Defisit'})\n\n4. Rekomendasi Strategis:\n- ${wantsExpense > targetWants ? 'Fokus utama minggu ini: rem pengeluaran nongkrong/kopi agar jatah harian tidak tergerus.' : 'Pengeluaran gaya hidup masih terkendali dengan baik, pertahankan!'}\n- Alokasikan minimal 20% langsung ke rekening tabungan di awal gajian tanggal ${payDay}.`;
+  }
+
+  // 16. Dynamic Analytical Fallback (Zero Monotony, Highly Specific)
+  const targetNeeds = Math.round(monthlyIncome * 0.5);
+  const targetWants = Math.round(monthlyIncome * 0.3);
+  const targetSavings = Math.round(monthlyIncome * 0.2);
+
+  return `Analisis Finansial Terkait Pertanyaanmu, ${firstName}:\n\nMenanggapi hal yang kamu sampaikan ("${cleanPrompt}"), berikut rincian analisis data finansialmu saat ini:\n\n1. Posisi Keuangan Terkini:\n- Saldo Aktif: ${formatCurrency(netBalance)}\n- Batas Aman Belanja Harian: ${formatCurrency(safeDaily)} per hari\n- Hitung Mundur Gajian: ${daysLeft} hari lagi (tanggal ${payDay})\n\n2. Rincian Alokasi Anggaran:\n- Kebutuhan (Needs 50%): ${formatCurrency(needsExpense)} dari plafon ${formatCurrency(targetNeeds)}\n- Keinginan (Wants 30%): ${formatCurrency(wantsExpense)} dari plafon ${formatCurrency(targetWants)}\n- Tabungan (Savings 20%): ${formatCurrency(savingsExpense)} dari target ${formatCurrency(targetSavings)}\n\n3. Catatan & Langkah Rekomendasi:\n- Pertahankan ritme belanja maksimal di angka ${formatCurrency(safeDaily)}/hari agar cashflow tetap positif sampai tanggal gajian.\n- Jika ada transaksi pengeluaran atau pemasukan baru, kamu bisa langsung ketik atau ucapkan dengan suara (misal: "catat makan siang 25 ribu") untuk saya bukukan otomatis.`;
 }
 
 /**
@@ -687,10 +764,10 @@ Format JSON array:
 Kalimat yang diucapkan: "${spokenText}"`;
 
       const modelsToTry = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-3.1-flash-lite',
+        'gemini-3.8-flash',
+        'gemini-flash-latest',
+        'gemini-3.5-flash',
+        'gemini-flash-lite-latest',
       ];
       let parsed: any = null;
 
@@ -851,10 +928,10 @@ FORMAT OUTPUT JSON MURNI (tanpa markdown, tanpa code block, tanpa teks pengantar
 }`;
 
   const modelsToTry = [
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-3.1-flash-lite',
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
+    'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
   ];
 
   let rawMime = audioBlob.type || 'audio/webm';

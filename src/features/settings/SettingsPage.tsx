@@ -18,11 +18,14 @@ import {
   TrendingUp,
   Trash2,
   X,
+  Sparkles,
+  Key,
 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { supabase } from '../../lib/supabase';
 import { stripEmoji } from '../../utils/format';
 import { useScrollLock } from '../../utils/useScrollLock';
+import { getStoredGeminiKey, saveStoredGeminiKey } from '../../services/aiService';
 
 export const SettingsPage: React.FC = () => {
   const { profile, updateProfile, showToast, signOut, transactions, resetAllData } = useAppStore();
@@ -36,6 +39,23 @@ export const SettingsPage: React.FC = () => {
   const [salary, setSalary] = useState(String(profile.monthly_income));
   const [payDay, setPayDay] = useState(String(profile.pay_day));
   const [sideHustle, setSideHustle] = useState(profile.side_hustle_status || '-');
+  const [geminiKeyInput, setGeminiKeyInput] = useState('');
+  const [isKeyCustomized, setIsKeyCustomized] = useState(false);
+
+  useEffect(() => {
+    const currentKey = getStoredGeminiKey();
+    setGeminiKeyInput(currentKey);
+    const hasLocal = typeof window !== 'undefined' && !!localStorage.getItem('finai_gemini_api_key');
+    setIsKeyCustomized(hasLocal);
+  }, []);
+
+  const handleSaveGeminiKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveStoredGeminiKey(geminiKeyInput);
+    const hasLocal = !!geminiKeyInput.trim();
+    setIsKeyCustomized(hasLocal);
+    showToast(hasLocal ? 'Kunci API Gemini kustom berhasil disimpan.' : 'Menggunakan kunci Gemini bawaan.');
+  };
 
   // Close modal on Escape key
   useEffect(() => {
@@ -341,6 +361,68 @@ export const SettingsPage: React.FC = () => {
           <Download size={15} />
           <span>Ekspor JSON</span>
         </button>
+      </div>
+
+      {/* AI Intelligence & Gemini Engine Card */}
+      <div className="glass-1 p-5 rounded-2xl border-[rgba(205,225,245,0.12)] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#E39A5E]/15 border border-[#E39A5E]/30 text-[#E39A5E] flex items-center justify-center">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-[#EEF2F6]">Mesin Kecerdasan AI (Gemini 3.8 Flash)</h2>
+              <p className="text-xs text-[#A3AFBC] mt-0.5">
+                Pusat penalaran finansial & ekstraksi suara multi-transaksi berkecepatan tinggi
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <span className="px-2.5 py-1 rounded-full bg-[#4FD3A4]/15 border border-[#4FD3A4]/30 text-[#4FD3A4] text-[11px] font-semibold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD3A4] animate-pulse" />
+              <span>{isKeyCustomized ? 'API Key Pribadi' : 'API Key Bawaan Aktif'}</span>
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveGeminiKey} className="space-y-3">
+          <div>
+            <label className="text-xs text-[#A3AFBC] flex items-center justify-between">
+              <span>Google Gemini API Key (Opsional)</span>
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-[#E39A5E] hover:underline"
+              >
+                Dapatkan API Key di Google AI Studio
+              </a>
+            </label>
+            <div className="relative flex items-center mt-1">
+              <span className="absolute left-3 text-[#A3AFBC] pointer-events-none">
+                <Key size={14} />
+              </span>
+              <input
+                type="password"
+                value={geminiKeyInput}
+                onChange={(e) => setGeminiKeyInput(e.target.value)}
+                placeholder="Masukkan API Key (kosongkan untuk memakai bawaan)"
+                className="w-full h-10 pl-9 pr-24 rounded-xl glass-2 text-xs text-[#EEF2F6] font-mono outline-none border border-[var(--glass-border)] focus:border-[#E39A5E] transition-all"
+              />
+              <div className="absolute right-1.5 flex items-center gap-1">
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 rounded-lg bg-[#E39A5E] hover:bg-[#CF8143] text-[#1C0E04] text-xs font-semibold active:scale-95 transition-all cursor-pointer shadow-xs"
+                >
+                  Simpan
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[11px] text-[#74808E] leading-relaxed">
+            API key tersimpan di penyimpanan privat browser Anda. Jika kosong, sistem otomatis memakai kunci bawaan Monetra. Monetra juga dilengkapi Local Financial Reasoning Engine untuk skenario tanpa jaringan.
+          </p>
+        </form>
       </div>
 
       {/* Danger Zone: Reset All Data */}
