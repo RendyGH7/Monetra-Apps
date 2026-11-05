@@ -10,9 +10,9 @@ import {
   BarChart3,
   ChevronRight,
   PieChart as DonutIcon,
-  Clock,
 } from 'lucide-react';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
+import { NotificationBell } from '../../components/common/NotificationBell';
 import {
   PieChart,
   Pie,
@@ -30,7 +30,6 @@ import {
   formatCurrency,
   formatTimeShort,
   formatCompact,
-  formatDateIndo,
   formatDateTimeWIB,
   getWIBParts,
   getNowWIBParts,
@@ -44,27 +43,6 @@ import {
   MONTHS_SHORT_ID,
 } from '../../utils/format';
 import { getDailyInsight } from '../../utils/dailyInsight';
-
-// ── Komponen Jam WIB Terisolasi (Mencegah re-render seluruh halaman setiap detik) ──
-const LiveWIBClock: React.FC = React.memo(() => {
-  const [timestamp, setTimestamp] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimestamp(Date.now());
-    }, 15000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-[#EEF2F6] shadow-xs">
-      <Clock size={12} className="text-[#E39A5E]" />
-      <span className="num-tabular font-medium">
-        {formatDateIndo(timestamp)} · {formatTimeShort(timestamp, true)}
-      </span>
-    </div>
-  );
-});
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -369,18 +347,16 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-4 md:pb-8">
-      {/* Top Greeting and Status with Live Indonesia WIB Clock */}
+      {/* Top Greeting and Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
-              {getWIBGreeting()}, {profile.nama}
-            </h1>
-            <LiveWIBClock />
-          </div>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
+            {getWIBGreeting()}, {profile.nama}
+          </h1>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
+          <NotificationBell />
           <button
             type="button"
             onClick={() => setQuickManualOpen(true)}
@@ -476,9 +452,6 @@ export const DashboardPage: React.FC = () => {
               <h2 className="text-sm font-semibold text-[#EEF2F6]">
                 Statistik {periodStats.title}
               </h2>
-              <p className="text-[11px] text-[#A3AFBC]">
-                Tren detail arus kas dan evaluasi pengeluaran
-              </p>
             </div>
           </div>
 
@@ -689,7 +662,6 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-[var(--text-primary)]">Distribusi Pengeluaran</h2>
-                <p className="text-[11px] text-[var(--text-secondary)]">Bulan Ini · {pieData.length} Kategori</p>
               </div>
             </div>
 

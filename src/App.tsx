@@ -7,6 +7,7 @@ import { BottomNav } from './components/layout/BottomNav';
 import { FloatingMascot } from './components/layout/FloatingMascot';
 import { VoiceModal } from './components/voice/VoiceModal';
 import { QuickManualModal } from './components/common/QuickManualModal';
+import { NotificationBell } from './components/common/NotificationBell';
 import { Toast } from './components/common/Toast';
 
 // ── Code Splitting via React.lazy untuk performa instan & hemat memori ──
@@ -207,7 +208,10 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            {/* AI Notification Bell */}
+            <NotificationBell align="right" />
+
             {/* Theme Toggle */}
             <button
               type="button"

@@ -106,7 +106,6 @@ export const SidebarNav: React.FC = () => {
               <span className="font-display font-bold text-lg tracking-tight text-[var(--text-primary)] whitespace-nowrap block">
                 Monetra
               </span>
-              <p className="text-[11px] text-[var(--text-secondary)] whitespace-nowrap">Asisten Keuangan</p>
             </div>
           </div>
         </div>

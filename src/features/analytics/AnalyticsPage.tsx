@@ -482,9 +482,6 @@ export const AnalyticsPage: React.FC = () => {
           <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
             Statistik & Analisis
           </h1>
-          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
-            Pola konsumsi {periodLabel.toLowerCase()} dan evaluasi kesehatan finansial
-          </p>
         </div>
 
         {/* Minimalist, Responsive & Animated Period Switcher */}
@@ -578,9 +575,6 @@ export const AnalyticsPage: React.FC = () => {
               <h2 className="text-sm font-semibold text-[#EEF2F6]">
                 Statistik {periodStats.title}
               </h2>
-              <p className="text-[11px] text-[#A3AFBC]">
-                Tren detail arus kas dan evaluasi pengeluaran
-              </p>
             </div>
           </div>
 
@@ -1104,9 +1098,6 @@ export const AnalyticsPage: React.FC = () => {
                 <h2 className="text-sm font-semibold text-[#EEF2F6]">
                   Top 5 Pengeluaran Terbesar
                 </h2>
-                <p className="text-[11px] text-[#A3AFBC] mt-0.5">
-                  Pos belanja dengan nominal tertinggi pada {periodLabel.toLowerCase()}
-                </p>
               </div>
 
               <button

@@ -112,3 +112,18 @@ export interface ParsedVoiceItem {
   need_want: NeedWantType;
   confidence: number;
 }
+
+export type NotificationType = 'payday' | 'budget_warning' | 'daily_safe' | 'goal' | 'spending' | 'ai_tip';
+export type NotificationSeverity = 'info' | 'warning' | 'danger' | 'success';
+
+export interface AINotification {
+  id: string;
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  actionTab?: 'beranda' | 'transaksi' | 'statistik' | 'asisten' | 'budget' | 'pengaturan';
+  actionPrompt?: string;
+}

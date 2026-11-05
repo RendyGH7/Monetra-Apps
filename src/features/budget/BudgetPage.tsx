@@ -65,9 +65,6 @@ export const BudgetPage: React.FC = () => {
           <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
             Budget & Target Finansial
           </h1>
-          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
-            Kelola pos anggaran bulanan dan pantau target tabungan darurat
-          </p>
         </div>
 
         <button

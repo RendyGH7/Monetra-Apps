@@ -241,9 +241,6 @@ export const TransactionsPage: React.FC = () => {
           <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
             Riwayat Transaksi
           </h1>
-          <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
-            Total {transactions.length} transaksi tercatat dalam sistem
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">

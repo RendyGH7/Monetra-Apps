@@ -120,9 +120,6 @@ export const SettingsPage: React.FC = () => {
         <h1 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-[#EEF2F6]">
           Pengaturan & Memori AI
         </h1>
-        <p className="text-xs sm:text-sm text-[#A3AFBC] mt-0.5">
-          Kontrol data pribadi, akun Google, dan fakta yang diingat AI tentangmu
-        </p>
       </div>
 
       {/* Google Account & Cloud Sync Status Card */}
